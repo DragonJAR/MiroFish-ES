@@ -69,6 +69,7 @@ TRANSLATION_FILES=(
   "frontend/src/i18n/"
   "AGENTS.md"
   "README-ES.md"
+  "sync-upstream.sh"
 )
 
 # Crear backup de archivos de traducción
