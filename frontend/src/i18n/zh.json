@@ -549,6 +549,11 @@
     "stepEntered": "已进入步骤",
     "graphBuildStarted": "开始构建图谱...",
     "graphBuildCompleted": "图谱构建任务已完成",
-    "manualGraphRefresh": "手动刷新图谱已触发"
+    "manualGraphRefresh": "手动刷新图谱已触发",
+    "unnamedSimulation": "未命名模拟",
+    "notStarted": "未开始",
+    "rounds": "轮",
+    "unknownFile": "未知文件",
+    "loadHistoryFailed": "加载历史项目失败"
   }
 }

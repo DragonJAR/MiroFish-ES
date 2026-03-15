@@ -549,6 +549,11 @@
     "stepEntered": "Paso ingresado",
     "graphBuildStarted": "Iniciando construcción del grafo...",
     "graphBuildCompleted": "Tarea de construcción del grafo completada",
-    "manualGraphRefresh": "Actualización manual del grafo activada"
+    "manualGraphRefresh": "Actualización manual del grafo activada",
+    "unnamedSimulation": "Simulación sin nombre",
+    "notStarted": "No iniciado",
+    "rounds": "rondas",
+    "unknownFile": "Archivo desconocido",
+    "loadHistoryFailed": "Error al cargar historial de proyectos"
   }
 }
