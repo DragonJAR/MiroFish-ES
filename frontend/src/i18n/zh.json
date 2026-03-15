@@ -554,6 +554,24 @@
     "notStarted": "未开始",
     "rounds": "轮",
     "unknownFile": "未知文件",
-    "loadHistoryFailed": "加载历史项目失败"
+    "loadHistoryFailed": "加载历史项目失败",
+    "uploadingAndAnalyzing": "正在上传文件并分析文档...",
+    "ontologyGenFailed": "本体生成失败",
+    "projectInitFailed": "项目初始化失败",
+    "unknownError": "未知错误",
+    "processFailed": "处理失败",
+    "startingGraphBuild": "正在启动图谱构建...",
+    "buildCompleteLoading": "构建完成，正在加载图谱...",
+    "graphBuildFailed": "图谱构建失败",
+    "unnamed": "未命名",
+    "unknown": "未知",
+    "noCurrentKeyMemory": "暂无当前关键记忆",
+    "noCoreEntities": "暂无核心实体",
+    "exitFullScreen": "退出全屏",
+    "enterFullScreen": "全屏显示",
+    "processing": "处理中...",
+    "projectLoadFailed": "加载项目失败",
+    "graphBuildStartFailed": "启动图谱构建失败",
+    "loadProjectError": "加载项目错误"
   }
 }

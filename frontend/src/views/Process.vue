@@ -573,7 +573,7 @@ const handleNewProject = async () => {
   try {
     loading.value = true
     currentPhase.value = 0 // 本体生成阶段
-    ontologyProgress.value = { message: '正在上传文件并分析文档...' }
+    ontologyProgress.value = { message: t('process.uploadingAndAnalyzing') }
     
     // 构建 FormData
     const formDataObj = new FormData()
@@ -604,11 +604,11 @@ const handleNewProject = async () => {
       // 自动开始图谱构建
       await startBuildGraph()
     } else {
-      error.value = response.error || '本体生成失败'
+      error.value = response.error || t('process.ontologyGenFailed')
     }
   } catch (err) {
     console.error('Handle new project error:', err)
-    error.value = '项目初始化失败: ' + (err.message || '未知错误')
+    error.value = t('process.projectInitFailed') + ': ' + (err.message || t('process.unknownError'))
   } finally {
     loading.value = false
   }
@@ -645,7 +645,7 @@ const loadProject = async () => {
     }
   } catch (err) {
     console.error('Load project error:', err)
-    error.value = '加载项目失败: ' + (err.message || '未知错误')
+      error.value = t('process.projectLoadFailed') + ': ' + (err.message || t('process.unknownError'))
   } finally {
     loading.value = false
   }
@@ -664,7 +664,7 @@ const updatePhaseByStatus = (status) => {
       currentPhase.value = 2
       break
     case 'failed':
-      error.value = projectData.value?.error || '处理失败'
+      error.value = projectData.value?.error || t('process.processFailed')
       break
   }
 }
@@ -676,7 +676,7 @@ const startBuildGraph = async () => {
     // 设置初始进度
     buildProgress.value = {
       progress: 0,
-      message: '正在启动图谱构建...'
+      message: t('process.startingGraphBuild')
     }
     
     const response = await buildGraph({ project_id: currentProjectId.value })
@@ -693,12 +693,12 @@ const startBuildGraph = async () => {
       // 启动任务状态轮询
       startPollingTask(taskId)
     } else {
-      error.value = response.error || '启动图谱构建失败'
+      error.value = response.error || t('process.graphBuildStartFailed')
       buildProgress.value = null
     }
   } catch (err) {
     console.error('Build graph error:', err)
-    error.value = '启动图谱构建失败: ' + (err.message || '未知错误')
+    error.value = t('process.graphBuildStartFailed') + ': ' + (err.message || t('process.unknownError'))
     buildProgress.value = null
   }
 }
@@ -787,7 +787,7 @@ const pollTaskStatus = async (taskId) => {
       // 更新进度显示
       buildProgress.value = {
         progress: task.progress || 0,
-        message: task.message || '处理中...'
+        message: task.message || t('process.processing')
       }
       
       console.log('Task status:', task.status, 'Progress:', task.progress)
@@ -802,7 +802,7 @@ const pollTaskStatus = async (taskId) => {
         // 更新进度显示为完成状态
         buildProgress.value = {
           progress: 100,
-          message: '构建完成，正在加载图谱...'
+          message: t('process.buildCompleteLoading')
         }
         
         // 重新加载项目数据获取 graph_id
@@ -823,7 +823,7 @@ const pollTaskStatus = async (taskId) => {
       } else if (task.status === 'failed') {
         stopPolling()
         stopGraphPolling()
-        error.value = '图谱构建失败: ' + (task.error || '未知错误')
+        error.value = t('process.graphBuildFailed') + ': ' + (task.error || t('process.unknownError'))
         buildProgress.value = null
       }
     }

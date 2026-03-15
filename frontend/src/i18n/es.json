@@ -554,6 +554,24 @@
     "notStarted": "No iniciado",
     "rounds": "rondas",
     "unknownFile": "Archivo desconocido",
-    "loadHistoryFailed": "Error al cargar historial de proyectos"
+    "loadHistoryFailed": "Error al cargar historial de proyectos",
+    "uploadingAndAnalyzing": "Subiendo archivos y analizando documento...",
+    "ontologyGenFailed": "Fallo en generación de ontología",
+    "projectInitFailed": "Fallo en inicialización del proyecto",
+    "unknownError": "Error desconocido",
+    "processFailed": "Procesamiento fallido",
+    "startingGraphBuild": "Iniciando construcción del grafo...",
+    "buildCompleteLoading": "Construcción completada, cargando grafo...",
+    "graphBuildFailed": "Fallo en construcción del grafo",
+    "unnamed": "Sin nombre",
+    "unknown": "Desconocido",
+    "noCurrentKeyMemory": "Sin memorias clave actuales",
+    "noCoreEntities": "Sin entidades principales",
+    "exitFullScreen": "Salir de pantalla completa",
+    "enterFullScreen": "Pantalla completa",
+    "processing": "Procesando...",
+    "projectLoadFailed": "Fallo al cargar proyecto",
+    "graphBuildStartFailed": "Fallo al iniciar construcción del grafo",
+    "loadProjectError": "Error al cargar proyecto"
   }
 }
