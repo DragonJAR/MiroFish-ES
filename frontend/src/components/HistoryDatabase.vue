@@ -13,7 +13,7 @@
     <!-- 标题区域 -->
     <div class="section-header">
       <div class="section-line"></div>
-      <span class="section-title">推演记录</span>
+      <span class="section-title">{{ t('history.title') }}</span>
       <div class="section-line"></div>
     </div>
 
@@ -33,19 +33,19 @@
         <div class="card-header">
           <span class="card-id">{{ formatSimulationId(project.simulation_id) }}</span>
           <div class="card-status-icons">
-            <span 
-              class="status-icon" 
+            <span
+              class="status-icon"
               :class="{ available: project.project_id, unavailable: !project.project_id }"
-              title="图谱构建"
+              :title="t('history.graphBuild')"
             >◇</span>
-            <span 
-              class="status-icon available" 
-              title="环境搭建"
+            <span
+              class="status-icon available"
+              :title="t('history.envSetup')"
             >◈</span>
-            <span 
-              class="status-icon" 
+            <span
+              class="status-icon"
               :class="{ available: project.report_id, unavailable: !project.report_id }"
-              title="分析报告"
+              :title="t('history.report')"
             >◆</span>
           </div>
         </div>
@@ -67,13 +67,13 @@
             </div>
             <!-- 如果有更多文件，显示提示 -->
             <div v-if="project.files.length > 3" class="files-more">
-              +{{ project.files.length - 3 }} 个文件
+              +{{ project.files.length - 3 }} {{ t('history.moreFiles', { n: project.files.length - 3 }) }}
             </div>
           </div>
           <!-- 无文件时的占位 -->
           <div class="files-empty" v-else>
             <span class="empty-file-icon">◇</span>
-            <span class="empty-file-text">暂无文件</span>
+            <span class="empty-file-text">{{ t('history.noFiles') }}</span>
           </div>
         </div>
 
@@ -102,7 +102,7 @@
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-state">
       <span class="loading-spinner"></span>
-      <span class="loading-text">加载中...</span>
+      <span class="loading-text">{{ t('history.loading') }}</span>
     </div>
 
     <!-- 历史回放详情弹窗 -->
@@ -124,65 +124,65 @@
 
             <!-- 弹窗内容 -->
             <div class="modal-body">
-              <!-- 模拟需求 -->
-              <div class="modal-section">
-                <div class="modal-label">模拟需求</div>
-                <div class="modal-requirement">{{ selectedProject.simulation_requirement || '无' }}</div>
-              </div>
+            <!-- 模拟需求 -->
+            <div class="modal-section">
+              <div class="modal-label">{{ t('history.simRequirement') }}</div>
+              <div class="modal-requirement">{{ selectedProject.simulation_requirement || t('history.none') }}</div>
+            </div>
 
-              <!-- 文件列表 -->
-              <div class="modal-section">
-                <div class="modal-label">关联文件</div>
-                <div class="modal-files" v-if="selectedProject.files && selectedProject.files.length > 0">
-                  <div v-for="(file, index) in selectedProject.files" :key="index" class="modal-file-item">
-                    <span class="file-tag" :class="getFileType(file.filename)">{{ getFileTypeLabel(file.filename) }}</span>
-                    <span class="modal-file-name">{{ file.filename }}</span>
-                  </div>
+            <!-- 文件列表 -->
+            <div class="modal-section">
+              <div class="modal-label">{{ t('history.relatedFiles') }}</div>
+              <div class="modal-files" v-if="selectedProject.files && selectedProject.files.length > 0">
+                <div v-for="(file, index) in selectedProject.files" :key="index" class="modal-file-item">
+                  <span class="file-tag" :class="getFileType(file.filename)">{{ getFileTypeLabel(file.filename) }}</span>
+                  <span class="modal-file-name">{{ file.filename }}</span>
                 </div>
-                <div class="modal-empty" v-else>暂无关联文件</div>
               </div>
+              <div class="modal-empty" v-else>{{ t('history.noRelatedFiles') }}</div>
             </div>
+          </div>
 
-            <!-- 推演回放分割线 -->
-            <div class="modal-divider">
-              <span class="divider-line"></span>
-              <span class="divider-text">推演回放</span>
-              <span class="divider-line"></span>
-            </div>
+          <!-- 推演回放分割线 -->
+          <div class="modal-divider">
+            <span class="divider-line"></span>
+            <span class="divider-text">{{ t('history.playback') }}</span>
+            <span class="divider-line"></span>
+          </div>
 
-            <!-- 导航按钮 -->
-            <div class="modal-actions">
-              <button 
-                class="modal-btn btn-project" 
-                @click="goToProject"
-                :disabled="!selectedProject.project_id"
-              >
-                <span class="btn-step">Step1</span>
-                <span class="btn-icon">◇</span>
-                <span class="btn-text">图谱构建</span>
-              </button>
-              <button 
-                class="modal-btn btn-simulation" 
-                @click="goToSimulation"
-              >
-                <span class="btn-step">Step2</span>
-                <span class="btn-icon">◈</span>
-                <span class="btn-text">环境搭建</span>
-              </button>
-              <button 
-                class="modal-btn btn-report" 
-                @click="goToReport"
-                :disabled="!selectedProject.report_id"
-              >
-                <span class="btn-step">Step4</span>
-                <span class="btn-icon">◆</span>
-                <span class="btn-text">分析报告</span>
-              </button>
-            </div>
-            <!-- 不可回放提示 -->
-            <div class="modal-playback-hint">
-              <span class="hint-text">Step3「开始模拟」与 Step5「深度互动」需在运行中启动，不支持历史回放</span>
-            </div>
+          <!-- 导航按钮 -->
+          <div class="modal-actions">
+            <button
+              class="modal-btn btn-project"
+              @click="goToProject"
+              :disabled="!selectedProject.project_id"
+            >
+              <span class="btn-step">Step1</span>
+              <span class="btn-icon">◇</span>
+              <span class="btn-text">{{ t('history.graphBuild') }}</span>
+            </button>
+            <button
+              class="modal-btn btn-simulation"
+              @click="goToSimulation"
+            >
+              <span class="btn-step">Step2</span>
+              <span class="btn-icon">◈</span>
+              <span class="btn-text">{{ t('history.envSetup') }}</span>
+            </button>
+            <button
+              class="modal-btn btn-report"
+              @click="goToReport"
+              :disabled="!selectedProject.report_id"
+            >
+              <span class="btn-step">Step4</span>
+              <span class="btn-icon">◆</span>
+              <span class="btn-text">{{ t('history.report') }}</span>
+            </button>
+          </div>
+          <!-- 不可回放提示 -->
+          <div class="modal-playback-hint">
+            <span class="hint-text">{{ t('history.playbackHint') }}</span>
+          </div>
           </div>
         </div>
       </Transition>
@@ -193,10 +193,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, onActivated, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getSimulationHistory } from '../api/simulation'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 
 // 状态
 const projects = ref([])

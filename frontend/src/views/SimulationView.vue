@@ -8,14 +8,14 @@
       
       <div class="header-center">
         <div class="view-switcher">
-          <button 
-            v-for="mode in ['graph', 'split', 'workbench']" 
+          <button
+            v-for="mode in ['graph', 'split', 'workbench']"
             :key="mode"
             class="switch-btn"
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: '图谱', split: '双栏', workbench: '工作台' }[mode] }}
+            {{ viewModeLabels[mode] }}
           </button>
         </div>
       </div>
@@ -23,7 +23,7 @@
       <div class="header-right">
         <div class="workflow-step">
           <span class="step-num">Step 2/5</span>
-          <span class="step-name">环境搭建</span>
+          <span class="step-name">{{ t('mainView.step2') }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -66,6 +66,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
 import { getProject, getGraphData } from '../api/graph'
@@ -73,6 +74,7 @@ import { getSimulation, stopSimulation, getEnvStatus, closeSimulationEnv } from 
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 // Props
 const props = defineProps({
@@ -91,6 +93,12 @@ const systemLogs = ref([])
 const currentStatus = ref('processing') // processing | completed | error
 
 // --- Computed Layout Styles ---
+const viewModeLabels = computed(() => ({
+  graph: t('mainView.graphView'),
+  split: t('mainView.splitView'),
+  workbench: t('mainView.workbenchView')
+}))
+
 const leftPanelStyle = computed(() => {
   if (viewMode.value === 'graph') return { width: '100%', opacity: 1, transform: 'translateX(0)' }
   if (viewMode.value === 'workbench') return { width: '0%', opacity: 0, transform: 'translateX(-20px)' }
@@ -109,9 +117,9 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (currentStatus.value === 'error') return 'Error'
-  if (currentStatus.value === 'completed') return 'Ready'
-  return 'Preparing'
+  if (currentStatus.value === 'error') return t('common.error')
+  if (currentStatus.value === 'completed') return t('common.completed')
+  return t('common.processing')
 })
 
 // --- Helpers ---
@@ -146,26 +154,26 @@ const handleGoBack = () => {
 }
 
 const handleNextStep = (params = {}) => {
-  addLog('进入 Step 3: 开始模拟')
-  
+  addLog(t('logs.enteringStep3'))
+
   // 记录模拟轮数配置
   if (params.maxRounds) {
-    addLog(`自定义模拟轮数: ${params.maxRounds} 轮`)
+    addLog(`${params.maxRounds} ${t('logs.customRoundsParam')}`)
   } else {
-    addLog('使用自动配置的模拟轮数')
+    addLog(t('logs.autoConfiguredRoundsUsed'))
   }
-  
+
   // 构建路由参数
   const routeParams = {
     name: 'SimulationRun',
     params: { simulationId: currentSimulationId.value }
   }
-  
+
   // 如果有自定义轮数，通过 query 参数传递
   if (params.maxRounds) {
     routeParams.query = { maxRounds: params.maxRounds }
   }
-  
+
   // 跳转到 Step 3 页面
   router.push(routeParams)
 }
@@ -178,30 +186,30 @@ const handleNextStep = (params = {}) => {
  */
 const checkAndStopRunningSimulation = async () => {
   if (!currentSimulationId.value) return
-  
+
   try {
     // 先检查模拟环境是否存活
     const envStatusRes = await getEnvStatus({ simulation_id: currentSimulationId.value })
-    
+
     if (envStatusRes.success && envStatusRes.data?.env_alive) {
-      addLog('检测到模拟环境正在运行，正在关闭...')
-      
+      addLog(t('logs.simEnvRunning'))
+
       // 尝试优雅关闭模拟环境
       try {
-        const closeRes = await closeSimulationEnv({ 
+        const closeRes = await closeSimulationEnv({
           simulation_id: currentSimulationId.value,
           timeout: 10  // 10秒超时
         })
-        
+
         if (closeRes.success) {
-          addLog('✓ 模拟环境已关闭')
+          addLog(t('logs.simEnvClosedOk'))
         } else {
-          addLog(`关闭模拟环境失败: ${closeRes.error || '未知错误'}`)
+          addLog(`${t('logs.simEnvCloseFailed')}: ${closeRes.error || t('common.error')}`)
           // 如果优雅关闭失败，尝试强制停止
           await forceStopSimulation()
         }
       } catch (closeErr) {
-        addLog(`关闭模拟环境异常: ${closeErr.message}`)
+        addLog(`${t('logs.simEnvCloseException')}: ${closeErr.message}`)
         // 如果优雅关闭异常，尝试强制停止
         await forceStopSimulation()
       }
@@ -209,7 +217,7 @@ const checkAndStopRunningSimulation = async () => {
       // 环境未运行，但可能进程还在，检查模拟状态
       const simRes = await getSimulation(currentSimulationId.value)
       if (simRes.success && simRes.data?.status === 'running') {
-        addLog('检测到模拟状态为运行中，正在停止...')
+        addLog(t('logs.simStatusRunning'))
         await forceStopSimulation()
       }
     }
@@ -226,31 +234,31 @@ const forceStopSimulation = async () => {
   try {
     const stopRes = await stopSimulation({ simulation_id: currentSimulationId.value })
     if (stopRes.success) {
-      addLog('✓ 模拟已强制停止')
+      addLog(t('logs.forceStopOk'))
     } else {
-      addLog(`强制停止模拟失败: ${stopRes.error || '未知错误'}`)
+      addLog(`${t('logs.forceStopFailed')}: ${stopRes.error || t('common.error')}`)
     }
   } catch (err) {
-    addLog(`强制停止模拟异常: ${err.message}`)
+    addLog(`${t('logs.forceStopException')}: ${err.message}`)
   }
 }
 
 const loadSimulationData = async () => {
   try {
-    addLog(`加载模拟数据: ${currentSimulationId.value}`)
-    
+    addLog(`${t('logs.simDataLoaded')}: ${currentSimulationId.value}`)
+
     // 获取 simulation 信息
     const simRes = await getSimulation(currentSimulationId.value)
     if (simRes.success && simRes.data) {
       const simData = simRes.data
-      
+
       // 获取 project 信息
       if (simData.project_id) {
         const projRes = await getProject(simData.project_id)
         if (projRes.success && projRes.data) {
           projectData.value = projRes.data
-          addLog(`项目加载成功: ${projRes.data.project_id}`)
-          
+          addLog(`${t('logs.projectLoadedSuccessfully')}: ${projRes.data.project_id}`)
+
           // 获取 graph 数据
           if (projRes.data.graph_id) {
             await loadGraph(projRes.data.graph_id)
@@ -258,10 +266,10 @@ const loadSimulationData = async () => {
         }
       }
     } else {
-      addLog(`加载模拟数据失败: ${simRes.error || '未知错误'}`)
+      addLog(`${t('logs.simDataLoadFailed')}: ${simRes.error || t('common.error')}`)
     }
   } catch (err) {
-    addLog(`加载异常: ${err.message}`)
+    addLog(`${t('logs.simDataException')}: ${err.message}`)
   }
 }
 
@@ -271,10 +279,10 @@ const loadGraph = async (graphId) => {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog('图谱数据加载成功')
+      addLog(t('logs.graphDataLoaded'))
     }
   } catch (err) {
-    addLog(`图谱加载失败: ${err.message}`)
+    addLog(`${t('logs.graphLoadFailed')}: ${err.message}`)
   } finally {
     graphLoading.value = false
   }
@@ -287,11 +295,11 @@ const refreshGraph = () => {
 }
 
 onMounted(async () => {
-  addLog('SimulationView 初始化')
-  
+  addLog(t('logs.simViewInit'))
+
   // 检查并关闭正在运行的模拟（用户从 Step 3 返回时）
   await checkAndStopRunningSimulation()
-  
+
   // 加载模拟数据
   loadSimulationData()
 })
