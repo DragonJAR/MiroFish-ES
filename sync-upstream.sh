@@ -68,7 +68,7 @@ fi
 TRANSLATION_FILES=(
   "frontend/src/i18n/"
   "AGENTS.md"
-  "README-ES.md"
+  "README-ZH.md"
   "sync-upstream.sh"
 )
 
