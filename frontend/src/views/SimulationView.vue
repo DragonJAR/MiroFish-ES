@@ -22,7 +22,7 @@
 
       <div class="header-right">
         <div class="workflow-step">
-          <span class="step-num">Step 2/5</span>
+          <span class="step-num">{{ $t('mainView.step2') }}</span>
           <span class="step-name">{{ t('mainView.step2') }}</span>
         </div>
         <div class="step-divider"></div>

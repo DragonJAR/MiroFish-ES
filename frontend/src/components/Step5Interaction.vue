@@ -85,8 +85,8 @@
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
           <div class="action-bar-text">
-            <span class="action-bar-title">Interactive Tools</span>
-            <span class="action-bar-subtitle mono">{{ profiles.length }} agents available</span>
+            <span class="action-bar-title">{{ $t('step5.interactiveTools') }}</span>
+            <span class="action-bar-subtitle mono">{{ profiles.length }} {{ $t('step5.agentsAvailable') }}</span>
           </div>
         </div>
           <div class="action-bar-tabs">
@@ -292,7 +292,7 @@
             <textarea 
               v-model="chatInput"
               class="chat-input"
-              placeholder="输入您的问题..."
+              placeholder="{{ $t('step5.inputQuestion') }}"
               @keydown.enter.exact.prevent="sendMessage"
               :disabled="isSending || (!selectedAgent && chatTarget === 'agent')"
               rows="1"
@@ -358,7 +358,7 @@
               <textarea 
                 v-model="surveyQuestion"
                 class="survey-input"
-                placeholder="输入您想问所有被选中对象的问题..."
+                placeholder="{{ $t('step5.surveyInputPlaceholder') }}"
                 rows="3"
               ></textarea>
             </div>

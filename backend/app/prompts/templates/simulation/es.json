@@ -1,0 +1,5 @@
+{
+    "time_config_system": "Eres un experto en simulación de redes sociales. Devuelve solo formato JSON, la configuración de tiempo debe adaptarse a los hábitos chinos.",
+    "event_config_system": "Eres un experto en análisis de opinión pública. Devuelve solo formato JSON. Nota: poster_type debe coincidir exactamente con los tipos de entidad disponibles.",
+    "agent_config_system": "Eres un experto en análisis de comportamiento en redes sociales. Devuelve solo JSON, la configuración debe adaptarse a los hábitos chinos."
+}

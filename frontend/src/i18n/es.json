@@ -353,7 +353,8 @@
     "step2": "Configuración del entorno",
     "step3": "Iniciar simulación",
     "step4": "Generación de reportes",
-    "step5": "Interacción profunda"
+    "step5": "Interacción profunda",
+    "stepIndicator": "Paso {{current}}/5"
   },
   "report": {
     "predictionReport": "Informe de Predicción",
@@ -573,5 +574,100 @@
     "projectLoadFailed": "Fallo al cargar proyecto",
     "graphBuildStartFailed": "Fallo al iniciar construcción del grafo",
     "loadProjectError": "Error al cargar proyecto"
+  },
+  "graphPanel": {
+    "title": "Visualización de relaciones del grafo",
+    "refresh": "Actualizar",
+    "nodeDetails": "Detalles del nodo",
+    "relationship": "Relación",
+    "selfRelations": "Relaciones propias",
+    "name": "Nombre",
+    "uuid": "UUID",
+    "created": "Creado",
+    "properties": "Propiedades",
+    "summary": "Resumen",
+    "labels": "Etiquetas",
+    "fact": "Hecho",
+    "type": "Tipo",
+    "episodes": "Episodios",
+    "validFrom": "Válido desde",
+    "invalidAt": "Inválido en",
+    "expiredAt": "Expirado en",
+    "entityTypes": "Tipos de entidad",
+    "showEdgeLabels": "Mostrar etiquetas de relaciones"
+  },
+  "process": {
+    "nameLabel": "Nombre:",
+    "uuidLabel": "UUID:",
+    "createdLabel": "Creado:",
+    "propertiesLabel": "Propiedades:",
+    "summaryLabel": "Resumen:",
+    "labelsLabel": "Etiquetas:",
+    "relationship": "Relación",
+    "validFromLabel": "Válido desde:",
+    "invalidAtLabel": "Inválido en:",
+    "expiredAtLabel": "Expirado en:"
+  },
+  "step1": {
+    "attributes": "ATRIBUTOS",
+    "examples": "EJEMPLOS",
+    "connections": "CONEXIONES",
+    "generatedEntityTypes": "TIPOS DE ENTIDAD GENERADOS",
+    "generatedRelationTypes": "TIPOS DE RELACIÓN GENERADOS"
+  },
+  "step2": {
+    "projectId": "ID del Proyecto",
+    "graphId": "ID del Grafo",
+    "simulationId": "ID de Simulación",
+    "taskId": "ID de Tarea",
+    "agent": "Agente"
+  },
+  "step3": {
+    "infoPlaza": "Plaza de Información",
+    "topicCommunity": "Comunidad de Temas",
+    "round": "RONDA",
+    "elapsedTime": "Tiempo transcurrido",
+    "acts": "ACTS",
+    "availableActions": "Acciones disponibles",
+    "totalEvents": "TOTAL DE EVENTOS:",
+    "waitingForAgents": "Esperando acciones de los agentes...",
+    "simulationMonitor": "MONITOR DE SIMULACIÓN",
+    "repostFrom": "Republicado de @",
+    "likedPost": "Le dio like a la publicación de @",
+    "replyToPost": "Responder a la publicación #",
+    "searchQuery": "Búsqueda:",
+    "followedUser": "Siguió a @",
+    "actionSkipped": "Acción omitida"
+  },
+  "step4": {
+    "predictionReport": "Informe de Predicción",
+    "simulation": "Simulación",
+    "requirement": "Requisito",
+    "iteration": "Iteración",
+    "sectionGenerated": "Sección \"{{title}}\" contenido generado",
+    "reportComplete": "Generación de informe completada",
+    "waitingForActivity": "Esperando actividad del agente...",
+    "consoleOutput": "SALIDA DE CONSOLA"
+  },
+  "step5": {
+    "interactiveTools": "Herramientas interactivas",
+    "agentsAvailable": "agentes disponibles",
+    "inputQuestion": "Escribe tu pregunta...",
+    "selectSurveyTarget": "Seleccionar objeto de encuesta",
+    "surveyQuestion": "Pregunta de la encuesta",
+    "surveyInputPlaceholder": "Escribe la pregunta que deseas enviar a todos los agentes seleccionados...",
+    "sendSurvey": "Enviar encuesta",
+    "sending": "Enviando...",
+    "surveyResults": "Resultados de la encuesta",
+    "responsesReceived": "{{count}} respuestas recibidas",
+    "unknownProfession": "Profesión desconocida"
+  },
+  "history": {
+    "step1": "Paso 1",
+    "step2": "Paso 2",
+    "step4": "Paso 4"
+  },
+  "mainView": {
+    "stepIndicator": "Paso {{current}}/5"
   }
 }
