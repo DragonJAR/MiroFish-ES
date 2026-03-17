@@ -34,12 +34,12 @@
           <div class="actions-tooltip">
             <div class="tooltip-title">{{ $t('step3.availableActions') }}</div>
             <div class="tooltip-actions">
-              <span class="tooltip-action">POST</span>
-              <span class="tooltip-action">LIKE</span>
-              <span class="tooltip-action">REPOST</span>
-              <span class="tooltip-action">QUOTE</span>
-              <span class="tooltip-action">FOLLOW</span>
-              <span class="tooltip-action">IDLE</span>
+              <span class="tooltip-action">{{ $t('logs.post') }}</span>
+              <span class="tooltip-action">{{ $t('logs.like') }}</span>
+              <span class="tooltip-action">{{ $t('logs.repost') }}</span>
+              <span class="tooltip-action">{{ $t('logs.quote') }}</span>
+              <span class="tooltip-action">{{ $t('logs.follow') }}</span>
+              <span class="tooltip-action">{{ $t('logs.idle') }}</span>
             </div>
           </div>
         </div>
@@ -75,16 +75,16 @@
           <div class="actions-tooltip">
             <div class="tooltip-title">{{ $t('step3.availableActions') }}</div>
             <div class="tooltip-actions">
-              <span class="tooltip-action">POST</span>
-              <span class="tooltip-action">COMMENT</span>
-              <span class="tooltip-action">LIKE</span>
-              <span class="tooltip-action">DISLIKE</span>
-              <span class="tooltip-action">SEARCH</span>
-              <span class="tooltip-action">TREND</span>
-              <span class="tooltip-action">FOLLOW</span>
-              <span class="tooltip-action">MUTE</span>
-              <span class="tooltip-action">REFRESH</span>
-              <span class="tooltip-action">IDLE</span>
+              <span class="tooltip-action">{{ $t('logs.post') }}</span>
+              <span class="tooltip-action">{{ $t('logs.comment') }}</span>
+              <span class="tooltip-action">{{ $t('logs.like') }}</span>
+              <span class="tooltip-action">{{ $t('logs.dislike') }}</span>
+              <span class="tooltip-action">{{ $t('logs.search') }}</span>
+              <span class="tooltip-action">{{ $t('logs.trend') }}</span>
+              <span class="tooltip-action">{{ $t('logs.follow') }}</span>
+              <span class="tooltip-action">{{ $t('logs.mute') }}</span>
+              <span class="tooltip-action">{{ $t('logs.refresh') }}</span>
+              <span class="tooltip-action">{{ $t('logs.idle') }}</span>
             </div>
           </div>
         </div>
@@ -278,7 +278,7 @@
       <div class="log-content" ref="logContent">
         <div class="log-line" v-for="(log, idx) in systemLogs" :key="idx">
           <span class="log-time">{{ log.time }}</span>
-          <span class="log-msg">{{ log.msg }}</span>
+          <span class="log-msg">{{ translateLog(log.msg) }}</span>
         </div>
       </div>
     </div>
@@ -296,6 +296,7 @@ import {
   getRunStatusDetail
 } from '../api/simulation'
 import { generateReport } from '../api/report'
+import { useTranslateLog } from '../composables/useTranslateLog'
 
 const props = defineProps({
   simulationId: String,
@@ -313,6 +314,7 @@ const emit = defineEmits(['go-back', 'next-step', 'add-log', 'update-status'])
 
 const router = useRouter()
 const { t } = useI18n()
+const { translateLog } = useTranslateLog()
 
 // State
 const isGeneratingReport = ref(false)

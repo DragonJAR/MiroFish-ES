@@ -382,7 +382,7 @@
       </div>
       <div class="log-content" ref="logContent">
         <div class="log-line" v-for="(log, idx) in consoleLogs" :key="idx">
-          <span class="log-msg" :class="getLogLevelClass(log)">{{ log }}</span>
+          <span class="log-msg" :class="getLogLevelClass(log)">{{ translateLog(log) }}</span>
         </div>
       </div>
     </div>
@@ -394,9 +394,11 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick, h, reactive } f
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { getAgentLog, getConsoleLog } from '../api/report'
+import { useTranslateLog } from '../composables/useTranslateLog'
 
 const router = useRouter()
 const { t } = useI18n()
+const { translateLog } = useTranslateLog()
 
 const props = defineProps({
   reportId: String,

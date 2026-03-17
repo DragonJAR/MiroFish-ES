@@ -901,7 +901,7 @@ const renderGraph = () => {
       .attr('y', height / 2)
       .attr('text-anchor', 'middle')
       .attr('fill', '#999')
-      .text('等待图谱数据...')
+      .text(t('graphPanel.waitingGraphData'))
     return
   }
   

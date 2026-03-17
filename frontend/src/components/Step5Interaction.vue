@@ -8,7 +8,7 @@
           <!-- Report Header -->
           <div class="report-header-block">
             <div class="report-meta">
-              <span class="report-tag">Prediction Report</span>
+              <span class="report-tag">{{ $t('logs.predictionReport') }}</span>
               <span class="report-id">ID: {{ reportId || 'REF-2024-X92' }}</span>
             </div>
             <h1 class="main-title">{{ reportOutline.title }}</h1>
@@ -250,7 +250,7 @@
                 </svg>
               </div>
               <p class="empty-text">
-                {{ chatTarget === 'report_agent' ? '与 Report Agent 对话，深入了解报告内容' : '与模拟个体对话，了解他们的观点' }}
+                {{ chatTarget === 'report_agent' ? $t('step5.chatWithReportAgent') : $t('step5.chatWithAgents') }}
               </p>
             </div>
             <div 

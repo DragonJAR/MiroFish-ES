@@ -618,13 +618,13 @@
     <!-- Bottom Info / Logs -->
     <div class="system-logs">
       <div class="log-header">
-        <span class="log-title">SYSTEM DASHBOARD</span>
+        <span class="log-title">{{ $t('logs.systemDashboard') }}</span>
         <span class="log-id">{{ simulationId || 'NO_SIMULATION' }}</span>
       </div>
       <div class="log-content" ref="logContent">
         <div class="log-line" v-for="(log, idx) in systemLogs" :key="idx">
           <span class="log-time">{{ log.time }}</span>
-          <span class="log-msg">{{ log.msg }}</span>
+          <span class="log-msg">{{ translateLog(log.msg) }}</span>
         </div>
       </div>
     </div>
@@ -641,6 +641,7 @@ import {
   getSimulationConfig,
   getSimulationConfigRealtime 
 } from '../api/simulation'
+import { useTranslateLog } from '../composables/useTranslateLog'
 
 const props = defineProps({
   simulationId: String,  // 从父组件传入
@@ -651,6 +652,7 @@ const props = defineProps({
 
 const emit = defineEmits(['go-back', 'next-step', 'add-log', 'update-status'])
 const { t } = useI18n()
+const { translateLog } = useTranslateLog()
 
 // State
 const phase = ref(0) // 0: 初始化, 1: 生成人设, 2: 生成配置, 3: 完成

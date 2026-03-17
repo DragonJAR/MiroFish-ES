@@ -1169,18 +1169,18 @@ class ReportAgent:
         Returns:
             ReportOutline: 报告大纲
         """
-        logger.info("开始规划报告大纲...")
+        logger.info("Iniciando planificación del esquema del informe...")
 
         if progress_callback:
-            progress_callback("planning", 0, "正在分析模拟需求...")
+            progress_callback("planning", 0, "Analizando requisitos de simulación...")
 
-        # 首先获取模拟上下文
+        # Primero obtener el contexto de simulación
         context = self.zep_tools.get_simulation_context(
             graph_id=self.graph_id, simulation_requirement=self.simulation_requirement
         )
 
         if progress_callback:
-            progress_callback("planning", 30, "正在生成报告大纲...")
+            progress_callback("planning", 30, "Generando esquema del informe...")
 
         # Usar prompts i18n si están disponibles
         if _PROMPTS_AVAILABLE:
@@ -1224,7 +1224,9 @@ class ReportAgent:
             )
 
             if progress_callback:
-                progress_callback("planning", 80, "正在解析大纲结构...")
+                progress_callback(
+                    "planning", 80, "Analizando estructura del esquema..."
+                )
 
             # 解析大纲
             sections = []
@@ -1240,13 +1242,17 @@ class ReportAgent:
             )
 
             if progress_callback:
-                progress_callback("planning", 100, "大纲规划完成")
+                progress_callback(
+                    "planning", 100, "Planificación del esquema completada"
+                )
 
-            logger.info(f"大纲规划完成: {len(sections)} 个章节")
+            logger.info(
+                f"Planificación del esquema completada: {len(sections)} secciones"
+            )
             return outline
 
         except Exception as e:
-            logger.error(f"大纲规划失败: {str(e)}")
+            logger.error(f"Error en planificación del esquema: {str(e)}")
             # 返回默认大纲（3个章节，作为fallback）
             return ReportOutline(
                 title="未来预测报告",
