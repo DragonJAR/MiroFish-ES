@@ -266,11 +266,11 @@
               <div class="message-content">
                 <div class="message-header">
                   <span class="sender-name">
-                    {{ msg.role === 'user' ? 'You' : (chatTarget === 'report_agent' ? 'Report Agent' : (selectedAgent?.username || 'Agent')) }}
+                    {{ msg.role === 'user' ? $t('step5.you') : (chatTarget === 'report_agent' ? $t('step5.reportAgentName') : (selectedAgent?.username || $t('step5.agent'))) }}
                   </span>
                   <span class="message-time">{{ formatTime(msg.timestamp) }}</span>
                 </div>
-                <div class="message-text" v-html="renderMarkdown(msg.content)"></div>
+                <div class="message-text" v-html="renderMarkdown(translateLog(msg.content))"></div>
               </div>
             </div>
             <div v-if="isSending" class="chat-message assistant">
@@ -292,7 +292,7 @@
             <textarea 
               v-model="chatInput"
               class="chat-input"
-              placeholder="{{ $t('step5.inputQuestion') }}"
+              :placeholder="$t('step5.inputQuestion')"
               @keydown.enter.exact.prevent="sendMessage"
               :disabled="isSending || (!selectedAgent && chatTarget === 'agent')"
               rows="1"
@@ -317,8 +317,8 @@
           <div class="survey-setup">
             <div class="setup-section">
               <div class="section-header">
-                <span class="section-title">选择调查对象</span>
-                <span class="selection-count">已选 {{ selectedAgents.size }} / {{ profiles.length }}</span>
+                <span class="section-title">{{ $t('step5.selectSurveySubject') }}</span>
+                <span class="selection-count">{{ $t('step5.selectedCount', { count: selectedAgents.size, total: profiles.length }) }}</span>
               </div>
               <div class="agents-grid">
                 <label 
@@ -335,7 +335,7 @@
                   <div class="checkbox-avatar">{{ (agent.username || 'A')[0] }}</div>
                   <div class="checkbox-info">
                     <span class="checkbox-name">{{ agent.username }}</span>
-                    <span class="checkbox-role">{{ agent.profession || '未知职业' }}</span>
+                    <span class="checkbox-role">{{ agent.profession || $t('step5.unknownProfession') }}</span>
                   </div>
                   <div class="checkbox-indicator">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3">
@@ -345,20 +345,20 @@
                 </label>
               </div>
               <div class="selection-actions">
-                <button class="action-link" @click="selectAllAgents">全选</button>
+                <button class="action-link" @click="selectAllAgents">{{ $t('step5.selectAll') }}</button>
                 <span class="action-divider">|</span>
-                <button class="action-link" @click="clearAgentSelection">清空</button>
+                <button class="action-link" @click="clearAgentSelection">{{ $t('step5.clearSelection') }}</button>
               </div>
             </div>
 
             <div class="setup-section">
               <div class="section-header">
-                <span class="section-title">问卷问题</span>
+                <span class="section-title">{{ $t('step5.surveyQuestionLabel') }}</span>
               </div>
               <textarea 
                 v-model="surveyQuestion"
                 class="survey-input"
-                placeholder="{{ $t('step5.surveyInputPlaceholder') }}"
+                :placeholder="$t('step5.surveyInputPlaceholder')"
                 rows="3"
               ></textarea>
             </div>
@@ -369,15 +369,15 @@
               @click="submitSurvey"
             >
               <span v-if="isSurveying" class="loading-spinner"></span>
-              <span v-else>发送问卷</span>
+              <span v-else>{{ $t('step5.sendSurveyBtn') }}</span>
             </button>
           </div>
 
           <!-- Survey Results -->
           <div v-if="surveyResults.length > 0" class="survey-results">
             <div class="results-header">
-              <span class="results-title">调查结果</span>
-              <span class="results-count">{{ surveyResults.length }} 条回复</span>
+              <span class="results-title">{{ $t('step5.resultsTitle') }}</span>
+              <span class="results-count">{{ $t('step5.responsesCount', { count: surveyResults.length }) }}</span>
             </div>
             <div class="results-list">
               <div 
@@ -389,7 +389,7 @@
                   <div class="result-avatar">{{ (result.agent_name || 'A')[0] }}</div>
                   <div class="result-info">
                     <span class="result-name">{{ result.agent_name }}</span>
-                    <span class="result-role">{{ result.profession || '未知职业' }}</span>
+                    <span class="result-role">{{ result.profession || $t('step5.unknownProfession') }}</span>
                   </div>
                 </div>
                 <div class="result-question">
@@ -415,8 +415,10 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { chatWithReport, getReport, getAgentLog } from '../api/report'
 import { interviewAgents, getSimulationProfilesRealtime } from '../api/simulation'
+import { useTranslateLog } from '../composables/useTranslateLog'
 
 const { t } = useI18n()
+const { translateLog } = useTranslateLog()
 
 const props = defineProps({
   reportId: String,
@@ -668,7 +670,7 @@ const sendMessage = async () => {
     addLog(`${t('logs.sendFailed')}: ${err.message}`)
     chatHistory.value.push({
       role: 'assistant',
-      content: `抱歉，发生了错误: ${err.message}`,
+      content: `${t('step5.errorOccurred')}: ${err.message}`,
       timestamp: new Date().toISOString()
     })
   } finally {
@@ -700,7 +702,7 @@ const sendToReportAgent = async (message) => {
   if (res.success && res.data) {
     chatHistory.value.push({
       role: 'assistant',
-      content: res.data.response || res.data.answer || '无响应',
+      content: res.data.response || res.data.answer || this.$t('step5.noResponse'),
       timestamp: new Date().toISOString()
     })
     addLog(t('logs.reportAgentReplied'))
@@ -722,9 +724,9 @@ const sendToAgent = async (message) => {
     const historyContext = chatHistory.value
       .filter(msg => msg.content !== message)
       .slice(-6)
-      .map(msg => `${msg.role === 'user' ? '提问者' : '你'}：${msg.content}`)
+      .map(msg => `${msg.role === 'user' ? t('step5.questioner') : t('step5.you')}: ${msg.content}`)
       .join('\n')
-    prompt = `以下是我们之前的对话：\n${historyContext}\n\n现在我的新问题是：${message}`
+    prompt = `${t('step5.previousConversation')}:\n${historyContext}\n\n${t('step5.newQuestion')}: ${message}`
   }
   
   const res = await interviewAgents({
@@ -833,20 +835,20 @@ const submitSurvey = async () => {
         const agent = profiles.value[agentIdx]
         
         // 优先使用 reddit 平台回复，其次 twitter
-        let responseContent = '无响应'
+        let responseContent = t('step5.noResponse')
         
         if (typeof resultsDict === 'object' && !Array.isArray(resultsDict)) {
           const redditKey = `reddit_${agentIdx}`
           const twitterKey = `twitter_${agentIdx}`
           const agentResult = resultsDict[redditKey] || resultsDict[twitterKey]
           if (agentResult) {
-            responseContent = agentResult.response || agentResult.answer || '无响应'
+            responseContent = agentResult.response || agentResult.answer || t('step5.noResponse')
           }
         } else if (Array.isArray(resultsDict)) {
           // 兼容数组格式
           const matchedResult = resultsDict.find(r => r.agent_id === agentIdx)
           if (matchedResult) {
-            responseContent = matchedResult.response || matchedResult.answer || '无响应'
+            responseContent = matchedResult.response || matchedResult.answer || t('step5.noResponse')
           }
         }
         
@@ -885,7 +887,7 @@ const loadReportData = async () => {
       await loadAgentLogs()
     }
   } catch (err) {
-    addLog(`加载报告失败: ${err.message}`)
+    addLog(`${t('step5.reportLoadFailed')}: ${err.message}`)
   }
 }
 
@@ -907,10 +909,10 @@ const loadAgentLogs = async () => {
         }
       })
       
-      addLog('报告数据加载完成')
+      addLog(t('step5.reportDataLoaded'))
     }
   } catch (err) {
-    addLog(`加载报告日志失败: ${err.message}`)
+    addLog(`${t('step5.reportLogLoadFailed')}: ${err.message}`)
   }
 }
 
@@ -921,10 +923,10 @@ const loadProfiles = async () => {
     const res = await getSimulationProfilesRealtime(props.simulationId, 'reddit')
     if (res.success && res.data) {
       profiles.value = res.data.profiles || []
-      addLog(`加载了 ${profiles.value.length} 个模拟个体`)
+      addLog(t('step5.profilesLoaded', { count: profiles.value.length }))
     }
   } catch (err) {
-    addLog(`加载模拟个体失败: ${err.message}`)
+    addLog(t('step5.profilesLoadFailed'))
   }
 }
 
@@ -938,7 +940,7 @@ const handleClickOutside = (e) => {
 
 // Lifecycle
 onMounted(() => {
-  addLog('Step5 深度互动初始化')
+  addLog(t('step5.step5Init'))
   loadReportData()
   loadProfiles()
   document.addEventListener('click', handleClickOutside)

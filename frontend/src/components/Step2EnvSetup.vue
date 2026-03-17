@@ -90,8 +90,8 @@
                 @click="selectProfile(profile)"
               >
                 <div class="profile-header">
-                  <span class="profile-realname">{{ profile.username || 'Unknown' }}</span>
-                  <span class="profile-username">@{{ profile.name || `agent_${idx}` }}</span>
+                  <span class="profile-realname">{{ profile.username || t('step2.unknown') }}</span>
+                  <span class="profile-username">@{{ profile.name || t('step2.agent') + '_' + idx }}</span>
                 </div>
                 <div class="profile-meta">
                   <span class="profile-profession">{{ profile.profession || $t('step2.unknownProfession') }}</span>

@@ -106,8 +106,8 @@
             <!-- 自环组详情 -->
             <template v-if="selectedItem.data.isSelfLoopGroup">
               <div class="edge-relation-header self-loop-header">
-                {{ selectedItem.data.source_name }} - Self Relations
-                <span class="self-loop-count">{{ selectedItem.data.selfLoopCount }} items</span>
+                {{ selectedItem.data.source_name }} - {{ t('graphPanel.selfRelations') }}
+                <span class="self-loop-count">{{ selectedItem.data.selfLoopCount }} {{ t('graphPanel.items') }}</span>
               </div>
               
               <div class="self-loop-list">
@@ -122,7 +122,7 @@
                     @click="toggleSelfLoop(loop.uuid || idx)"
                   >
                     <span class="self-loop-index">#{{ idx + 1 }}</span>
-                    <span class="self-loop-name">{{ loop.name || loop.fact_type || 'RELATED' }}</span>
+                    <span class="self-loop-name">{{ loop.name || loop.fact_type || t('graphPanel.related') }}</span>
                     <span class="self-loop-toggle">{{ expandedSelfLoops.has(loop.uuid || idx) ? '−' : '+' }}</span>
                   </div>
                   
@@ -157,7 +157,7 @@
             <!-- 普通边详情 -->
             <template v-else>
               <div class="edge-relation-header">
-                {{ selectedItem.data.source_name }} → {{ selectedItem.data.name || 'RELATED_TO' }} → {{ selectedItem.data.target_name }}
+                {{ selectedItem.data.source_name }} → {{ selectedItem.data.name || t('graphPanel.relatedTo') }} → {{ selectedItem.data.target_name }}
               </div>
               
               <div class="detail-row">
@@ -166,11 +166,11 @@
               </div>
               <div class="detail-row">
                 <span class="detail-label">{{ $t('graphPanel.labels') }}:</span>
-                <span class="detail-value">{{ selectedItem.data.name || 'RELATED_TO' }}</span>
+                <span class="detail-value">{{ selectedItem.data.name || t('graphPanel.relatedTo') }}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Type:</span>
-                <span class="detail-value">{{ selectedItem.data.fact_type || 'Unknown' }}</span>
+                <span class="detail-value">{{ selectedItem.data.fact_type || t('graphPanel.unknown') }}</span>
               </div>
               <div class="detail-row" v-if="selectedItem.data.fact">
                 <span class="detail-label">Fact:</span>
@@ -179,7 +179,7 @@
               
               <!-- Episodes -->
               <div class="detail-section" v-if="selectedItem.data.episodes && selectedItem.data.episodes.length > 0">
-                <div class="section-title">Episodes:</div>
+                <div class="section-title">{{ t('graphPanel.episodes') }}:</div>
                 <div class="episodes-list">
                   <span v-for="ep in selectedItem.data.episodes" :key="ep" class="episode-tag">
                     {{ ep }}
@@ -358,7 +358,7 @@ const renderGraph = () => {
   
   const nodes = nodesData.map(n => ({
     id: n.uuid,
-    name: n.name || 'Unnamed',
+    name: n.name || t('graphPanel.unnamed'),
     type: n.labels?.find(l => l !== 'Entity') || 'Entity',
     rawData: n
   }))

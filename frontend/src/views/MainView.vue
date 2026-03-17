@@ -138,11 +138,11 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (error.value) return 'Error'
-  if (currentPhase.value >= 2) return 'Ready'
-  if (currentPhase.value === 1) return 'Building Graph'
-  if (currentPhase.value === 0) return 'Generating Ontology'
-  return 'Initializing'
+  if (error.value) return t('common.error')
+  if (currentPhase.value >= 2) return t('common.ready')
+  if (currentPhase.value === 1) return t('common.buildingGraph')
+  if (currentPhase.value === 0) return t('common.generatingOntology')
+  return t('common.initializing')
 })
 
 // --- Helpers ---
@@ -272,7 +272,7 @@ const updatePhaseByStatus = (status) => {
     case 'ontology_generated': currentPhase.value = 0; break;
     case 'graph_building': currentPhase.value = 1; break;
     case 'graph_completed': currentPhase.value = 2; break;
-    case 'failed': error.value = 'Project failed'; break;
+    case 'failed': error.value = t('common.projectFailed'); break;
   }
 }
 

@@ -249,7 +249,7 @@
               
               <!-- 本体生成进度 -->
               <div class="detail-section" v-if="ontologyProgress && currentPhase === 0">
-                <div class="detail-label">生成进度</div>
+                <div class="detail-label">{{ t('process.generatingProgress') }}</div>
                 <div class="ontology-progress">
                   <div class="progress-spinner"></div>
                   <span class="progress-text">{{ ontologyProgress.message }}</span>
@@ -322,7 +322,7 @@
               
               <!-- 构建进度 -->
               <div class="detail-section" v-if="buildProgress && currentPhase >= 1">
-                <div class="detail-label">构建进度</div>
+                <div class="detail-label">{{ t('process.graphBuildingProgress') }}</div>
                 <div class="progress-bar">
                   <div class="progress-fill" :style="{ width: buildProgress.progress + '%' }"></div>
                 </div>
@@ -478,7 +478,7 @@ const goHome = () => {
 
 const goToNextStep = () => {
   // TODO: 进入环境搭建步骤
-  alert('环境搭建功能开发中...')
+  alert(t('process.envSetupInDevelopment'))
 }
 
 const toggleFullScreen = () => {
@@ -565,7 +565,7 @@ const handleNewProject = async () => {
   const pending = getPendingUpload()
   
   if (!pending.isPending || pending.files.length === 0) {
-    error.value = '没有待上传的文件，请返回首页重新操作'
+    error.value = t('process.noFilesToUpload')
     loading.value = false
     return
   }
@@ -641,7 +641,7 @@ const loadProject = async () => {
         await loadGraph(response.data.graph_id)
       }
     } else {
-      error.value = response.error || '加载项目失败'
+      error.value = response.error || t('process.loadProjectError')
     }
   } catch (err) {
     console.error('Load project error:', err)
@@ -682,7 +682,7 @@ const startBuildGraph = async () => {
     const response = await buildGraph({ project_id: currentProjectId.value })
     
     if (response.success) {
-      buildProgress.value.message = '图谱构建任务已启动...'
+      buildProgress.value.message = t('process.graphBuildTaskStarted')
       
       // 保存 task_id 用于轮询
       const taskId = response.data.task_id
@@ -793,7 +793,7 @@ const pollTaskStatus = async (taskId) => {
       console.log('Task status:', task.status, 'Progress:', task.progress)
       
       if (task.status === 'completed') {
-        console.log('✅ 图谱构建完成，正在加载完整数据...')
+        console.log('✅ ' + t('process.graphBuildingCompleteLoading'))
         
         stopPolling()
         stopGraphPolling()
@@ -812,9 +812,9 @@ const pollTaskStatus = async (taskId) => {
           
           // 最终加载完整图谱数据
           if (projectResponse.data.graph_id) {
-            console.log('📊 加载完整图谱:', projectResponse.data.graph_id)
+            console.log('📊 ' + t('process.loadingGraph') + ':', projectResponse.data.graph_id)
             await loadGraph(projectResponse.data.graph_id)
-            console.log('✅ 图谱加载完成')
+            console.log('✅ ' + t('process.graphLoaded'))
           }
         }
         
@@ -913,7 +913,7 @@ const renderGraph = () => {
   
   const nodes = nodesData.map(n => ({
     id: n.uuid,
-    name: n.name || '未命名',
+    name: n.name || t('process.unnamed'),
     type: n.labels?.find(l => l !== 'Entity' && l !== 'Node') || 'Entity',
     rawData: n // 保存原始数据
   }))
@@ -929,8 +929,25 @@ const renderGraph = () => {
       type: e.fact_type || e.name || 'RELATED_TO',
       rawData: {
         ...e,
-        source_name: nodeMap[e.source_node_uuid]?.name || '未知',
-        target_name: nodeMap[e.target_node_uuid]?.name || '未知'
+        source_name: nodeMap[e.source_node_uuid]?.name || t('process.unknown'),
+        target_name: nodeMap[e.target_node_uuid]?.name || t('process.unknown')
+      }
+    }))
+  }))
+  
+  // 创建节点ID集合用于过滤有效边
+  const nodeIds = new Set(nodes.map(n => n.id))
+  
+  const edges = edgesData
+    .filter(e => nodeIds.has(e.source_node_uuid) && nodeIds.has(e.target_node_uuid))
+    .map(e => ({
+      source: e.source_node_uuid,
+      target: e.target_node_uuid,
+      type: e.fact_type || e.name || 'RELATED_TO',
+      rawData: {
+        ...e,
+        source_name: nodeMap[e.source_node_uuid]?.name || t('process.unknown'),
+        target_name: nodeMap[e.target_node_uuid]?.name || t('process.unknown')
       }
     }))
   

@@ -215,7 +215,7 @@ const creatingSimulation = ref(false)
 // 进入环境搭建 - 创建 simulation 并跳转
 const handleEnterEnvSetup = async () => {
   if (!props.projectData?.project_id || !props.projectData?.graph_id) {
-    console.error('Faltan datos del proyecto o grafo')
+    console.error(t('step1.missingProjectOrGraphData'))
     return
   }
   
@@ -236,12 +236,12 @@ const handleEnterEnvSetup = async () => {
         params: { simulationId: res.data.simulation_id }
       })
     } else {
-      console.error('Error al crear simulacion:', res.error)
-      alert('Error al crear simulacion: ' + (res.error || 'Error desconocido'))
+      console.error(t('step1.errorCreatingSimulation') + ':', res.error)
+      alert(t('step1.errorCreatingSimulation') + ': ' + (res.error || t('common.unknownError')))
     }
   } catch (err) {
-    console.error('Excepcion al crear simulacion:', err)
-    alert('Excepcion al crear simulacion: ' + err.message)
+    console.error(t('step1.exceptionCreatingSimulation') + ':', err)
+    alert(t('step1.exceptionCreatingSimulation') + ': ' + err.message)
   } finally {
     creatingSimulation.value = false
   }

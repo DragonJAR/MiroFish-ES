@@ -14,7 +14,7 @@ from ..config import Config
 
 
 class LLMClient:
-    """LLM客户端"""
+    """LLM客户端 con soporte para fallback automático"""
 
     # Configuración de reintentos
     MAX_RETRIES = 5
@@ -27,10 +27,23 @@ class LLMClient:
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         model: Optional[str] = None,
+        use_fallback: bool = False,
     ):
+        # Configuración del proveedor principal
         self.api_key = api_key or Config.LLM_API_KEY
         self.base_url = base_url or Config.LLM_BASE_URL
         self.model = model or Config.LLM_MODEL_NAME
+
+        # Configuración del proveedor fallback
+        self.fallback_api_key = getattr(Config, "LLM_FALLBACK_API_KEY", None)
+        self.fallback_base_url = getattr(Config, "LLM_FALLBACK_BASE_URL", None)
+        self.fallback_model = getattr(Config, "LLM_FALLBACK_MODEL", None)
+
+        # Si use_fallback es True, usar el proveedor fallback directamente
+        if use_fallback and self.fallback_api_key:
+            self.api_key = self.fallback_api_key
+            self.base_url = self.fallback_base_url or "https://api.minimax.io/v1"
+            self.model = self.fallback_model or "MiniMax-M2.5"
 
         if not self.api_key:
             raise ValueError("LLM_API_KEY 未配置")
@@ -64,44 +77,108 @@ class LLMClient:
         response_format: Optional[Dict] = None,
     ) -> str:
         """
-        发送聊天请求
+        发送聊天请求 - con fallback automático
 
-        Args:
-            messages: 消息列表
-            temperature: 温度参数
-            max_tokens: 最大token数
-            response_format: 响应格式（如JSON模式）
-
-        Returns:
-            模型响应文本
+        Si el proveedor principal falla (rate limit), automáticamente
+        cambia al proveedor fallback y reintenta.
         """
-        kwargs = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens,
-        }
+        # Intentar con el proveedor principal
+        try:
+            return self._chat_with_retries(
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                response_format=response_format,
+            )
+        except Exception as primary_error:
+            # Si hay error y tenemos fallback configurado, probar con fallback
+            if self.fallback_api_key and self._is_retryable_error(primary_error):
+                print(
+                    f"⚠️ Proveedor principal falló: {type(primary_error).__name__}. Cambiando a fallback..."
+                )
+                return self._chat_with_fallback(
+                    messages=messages,
+                    temperature=temperature,
+                    max_tokens=max_tokens,
+                    response_format=response_format,
+                )
+            # No hay fallback o error no retryable, lanzar
+            raise
 
-        if response_format:
-            kwargs["response_format"] = response_format
+    def _chat_with_fallback(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+        response_format: Optional[Dict] = None,
+    ) -> str:
+        """
+        Ejecuta chat usando el proveedor fallback.
+        Crea un cliente temporal con la configuración fallback.
+        """
+        # Crear cliente temporal con fallback
+        fallback_client = LLMClient(
+            api_key=self.fallback_api_key,
+            base_url=self.fallback_base_url or "https://api.minimax.io/v1",
+            model=self.fallback_model or "MiniMax-M2.5",
+            use_fallback=True,
+        )
 
-        # Sistema de reintentos
+        try:
+            return fallback_client._chat_with_retries(
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                response_format=response_format,
+            )
+        except Exception as fallback_error:
+            print(f"❌ Fallback también falló: {fallback_error}")
+            raise
+
+    def _chat_with_retries(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+        response_format: Optional[Dict] = None,
+    ) -> str:
+        """
+        Método interno que ejecuta el chat con reintentos.
+        """
         last_error = None
+
         for attempt in range(self.MAX_RETRIES):
             try:
+                kwargs = {
+                    "model": self.model,
+                    "messages": messages,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                }
+
+                if response_format:
+                    kwargs["response_format"] = response_format
+
                 response = self.client.chat.completions.create(**kwargs)
                 content = response.choices[0].message.content
 
-                # Limpiar thinking blocks
-                if content:
-                    content = re.sub(r"<think>[\s\S]*?</think>", "", content).strip()
+                if content is None:
+                    raise ValueError("LLM返回的内容为空")
+
+                # Si es JSON mode, remover markdown si existe
+                if response_format and response_format.get("type") == "json_object":
+                    content = re.sub(
+                        r"^```(?:json)?\s*\n?", "", content, flags=re.IGNORECASE
+                    )
+                    content = re.sub(r"\n?```\s*$", "", content)
+                    content = content.strip()
+
                 return content
 
             except Exception as e:
                 last_error = e
 
                 if not self._is_retryable_error(e):
-                    # Error no retryable, lanzar inmediatamente
                     raise
 
                 if attempt < self.MAX_RETRIES - 1:
@@ -111,11 +188,9 @@ class LLMClient:
                     )
                     time.sleep(delay)
                 else:
-                    # Todos los reintentos agotados
                     print(f"❌ LLM falló después de {self.MAX_RETRIES} intentos")
                     raise
 
-        # Código unreachable, pero por seguridad
         raise last_error if last_error else Exception("Error desconocido en LLM")
 
     def chat_json(
