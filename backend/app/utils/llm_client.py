@@ -1,6 +1,6 @@
 """
-LLM客户端封装
-统一使用OpenAI格式调用
+Cliente LLM
+Utiliza formato OpenAI para todas las llamadas
 """
 
 import json
@@ -14,9 +14,9 @@ from ..config import Config
 
 
 class LLMClient:
-    """LLM客户端 con soporte para fallback automático"""
+    """Cliente LLM con soporte para fallback automatico"""
 
-    # Configuración de reintentos
+    # Configuracion de reintentos
     MAX_RETRIES = 5
     INITIAL_DELAY = 2  # segundos
     MAX_DELAY = 120  # segundos
@@ -29,12 +29,12 @@ class LLMClient:
         model: Optional[str] = None,
         use_fallback: bool = False,
     ):
-        # Configuración del proveedor principal
+        # Configuracion del proveedor principal
         self.api_key = api_key or Config.LLM_API_KEY
         self.base_url = base_url or Config.LLM_BASE_URL
         self.model = model or Config.LLM_MODEL_NAME
 
-        # Configuración del proveedor fallback
+        # Configuracion del proveedor fallback
         self.fallback_api_key = getattr(Config, "LLM_FALLBACK_API_KEY", None)
         self.fallback_base_url = getattr(Config, "LLM_FALLBACK_BASE_URL", None)
         self.fallback_model = getattr(Config, "LLM_FALLBACK_MODEL", None)
@@ -46,7 +46,7 @@ class LLMClient:
             self.model = self.fallback_model or "MiniMax-M2.5"
 
         if not self.api_key:
-            raise ValueError("LLM_API_KEY 未配置")
+            raise ValueError("LLM_API_KEY no configurada")
 
         self.client = OpenAI(
             api_key=self.api_key, base_url=self.base_url, timeout=self.TIMEOUT
@@ -77,9 +77,9 @@ class LLMClient:
         response_format: Optional[Dict] = None,
     ) -> str:
         """
-        发送聊天请求 - con fallback automático
+        Enviar peticion de chat - con fallback automatico
 
-        Si el proveedor principal falla (rate limit), automáticamente
+        Si el proveedor principal falla (rate limit), automaticamente
         cambia al proveedor fallback y reintenta.
         """
         # Intentar con el proveedor principal
@@ -94,7 +94,7 @@ class LLMClient:
             # Si hay error y tenemos fallback configurado, probar con fallback
             if self.fallback_api_key and self._is_retryable_error(primary_error):
                 print(
-                    f"⚠️ Proveedor principal falló: {type(primary_error).__name__}. Cambiando a fallback..."
+                    f"⚠️ Proveedor principal fallo: {type(primary_error).__name__}. Cambiando a fallback..."
                 )
                 return self._chat_with_fallback(
                     messages=messages,
@@ -114,7 +114,7 @@ class LLMClient:
     ) -> str:
         """
         Ejecuta chat usando el proveedor fallback.
-        Crea un cliente temporal con la configuración fallback.
+        Crea un cliente temporal con la configuracion fallback.
         """
         # Crear cliente temporal con fallback
         fallback_client = LLMClient(
@@ -132,7 +132,7 @@ class LLMClient:
                 response_format=response_format,
             )
         except Exception as fallback_error:
-            print(f"❌ Fallback también falló: {fallback_error}")
+            print(f"❌ Fallback tambion fallo: {fallback_error}")
             raise
 
     def _chat_with_retries(
@@ -143,7 +143,7 @@ class LLMClient:
         response_format: Optional[Dict] = None,
     ) -> str:
         """
-        Método interno que ejecuta el chat con reintentos.
+        Metodo interno que ejecuta el chat con reintentos.
         """
         last_error = None
 
@@ -163,7 +163,7 @@ class LLMClient:
                 content = response.choices[0].message.content
 
                 if content is None:
-                    raise ValueError("LLM返回的内容为空")
+                    raise ValueError("El LLM devolvio contenido vacio")
 
                 # Si es JSON mode, remover markdown si existe
                 if response_format and response_format.get("type") == "json_object":
@@ -188,7 +188,7 @@ class LLMClient:
                     )
                     time.sleep(delay)
                 else:
-                    print(f"❌ LLM falló después de {self.MAX_RETRIES} intentos")
+                    print(f"❌ LLM fallo despues de {self.MAX_RETRIES} intentos")
                     raise
 
         raise last_error if last_error else Exception("Error desconocido en LLM")
@@ -200,15 +200,15 @@ class LLMClient:
         max_tokens: int = 4096,
     ) -> Dict[str, Any]:
         """
-        发送聊天请求并返回JSON
+        Enviar peticion de chat y devolver JSON
 
         Args:
-            messages: 消息列表
-            temperature: 温度参数
-            max_tokens: 最大token数
+            messages: Lista de mensajes
+            temperature: Parametro de temperatura
+            max_tokens: Maximo de tokens
 
         Returns:
-            解析后的JSON对象
+            Objeto JSON parseado
         """
         response = self.chat(
             messages=messages,
@@ -216,7 +216,7 @@ class LLMClient:
             max_tokens=max_tokens,
             response_format={"type": "json_object"},
         )
-        # 清理markdown代码块标记
+        # Limpiar marcadores de codigo markdown
         cleaned_response = response.strip()
         cleaned_response = re.sub(
             r"^```(?:json)?\s*\n?", "", cleaned_response, flags=re.IGNORECASE
@@ -227,4 +227,4 @@ class LLMClient:
         try:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
-            raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response}")
+            raise ValueError(f"El JSON devuelto por el LLM es invalido: {cleaned_response}")

@@ -1,63 +1,63 @@
 """
-配置管理
-统一从项目根目录的 .env 文件加载配置
+Gestión de configuración
+Cargar configuración uniformemente desde el archivo .env en la raíz del proyecto
 """
 
 import os
 from dotenv import load_dotenv
 
-# 加载项目根目录的 .env 文件
-# 路径: MiroFish/.env (相对于 backend/app/config.py)
+# Cargar el archivo .env desde la raíz del proyecto
+# Ruta: MiroFish/.env (relativo a backend/app/config.py)
 project_root_env = os.path.join(os.path.dirname(__file__), "../../.env")
 
 if os.path.exists(project_root_env):
     load_dotenv(project_root_env, override=True)
 else:
-    # 如果根目录没有 .env，尝试加载环境变量（用于生产环境）
+    # Si no existe .env en la raíz, intentar cargar variables de entorno (para producción)
     load_dotenv(override=True)
 
 
 class Config:
-    """Flask配置类"""
+    """Clase de configuración Flask"""
 
-    # Flask配置
+    # Configuración Flask
     SECRET_KEY = os.environ.get("SECRET_KEY", "mirofish-secret-key")
     DEBUG = os.environ.get("FLASK_DEBUG", "True").lower() == "true"
 
-    # JSON配置 - 禁用ASCII转义，让中文直接显示（而不是 \uXXXX 格式）
+    # Configuración JSON - Deshabilitar escape ASCII, mostrar chino directamente (en lugar de formato \uXXXX)
     JSON_AS_ASCII = False
 
-    # LLM配置（统一使用OpenAI格式）
+    # Configuración LLM (usar formato OpenAI uniforme)
     LLM_API_KEY = os.environ.get("LLM_API_KEY")
     LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "https://api.z.ai/api/paas/v4")
     LLM_MODEL_NAME = os.environ.get("LLM_MODEL_NAME", "glm-4.5")
 
-    # LLM Fallback配置（cuando el principal falla）
+    # Configuración LLM Fallback (cuando el principal falla)
     LLM_FALLBACK_API_KEY = os.environ.get("LLM_FALLBACK_API_KEY")
     LLM_FALLBACK_BASE_URL = os.environ.get(
         "LLM_FALLBACK_BASE_URL", "https://api.minimax.io/v1"
     )
     LLM_FALLBACK_MODEL = os.environ.get("LLM_FALLBACK_MODEL", "MiniMax-M2.5")
 
-    # Zep配置
+    # Configuración Zep
     ZEP_API_KEY = os.environ.get("ZEP_API_KEY")
 
-    # 文件上传配置
+    # Configuración de subida de archivos
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "../uploads")
     ALLOWED_EXTENSIONS = {"pdf", "md", "txt", "markdown"}
 
-    # 文本处理配置
-    DEFAULT_CHUNK_SIZE = 500  # 默认切块大小
-    DEFAULT_CHUNK_OVERLAP = 50  # 默认重叠大小
+    # Configuración de procesamiento de texto
+    DEFAULT_CHUNK_SIZE = 500  # Tamaño de fragmento predeterminado
+    DEFAULT_CHUNK_OVERLAP = 50  # Tamaño de superposición predeterminado
 
-    # OASIS模拟配置
+    # Configuración de simulación OASIS
     OASIS_DEFAULT_MAX_ROUNDS = int(os.environ.get("OASIS_DEFAULT_MAX_ROUNDS", "10"))
     OASIS_SIMULATION_DATA_DIR = os.path.join(
         os.path.dirname(__file__), "../uploads/simulations"
     )
 
-    # OASIS平台可用动作配置
+    # Configuración de acciones disponibles de plataforma OASIS
     OASIS_TWITTER_ACTIONS = [
         "CREATE_POST",
         "LIKE_POST",
@@ -82,7 +82,7 @@ class Config:
         "MUTE",
     ]
 
-    # Report Agent配置
+    # Configuración de Report Agent
     REPORT_AGENT_MAX_TOOL_CALLS = int(
         os.environ.get("REPORT_AGENT_MAX_TOOL_CALLS", "5")
     )

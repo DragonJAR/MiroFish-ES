@@ -90,7 +90,7 @@ Por favor genera en formato JSON, con la siguiente estructura:
 
 ## Guía de diseño (¡extremadamente importante!)
 
-### 1. Diseño de tipos de entidad - Debe严格遵守
+### 1. Diseño de tipos de entidad - Debe
 
 **Requisito de cantidad: Exactamente 10 tipos de entidad**
 
@@ -108,7 +108,7 @@ B. **Tipos específicos (8, diseñados según contenido del texto)**:
    - Por ejemplo: si el texto involucra eventos comerciales, puede haber `Company`, `CEO`, `Employee`
 
 **Por qué se necesitan tipos de respaldo**:
-- El texto puede contener varias personas como "profesor de escuela primaria", " transeúnte", "algunos网友"
+- El texto puede contener varias personas como "profesor de escuela primaria", " transeúnte", "algunos"
 - Si no hay un tipo específico para ellos, deben clasificarse en `Person`
 - De manera similar, organizaciones pequeñas, grupos temporales deben clasificarse en `Organization`
 
