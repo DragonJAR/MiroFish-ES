@@ -702,7 +702,7 @@ const sendToReportAgent = async (message) => {
   if (res.success && res.data) {
     chatHistory.value.push({
       role: 'assistant',
-      content: res.data.response || res.data.answer || this.$t('step5.noResponse'),
+      content: res.data.response || res.data.answer || t('step5.noResponse'),
       timestamp: new Date().toISOString()
     })
     addLog(t('logs.reportAgentReplied'))

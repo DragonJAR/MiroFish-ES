@@ -92,7 +92,7 @@ const logKeyMap = {
   '提供跨时空的深度归因分析': 'logs.crossTemporalAnalysis',
   '全景追踪': 'logs.panoramaTracking',
   '基于图结构的广度遍历算法': 'logs.breadthFirstTraversal',
-  '重构事件传播路径': 'logs重构事件传播路径',
+  '重构事件传播路径': 'logs.reconstructEventPath',
   '捕获全量信息流动的拓扑结构': 'logs.captureTopology',
   '快速检索': 'logs.quickSearch',
   '基于': 'logs.basedOn',

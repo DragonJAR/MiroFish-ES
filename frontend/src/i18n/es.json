@@ -85,7 +85,10 @@
     "step3": "Iniciar simulación",
     "step4": "Generación de reportes",
     "step5": "Interacción profunda",
-    "stepIndicator": "Paso {{current}}/5"
+    "stepIndicator": "Paso {current}/5"
+  },
+  "graph": {
+    "refreshTooltip": "Actualizar grafo"
   },
   "graphPanel": {
     "title": "Visualización de relaciones del grafo",
@@ -127,9 +130,14 @@
     "expiredAt": "Expirado en",
     "entityTypes": "Tipos de entidad",
     "showEdgeLabels": "Mostrar etiquetas de relaciones",
-    "waitingGraphData": "Esperando datos del grafo..."
+    "waitingGraphData": "Esperando datos del grafo...",
+    "processingHint": "Procesando...",
+    "memoryUpdating": "Actualizando memoria...",
+    "realtimeUpdating": "Actualización en tiempo real..."
   },
   "step1": {
+    "generatedEntityTypes": "Tipos de entidad generados",
+    "generatedRelationTypes": "Tipos de relación generados",
     "ontologyTitle": "Generación de ontología",
     "ontologyDesc": "El LLM analiza el contenido del documento y los requisitos de simulación, extrae semillas reales y genera automáticamente la estructura ontológica adecuada",
     "graphBuildTitle": "Construcción GraphRAG",
@@ -145,6 +153,9 @@
     "generating": "Generando",
     "waiting": "Esperando",
     "inProgress": "En progreso",
+    "attributes": "Atributos",
+    "examples": "Ejemplos",
+    "connections": "Conexiones",
     "analyzingDocs": "Analizando documentos...",
     "missingProjectOrGraphData": "Faltan datos del proyecto o grafo",
     "errorCreatingSimulation": "Error al crear simulación",
@@ -235,7 +246,11 @@
     "simulationId": "ID de Simulación",
     "taskId": "ID de Tarea",
     "agent": "Agente",
-    "unknown": "Desconocido"
+    "unknown": "Desconocido",
+    "waiting": "Esperando",
+    "completed": "Completado",
+    "generating": "Generando",
+    "inProgress": "En progreso"
   },
   "step3": {
     "startReport": "Comenzar a generar reporte de resultados",
@@ -267,10 +282,13 @@
     "simulation": "Simulación",
     "requirement": "Requisito",
     "iteration": "Iteración",
-    "sectionGenerated": "Sección \"{{title}}\" contenido generado",
+    "sectionGenerated": "Sección \"{title}\" contenido generado",
     "reportComplete": "Generación de informe completada",
     "waitingForActivity": "Esperando actividad del agente...",
     "consoleOutput": "SALIDA DE CONSOLA",
+    "interviewed": "Entrevistados",
+    "edges": "Enlaces",
+    "results": "Resultados",
     "currentMemory": "Memorias clave actuales",
     "coreEntities": "Entidades centrales",
     "relationChains": "Cadenas de relaciones",
@@ -389,13 +407,9 @@
     "agentsAvailable": "agentes disponibles",
     "inputQuestion": "Escribe tu pregunta...",
     "surveyResults": "Resultados de la encuesta",
-    "responsesReceived": "{{count}} respuestas recibidas",
-    "chatWithReportAgent": "Dialogar con el Agente de Informe para conocer los detalles del reporte",
-    "chatWithAgents": "Dialogar con individuos simulados para conocer sus perspectivas",
-    "selectSurveySubject": "Seleccionar objeto de encuesta",
-    "selectedCount": "Seleccionados {{count}} / {{total}}",
-    "resultsTitle": "Resultados de la encuesta",
-    "responsesCount": "{{count}} respuestas recibidas",
+    "responsesReceived": "{count} respuestas recibidas",
+    "selectedCount": "Seleccionados {count} / {total}",
+    "responsesCount": "{count} respuestas recibidas",
     "noResponse": "Sin respuesta",
     "results": "Resultados",
     "sectionTitleSurvey": "Encuesta",
@@ -404,7 +418,12 @@
     "previousConversation": "Esta es nuestra conversación anterior",
     "newQuestion": "Mi nueva pregunta es",
     "reportAgentName": "Agente de Informe",
-    "agent": "Agente"
+    "agent": "Agente",
+    "chatWithReportAgent": "Chat con Report Agent",
+    "chatWithAgents": "Chat con Agentes",
+    "selectSurveySubject": "Seleccionar tema de encuesta",
+    "resultsTitle": "Título de resultados",
+    "profileBio": "Biografía del perfil"
   },
   "process": {
     "stepLabel": "STEP 01",
@@ -460,7 +479,9 @@
     "relationship": "Relación",
     "validFromLabel": "Válido desde:",
     "invalidAtLabel": "Inválido en:",
-    "expiredAtLabel": "Expirado en:"
+    "expiredAtLabel": "Expirado en:",
+    "enterFullScreen": "Entrar en pantalla completa",
+    "exitFullScreen": "Salir de pantalla completa"
   },
   "logs": {
     "generating": "Generando",
@@ -482,6 +503,13 @@
     "failed": "Fallido",
     "retrying": "Reintentando",
     "attempt": "Intento",
+    "reportAgentInit": "Inicializando agente de reporte",
+    "reportAgentReplied": "El agente de reporte ha respondido",
+    "from": "Desde",
+    "generated": "Generado",
+    "bothPlatforms": "Ambas plataformas",
+    "effectiveCount": "válidos",
+    "historicalCount": "históricos",
     "attempts": "intentos",
     "failedAfterAttempts": "después aún falló",
     "secondsAfter": "segundos después",
@@ -592,9 +620,12 @@
     "loadedProfiles": "perfiles cargados",
     "selectedAgentsForInterview": "agentes seleccionados para entrevista",
     "interviewQuestionsGenerated": "preguntas de entrevista generadas",
+    "interviewQuestions": "preguntas de entrevista",
     "callingBatchInterviewAPI": "llamando API de entrevista por lotes",
+    "callingBatchAPI": "llamando API por lotes",
     "interviewAPIError": "error en API de entrevista",
     "waitingForResponseTimeout": "esperando respuesta, timeout",
+    "waitingTimeout": "tiempo de espera agotado",
     "seconds": "segundos",
     "broadSearch": "Búsqueda amplia",
     "effectiveHistorical": "válidos, históricos",
@@ -633,6 +664,7 @@
     "collectOpinions": "Recopilar datos de opiniones no estructuradas y estados psicológicos",
     "reportGenerationStarted": "Tarea de generación de reporte iniciada",
     "getContextInfo": "Obteniendo información de contexto de simulación",
+    "getContext": "Obtener contexto",
     "outlineComplete": "Planificación de esquema completada",
     "startGeneratingSection": "Generando capítulo",
     "reactRound": "Ronda ReACT",
@@ -646,6 +678,7 @@
     "contentGenerated": "Contenido generado",
     "generationComplete": "Generación completada",
     "reportGenerationComplete": "Generación de reporte completada",
+    "graphLoadSuccess": "Grafo cargado exitosamente",
     "errorOccurred": "Ocurrió un error",
     "simulationIdMissing": "Error: falta simulationId",
     "simulationCreated": "Instancia de simulación creada",
@@ -792,7 +825,14 @@
     "totalResults": "resultados",
     "noResultsFound": "No se encontraron resultados",
     "relatedNodes": "Nodos relacionados",
-    "waitingStart": "Esperando iniciar"
+    "waitingStart": "Esperando iniciar",
+    "searchResults": "Resultados de búsqueda",
+    "agentChatSelected": "Agente de chat seleccionado",
+    "agentReplied": "Agente respondió",
+    "noResponseData": "Sin datos de respuesta",
+    "surveySentTo": "Encuesta enviada a",
+    "objects": "objetos",
+    "selectAgentFirst": "Selecciona un agente primero"
   },
   "report": {
     "predictionReport": "Informe de Predicción",
@@ -813,6 +853,7 @@
     "waiting": "Esperando",
     "inProgress": "En progreso",
     "error": "Error",
+    "unknownError": "Error desconocido",
     "ready": "Listo",
     "buildingGraph": "Construyendo Grafo",
     "generatingOntology": "Generando Ontología",
@@ -853,7 +894,10 @@
     "toolCall": "Llamada a herramienta",
     "toolResult": "Resultado de herramienta",
     "reportStarted": "Reporte iniciado",
-    "noQuestionAvailable": "Sin pregunta disponible"
+    "noQuestionAvailable": "Sin pregunta disponible",
+    "final": "Final",
+    "rawOutput": "Salida original",
+    "structuredView": "Vista estructurada"
   },
   "simulation": {
     "twitter": "Twitter",
@@ -876,6 +920,7 @@
     "searchPosts": "Buscar posts",
     "searchUser": "Buscar usuario",
     "trend": "Tendencias",
-    "refresh": "Actualizar"
+    "refresh": "Actualizar",
+    "checkStatusFailed": "Error al verificar estado de simulación"
   }
 }

@@ -1160,12 +1160,12 @@ const PanoramaDisplay = {
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.stats.nodes),
-              h('span', { class: 'stat-label' }, $t('step4.nodes'))
+              h('span', { class: 'stat-label' }, t('step4.nodes'))
             ]),
             h('span', { class: 'stat-divider' }, '/'),
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.stats.edges),
-              h('span', { class: 'stat-label' }, $t('step4.edges'))
+              h('span', { class: 'stat-label' }, t('step4.edges'))
             ]),
             props.resultLength && h('span', { class: 'stat-divider' }, '·'),
             props.resultLength && h('span', { class: 'stat-size' }, formatSize(props.resultLength))
@@ -1431,7 +1431,7 @@ const InterviewDisplay = {
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.successCount || props.result.interviews.length),
-              h('span', { class: 'stat-label' }, $t('step4.interviewed'))
+              h('span', { class: 'stat-label' }, t('step4.interviewed'))
             ]),
             props.result.totalCount > 0 && h('span', { class: 'stat-divider' }, '/'),
             props.result.totalCount > 0 && h('span', { class: 'stat-item' }, [
@@ -1541,7 +1541,7 @@ const InterviewDisplay = {
                   !isPlaceholder && answerText.length > 400 && h('button', {
                     class: 'expand-answer-btn',
                     onClick: () => toggleAnswer(expandKey)
-                  }, isExpanded ? $t('common.showLess') : $t('common.showMore'))
+                  }, isExpanded ? t('common.showLess') : t('common.showMore'))
                 ])
               ])
             ])
@@ -1607,7 +1607,7 @@ const QuickSearchDisplay = {
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.count || props.result.facts.length),
-              h('span', { class: 'stat-label' }, $t('step4.results'))
+              h('span', { class: 'stat-label' }, t('step4.results'))
             ]),
             props.resultLength && h('span', { class: 'stat-divider' }, '·'),
             props.resultLength && h('span', { class: 'stat-size' }, formatSize(props.resultLength))
@@ -1712,9 +1712,9 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (isComplete.value) return $t('common.completed')
-  if (agentLogs.value.length > 0) return $t('common.generating')
-  return $t('common.waiting')
+  if (isComplete.value) return t('common.completed')
+  if (agentLogs.value.length > 0) return t('common.generating')
+  return t('common.waiting')
 })
 
 const totalSections = computed(() => {
@@ -1818,7 +1818,7 @@ const workflowSteps = computed(() => {
   steps.push({
     key: 'complete',
     noLabel: 'OK',
-    title: $t('common.completed'),
+    title: t('common.completed'),
     status: completeStatus,
     meta: completeStatus === 'active' ? 'FINALIZING' : ''
   })
@@ -2004,7 +2004,7 @@ const getActionLabel = (action) => {
     'tool_call': 'Tool Call',
     'tool_result': 'Tool Result',
     'llm_response': 'LLM Response',
-    'report_complete': $t('common.completed')
+    'report_complete': t('common.completed')
   }
   return labels[action] || action
 }
