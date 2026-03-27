@@ -1,0 +1,22 @@
+services:
+  neo4j:
+    image: neo4j:5-community
+    container_name: mirofish-neo4j
+    restart: unless-stopped
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      # Configuración inicial de usuario y contraseña
+      - NEO4J_AUTH=neo4j/mirofish2024
+      - NEO4J_PLUGINS=["apoc"]
+    volumes:
+      # Persistencia de datos
+      - mirofish_neo4j_data:/data
+      - mirofish_neo4j_logs:/logs
+
+volumes:
+  mirofish_neo4j_data:
+    driver: local
+  mirofish_neo4j_logs:
+    driver: local

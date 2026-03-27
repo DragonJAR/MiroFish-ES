@@ -41,6 +41,9 @@ yarn-error.log*
 .coverage
 htmlcov/
 
+# Neo4j data (Graphiti local)
+backend/neo4j/
+
 # Cursor
 .cursor/
 .claude/
@@ -60,3 +63,9 @@ backend/uploads/
 data/
 AGENTS.md
 actualizar.sh
+
+# Ruff cache
+.ruff_cache/
+
+# Translation temp files
+.translation-pending.txt
