@@ -91,6 +91,49 @@ Haz clic en la imagen para ver la predicción profunda de MiroFish sobre el fina
 4. **Generación de Informes**: ReportAgent con un rico conjunto de herramientas para interacción profunda con el entorno post-simulación
 5. **Interacción Profunda**: Conversa con cualquier agente en el mundo simulado & Interactúa con ReportAgent
 
+## 🧠 Backends de Memoria
+
+MiroFish soporta dos backends de almacenamiento de memoria para el grafo de conocimiento:
+
+### 1. Zep Cloud (Por defecto)
+Servicio cloud de gestión de memoria con funcionalidad de grafo integrada.
+
+**Ventajas:**
+- Sin necesidad de configuración local
+- Escalado automático
+- API ready-to-use
+
+**Configuración:**
+```env
+MEMORY_BACKEND=zep  # Por defecto, puede omitirse
+ZEP_API_KEY=tu_zep_api_key
+```
+
+Requiere solo una clave API de Zep Cloud: https://app.getzep.com/
+
+### 2. Graphiti (Local)
+Backend local usando Neo4j con Graphiti para extracción avanzada de entidades.
+
+**Ventajas:**
+- Control total de datos (offline/local)
+- Sin dependencias de servicios externos
+- Extracción de entidades LLM-powered
+
+**Configuración:**
+```env
+MEMORY_BACKEND=graphiti
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=mirofish2024
+```
+
+**Iniciar Neo4j con Docker:**
+```bash
+docker compose -f docker/graphiti/docker-compose.yml up -d
+```
+
+Neo4j UI estará disponible en `http://localhost:7474` (usuario: `neo4j`, contraseña: `mirofish2024`)
+
 ## 🚀 Inicio Rápido
 
 ### Opción 1: Despliegue desde Código Fuente (Recomendado)
@@ -175,6 +218,41 @@ docker compose up -d
 Lee el archivo `.env` desde el directorio raíz por defecto, mapea los puertos `3000 (frontend) / 5001 (backend)`
 
 > Se proporciona una dirección mirror para descarga más rápida como comentarios en `docker-compose.yml`, reemplaza si es necesario.
+
+### Scripts de Utilidad
+
+Para un flujo de desarrollo más conveniente, proporcionamos scripts de inicio/detención:
+
+**Linux/Mac:**
+```bash
+# Iniciar todo (detecta backend de memoria automáticamente)
+./scripts/iniciar.sh
+
+# Detener todo
+./scripts/detener.sh
+```
+
+**Windows (CMD/PowerShell):**
+```bash
+# Iniciar
+scripts\iniciar.bat
+
+# Detener
+scripts\detener.bat
+```
+
+**Características del script `iniciar.sh/bat`:**
+- Detecta el backend de memoria configurado (`MEMORY_BACKEND`)
+- Si es `graphiti`: inicia Neo4j con Docker automáticamente
+- Limpia procesos residuales de ejecuciones anteriores
+- Muestra URLs de servicio (Frontend, Backend, Neo4j UI si aplica)
+- Manejo limpio de `Ctrl+C` para detener todo
+
+**Configuración del backend de memoria:**
+```env
+# Backend de memoria a usar: "zep" (por defecto) o "graphiti"
+MEMORY_BACKEND=graphiti
+```
 
 ## 📬 Únete a la Conversación
 

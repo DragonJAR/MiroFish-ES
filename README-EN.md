@@ -91,6 +91,49 @@ Click the image to watch MiroFish's deep prediction of the lost ending based on 
 4. **Report Generation**: ReportAgent with rich toolset for deep interaction with post-simulation environment
 5. **Deep Interaction**: Chat with any agent in the simulated world & Interact with ReportAgent
 
+## 🧠 Memory Backends
+
+MiroFish supports two memory backend options for the knowledge graph:
+
+### 1. Zep Cloud (Default)
+Cloud-based memory management service with integrated graph functionality.
+
+**Benefits:**
+- No local configuration required
+- Automatic scaling
+- Ready-to-use API
+
+**Configuration:**
+```env
+MEMORY_BACKEND=zep  # Default, can be omitted
+ZEP_API_KEY=your_zep_api_key
+```
+
+Requires only a Zep Cloud API key: https://app.getzep.com/
+
+### 2. Graphiti (Local)
+Local backend using Neo4j with Graphiti for advanced entity extraction.
+
+**Benefits:**
+- Full data control (offline/local)
+- No external service dependencies
+- LLM-powered entity extraction
+
+**Configuration:**
+```env
+MEMORY_BACKEND=graphiti
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=mirofish2024
+```
+
+**Start Neo4j with Docker:**
+```bash
+docker compose -f docker/graphiti/docker-compose.yml up -d
+```
+
+Neo4j UI will be available at `http://localhost:7474` (user: `neo4j`, password: `mirofish2024`)
+
 ## 🚀 Quick Start
 
 ### Option 1: Source Code Deployment (Recommended)
@@ -175,6 +218,41 @@ docker compose up -d
 Reads `.env` from root directory by default, maps ports `3000 (frontend) / 5001 (backend)`
 
 > Mirror address for faster pulling is provided as comments in `docker-compose.yml`, replace if needed.
+
+### Utility Scripts
+
+For a more convenient development workflow, we provide start/stop scripts:
+
+**Linux/Mac:**
+```bash
+# Start everything (auto-detects memory backend)
+./scripts/iniciar.sh
+
+# Stop everything
+./scripts/detener.sh
+```
+
+**Windows (CMD/PowerShell):**
+```bash
+# Start
+scripts\iniciar.bat
+
+# Stop
+scripts\detener.bat
+```
+
+**`iniciar.sh/bat` script features:**
+- Auto-detects configured memory backend (`MEMORY_BACKEND`)
+- If `graphiti`: starts Neo4j with Docker automatically
+- Cleans up residual processes from previous runs
+- Shows service URLs (Frontend, Backend, Neo4j UI if applicable)
+- Clean `Ctrl+C` handling to stop everything
+
+**Memory backend configuration:**
+```env
+# Memory backend to use: "zep" (default) or "graphiti"
+MEMORY_BACKEND=graphiti
+```
 
 ## 📬 Join the Conversation
 
