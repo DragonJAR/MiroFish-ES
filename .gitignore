@@ -69,3 +69,4 @@ actualizar.sh
 
 # Translation temp files
 .translation-pending.txt
+scripts/translate_strings.py
