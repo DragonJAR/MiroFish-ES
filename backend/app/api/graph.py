@@ -407,7 +407,7 @@ def build_graph():
                 )
 
                 # Crear servicio de construcción de grafo
-                builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+                builder = GraphBuilderService()
 
                 # Fragmentar texto
                 task_manager.update_task(
@@ -581,7 +581,7 @@ def get_graph_data(graph_id: str):
                 {"success": False, "error": "ZEP_API_KEY no configurado"}
             ), 500
 
-        builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+        builder = GraphBuilderService()
         graph_data = builder.get_graph_data(graph_id)
 
         return jsonify({"success": True, "data": graph_data})
@@ -603,7 +603,7 @@ def delete_graph(graph_id: str):
                 {"success": False, "error": "ZEP_API_KEY no configurado"}
             ), 500
 
-        builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+        builder = GraphBuilderService()
         builder.delete_graph(graph_id)
 
         return jsonify({"success": True, "message": f"Grafo eliminado: {graph_id}"})

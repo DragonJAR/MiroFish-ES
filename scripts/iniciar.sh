@@ -38,6 +38,25 @@ NEO4J_PASSWORD=$(grep -E '^NEO4J_PASSWORD=' .env 2>/dev/null | cut -d'=' -f2- | 
 MEMORY_BACKEND="${MEMORY_BACKEND:-zep}"
 NEO4J_PASSWORD="${NEO4J_PASSWORD:-password}"
 
+# === CONFIGURACIÓN DE VARIABLES DE ENTORNO PARA GRAPHITI ===
+# Cargar variables desde .env
+export $(grep -v '^#' .env | grep -v '^$' | xargs)
+
+if [ "$MEMORY_BACKEND" = "graphiti" ]; then
+    info "Configurando variables de entorno para Graphiti..."
+    
+    # Graphiti usa OPENAI_* para el LLM (lee desde LLM_* del proyecto)
+    export OPENAI_API_KEY="${LLM_API_KEY}"
+    export OPENAI_BASE_URL="${LLM_BASE_URL}"
+    export OPENAI_MODEL_NAME="${LLM_MODEL_NAME}"
+    
+    info "  OPENAI_API_KEY=****"
+    info "  OPENAI_BASE_URL=${LLM_BASE_URL}"
+    info "  OPENAI_MODEL_NAME=${LLM_MODEL_NAME}"
+else
+    info "Zep Cloud seleccionado - sin variables OPENAI_* adicionales"
+fi
+
 # === LIMPIEZA DE PROCESOS ANTERIORES ===
 log "Deteniendo procesos anteriores..."
 docker compose --profile graphiti down >/dev/null 2>&1 || true

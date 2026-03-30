@@ -12,12 +12,21 @@ dependencies = [
     # 核心框架
     "flask>=3.0.0",
     "flask-cors>=6.0.0",
-    
+
     # LLM 相关
     "openai>=1.0.0",
-    
+
     # Zep Cloud
     "zep-cloud==3.13.0",
+
+    # Graphiti (memory backend alternativo)
+    # neo4j>=6.1.0 requerido por graphiti-core>=0.28.2
+    # camel-oasis punea neo4j==5.23.0 pero funciona con 6.x
+    "graphiti-core>=0.28.2",
+    "neo4j>=6.1.0",
+    
+    # Embeddings locales (Graphiti + HuggingFace)
+    "sentence-transformers>=3.0.0",
     
     # OASIS 社交媒体模拟
     "camel-oasis==0.2.5",
@@ -53,3 +62,13 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
+
+# camel-oasis punea neo4j==5.23.0 pero graphiti-core>=0.28.2 requiere >=5.26.0
+# camel-oasis funciona correctamente con neo4j>=6.1.0 (solo lo usa indirectamente)
+[tool.uv.sources]
+# No hay fuentes personalizadas - se usa la resolución estándar
+
+[tool.uv]
+override-dependencies = [
+    "neo4j>=6.1.0",
+]

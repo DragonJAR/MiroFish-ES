@@ -1,6 +1,6 @@
 """
-Servicio de actualización de memoria del grafo Zep
-Actualiza dinámicamente las actividades de los Agents en el grafo Zep durante la simulación
+Servicio de actualización de memoria del grafo
+Actualiza dinámicamente las actividades de los Agents en el grafo durante la simulación
 """
 
 import os
@@ -12,10 +12,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from queue import Queue, Empty
 
-from zep_cloud.client import Zep
-
 from ..config import Config
 from ..utils.logger import get_logger
+from ..memory import get_memory_backend
 
 logger = get_logger("mirofish.zep_graph_memory_updater")
 
@@ -209,12 +208,12 @@ class AgentActivity:
 
 class ZepGraphMemoryUpdater:
     """
-    Actualizador de memoria del grafo Zep
+    Actualizador de memoria del grafo
 
-    Monitorea los archivos de logs de acciones de la simulación, y actualiza las nuevas actividades de agentes al grafo Zep en tiempo real.
-    Agrupa por plataforma, cada BATCH_SIZE actividades se envían en lote a Zep.
+    Monitorea los archivos de logs de acciones de la simulación, y actualiza las nuevas actividades de agentes al grafo en tiempo real.
+    Agrupa por plataforma, cada BATCH_SIZE actividades se envían en lote.
 
-    Todos los comportamientos significativos se actualizarán a Zep, action_args incluirá información de contexto completa:
+    Todos los comportamientos significativos se actualizarán al grafo, action_args incluirá información de contexto completa:
     - Like/dislike del post original
     - República/cita del post original
     - Usuario seguido/silenciado
@@ -237,21 +236,22 @@ class ZepGraphMemoryUpdater:
     MAX_RETRIES = 3
     RETRY_DELAY = 2  # segundos
 
-    def __init__(self, graph_id: str, api_key: Optional[str] = None):
+    def __init__(self, graph_id: str, api_key: Optional[str] = None, backend=None):
         """
         Inicializar actualizador
 
         Args:
-            graph_id: ID del grafo Zep
-            api_key: Zep API Key (opcional, por defecto leer de configuración)
+            graph_id: ID del grafo
+            api_key: API Key (opcional, por defecto leer de configuración)
+            backend: Memory backend (opcional, por defecto usa get_memory_backend())
         """
         self.graph_id = graph_id
         self.api_key = api_key or Config.ZEP_API_KEY
 
         if not self.api_key:
-            raise ValueError("ZEP_API_KEY no configurada")
+            raise ValueError("API_KEY no configurada")
 
-        self.client = Zep(api_key=self.api_key)
+        self.backend = backend or get_memory_backend()
 
         # Cola de actividades
         self._activity_queue: Queue = Queue()
@@ -269,13 +269,13 @@ class ZepGraphMemoryUpdater:
 
         # Estadísticas
         self._total_activities = 0  # Actividades realmente añadidas a la cola
-        self._total_sent = 0  # Lotes enviados exitosamente a Zep
-        self._total_items_sent = 0  # Actividades enviadas exitosamente a Zep
+        self._total_sent = 0  # Lotes enviados exitosamente
+        self._total_items_sent = 0  # Actividades enviadas exitosamente
         self._failed_count = 0  # Lotes de envío fallidos
         self._skipped_count = 0  # Actividades filtradas/saltadas (DO_NOTHING)
 
         logger.info(
-            f"ZepGraphMemoryUpdater inicializado: graph_id={graph_id}, batch_size={self.BATCH_SIZE}"
+            f"GraphMemoryUpdater inicializado: graph_id={graph_id}, batch_size={self.BATCH_SIZE}"
         )
 
     def _get_platform_display_name(self, platform: str) -> str:
@@ -291,10 +291,10 @@ class ZepGraphMemoryUpdater:
         self._worker_thread = threading.Thread(
             target=self._worker_loop,
             daemon=True,
-            name=f"ZepMemoryUpdater-{self.graph_id[:8]}",
+            name=f"GraphMemoryUpdater-{self.graph_id[:8]}",
         )
         self._worker_thread.start()
-        logger.info(f"ZepGraphMemoryUpdater iniciado: graph_id={self.graph_id}")
+        logger.info(f"GraphMemoryUpdater iniciado: graph_id={self.graph_id}")
 
     def stop(self):
         """Detener hilo de trabajo en segundo plano"""
@@ -307,7 +307,7 @@ class ZepGraphMemoryUpdater:
             self._worker_thread.join(timeout=10)
 
         logger.info(
-            f"ZepGraphMemoryUpdater detenido: graph_id={self.graph_id}, "
+            f"GraphMemoryUpdater detenido: graph_id={self.graph_id}, "
             f"total_activities={self._total_activities}, "
             f"batches_sent={self._total_sent}, "
             f"items_sent={self._total_items_sent}, "
@@ -344,7 +344,7 @@ class ZepGraphMemoryUpdater:
         self._activity_queue.put(activity)
         self._total_activities += 1
         logger.debug(
-            f"Añadir actividad a cola Zep: {activity.agent_name} - {activity.action_type}"
+            f"Añadir actividad a cola: {activity.agent_name} - {activity.action_type}"
         )
 
     def add_activity_from_dict(self, data: Dict[str, Any], platform: str):
@@ -406,7 +406,7 @@ class ZepGraphMemoryUpdater:
 
     def _send_batch_activities(self, activities: List[AgentActivity], platform: str):
         """
-        Enviar lote de actividades al grafo Zep (fusionadas en un texto)
+        Enviar lote de actividades al grafo (fusionadas en un texto)
 
         Args:
             activities: Lista de actividades de Agent
@@ -422,8 +422,8 @@ class ZepGraphMemoryUpdater:
         # Envío con reintentos
         for attempt in range(self.MAX_RETRIES):
             try:
-                self.client.graph.add(
-                    graph_id=self.graph_id, type="text", data=combined_text
+                self.backend.add_episode(
+                    graph_id=self.graph_id, content=combined_text, source_type="text"
                 )
 
                 self._total_sent += 1
@@ -440,12 +440,12 @@ class ZepGraphMemoryUpdater:
             except Exception as e:
                 if attempt < self.MAX_RETRIES - 1:
                     logger.warning(
-                        f"Envío en lote a Zep fallido (intento {attempt + 1}/{self.MAX_RETRIES}): {e}"
+                        f"Envío en lote fallido (intento {attempt + 1}/{self.MAX_RETRIES}): {e}"
                     )
                     time.sleep(self.RETRY_DELAY * (attempt + 1))
                 else:
                     logger.error(
-                        f"Envío en lote a Zep fallido, reintentado {self.MAX_RETRIES} veces: {e}"
+                        f"Envío en lote fallido, reintentado {self.MAX_RETRIES} veces: {e}"
                     )
                     self._failed_count += 1
 
@@ -497,7 +497,7 @@ class ZepGraphMemoryUpdater:
 
 class ZepGraphMemoryManager:
     """
-    Gestor de actualizadores de memoria del grafo Zep para múltiples simulaciones
+    Gestor de actualizadores de memoria del grafo para múltiples simulaciones
 
     Cada simulación puede tener su propia instancia de actualizador
     """
@@ -506,13 +506,16 @@ class ZepGraphMemoryManager:
     _lock = threading.Lock()
 
     @classmethod
-    def create_updater(cls, simulation_id: str, graph_id: str) -> ZepGraphMemoryUpdater:
+    def create_updater(
+        cls, simulation_id: str, graph_id: str, backend=None
+    ) -> ZepGraphMemoryUpdater:
         """
         Crear actualizador de memoria de grafo para simulación
 
         Args:
             simulation_id: ID de simulación
-            graph_id: ID del grafo Zep
+            graph_id: ID del grafo
+            backend: Memory backend (opcional)
 
         Returns:
             Instancia de ZepGraphMemoryUpdater
@@ -522,7 +525,7 @@ class ZepGraphMemoryManager:
             if simulation_id in cls._updaters:
                 cls._updaters[simulation_id].stop()
 
-            updater = ZepGraphMemoryUpdater(graph_id)
+            updater = ZepGraphMemoryUpdater(graph_id, backend=backend)
             updater.start()
             cls._updaters[simulation_id] = updater
 

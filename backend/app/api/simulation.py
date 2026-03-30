@@ -9,12 +9,12 @@ from flask import request, jsonify, send_file
 
 from . import simulation_bp
 from ..config import Config
-from ..services.zep_entity_reader import ZepEntityReader
 from ..services.oasis_profile_generator import OasisProfileGenerator
 from ..services.simulation_manager import SimulationManager, SimulationStatus
 from ..services.simulation_runner import SimulationRunner, RunnerStatus
 from ..utils.logger import get_logger
 from ..models.project import ProjectManager
+from ..memory import get_memory_backend
 
 logger = get_logger("mirofish.api.simulation")
 
@@ -74,11 +74,16 @@ def get_graph_entities(graph_id: str):
             f"Obtener entidades del grafo: graph_id={graph_id}, entity_types={entity_types}, enrich={enrich}"
         )
 
-        reader = ZepEntityReader()
-        result = reader.filter_defined_entities(
-            graph_id=graph_id,
-            defined_entity_types=entity_types,
-            enrich_with_edges=enrich,
+        backend = get_memory_backend()
+        entities = backend.get_entities(graph_id=graph_id, entity_types=entity_types)
+
+        from ..memory import FilteredEntities
+
+        result = FilteredEntities(
+            entities=entities,
+            entity_types=set(entity_types) if entity_types else set(),
+            total_count=len(entities),
+            filtered_count=len(entities),
         )
 
         return jsonify({"success": True, "data": result.to_dict()})
@@ -99,8 +104,8 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
                 {"success": False, "error": "ZEP_API_KEY no configurada"}
             ), 500
 
-        reader = ZepEntityReader()
-        entity = reader.get_entity_with_context(graph_id, entity_uuid)
+        backend = get_memory_backend()
+        entity = backend.get_entity_by_uuid(graph_id, entity_uuid)
 
         if not entity:
             return jsonify(
@@ -127,10 +132,8 @@ def get_entities_by_type(graph_id: str, entity_type: str):
 
         enrich = request.args.get("enrich", "true").lower() == "true"
 
-        reader = ZepEntityReader()
-        entities = reader.get_entities_by_type(
-            graph_id=graph_id, entity_type=entity_type, enrich_with_edges=enrich
-        )
+        backend = get_memory_backend()
+        entities = backend.get_entities(graph_id=graph_id, entity_types=[entity_type])
 
         return jsonify(
             {
@@ -491,12 +494,19 @@ def prepare_simulation():
             logger.info(
                 f"Obtener cantidad de entidades de forma síncrona: graph_id={state.graph_id}"
             )
-            reader = ZepEntityReader()
+            backend = get_memory_backend()
             # Lectura rápida de entidades (sin información de bordes, solo contar cantidad)
-            filtered_preview = reader.filter_defined_entities(
-                graph_id=state.graph_id,
-                defined_entity_types=entity_types_list,
-                enrich_with_edges=False,  # No obtener información de bordes, acelerar
+            filtered_entities = backend.get_entities(
+                graph_id=state.graph_id, entity_types=entity_types_list
+            )
+
+            from ..memory import FilteredEntities
+
+            filtered_preview = FilteredEntities(
+                entities=filtered_entities,
+                entity_types=set(entity_types_list) if entity_types_list else set(),
+                total_count=len(filtered_entities),
+                filtered_count=len(filtered_entities),
             )
             # Guardar cantidad de entidades en estado (para que frontend obtenga inmediatamente)
             state.entities_count = filtered_preview.filtered_count
@@ -1418,9 +1428,18 @@ def generate_profiles():
         use_llm = data.get("use_llm", True)
         platform = data.get("platform", "reddit")
 
-        reader = ZepEntityReader()
-        filtered = reader.filter_defined_entities(
-            graph_id=graph_id, defined_entity_types=entity_types, enrich_with_edges=True
+        backend = get_memory_backend()
+        filtered_entities_list = backend.get_entities(
+            graph_id=graph_id, entity_types=entity_types
+        )
+
+        from ..memory import FilteredEntities
+
+        filtered = FilteredEntities(
+            entities=filtered_entities_list,
+            entity_types=set(entity_types) if entity_types else set(),
+            total_count=len(filtered_entities_list),
+            filtered_count=len(filtered_entities_list),
         )
 
         if filtered.filtered_count == 0:
@@ -1528,7 +1547,10 @@ def start_simulation():
                 max_rounds = int(max_rounds)
                 if max_rounds <= 0:
                     return jsonify(
-                        {"success": False, "error": "max_rounds debe ser un entero positivo"}
+                        {
+                            "success": False,
+                            "error": "max_rounds debe ser un entero positivo",
+                        }
                     ), 400
             except (ValueError, TypeError):
                 return jsonify(
@@ -2267,7 +2289,10 @@ def interview_agent():
 
     except TimeoutError as e:
         return jsonify(
-            {"success": False, "error": f"Esperando respuesta de Interview agotado: {str(e)}"}
+            {
+                "success": False,
+                "error": f"Esperando respuesta de Interview agotado: {str(e)}",
+            }
         ), 504
 
     except Exception as e:
@@ -2409,7 +2434,10 @@ def interview_agents_batch():
 
     except TimeoutError as e:
         return jsonify(
-            {"success": False, "error": f"Esperando respuesta de Interview por lotes agotado: {str(e)}"}
+            {
+                "success": False,
+                "error": f"Esperando respuesta de Interview por lotes agotado: {str(e)}",
+            }
         ), 504
 
     except Exception as e:
@@ -2467,13 +2495,19 @@ def interview_all_agents():
 
         if not prompt:
             return jsonify(
-                {"success": False, "error": "Por favor proporcione prompt (pregunta de entrevista)"}
+                {
+                    "success": False,
+                    "error": "Por favor proporcione prompt (pregunta de entrevista)",
+                }
             ), 400
 
         # Validar parametros platform
         if platform and platform not in ("twitter", "reddit"):
             return jsonify(
-                {"success": False, "error": "El parametro platform solo puede ser twitter o reddit"}
+                {
+                    "success": False,
+                    "error": "El parametro platform solo puede ser twitter o reddit",
+                }
             ), 400
 
         # Verificar estado del entorno
@@ -2502,7 +2536,10 @@ def interview_all_agents():
 
     except TimeoutError as e:
         return jsonify(
-            {"success": False, "error": f"Esperando respuesta de Interview global agotado: {str(e)}"}
+            {
+                "success": False,
+                "error": f"Esperando respuesta de Interview global agotado: {str(e)}",
+            }
         ), 504
 
     except Exception as e:
@@ -2550,7 +2587,9 @@ def get_interview_history():
         data = request.get_json() or {}
 
         simulation_id = data.get("simulation_id")
-        platform = data.get("platform")  # Si no se especifica devuelve historial de ambas plataformas
+        platform = data.get(
+            "platform"
+        )  # Si no se especifica devuelve historial de ambas plataformas
         agent_id = data.get("agent_id")
         limit = data.get("limit", 100)
 
@@ -2617,7 +2656,9 @@ def get_env_status():
         env_status = SimulationRunner.get_env_status_detail(simulation_id)
 
         if env_alive:
-            message = "El entorno esta en ejecucion, puede recibir comandos de Interview"
+            message = (
+                "El entorno esta en ejecucion, puede recibir comandos de Interview"
+            )
         else:
             message = "El entorno no esta en ejecucion o esta cerrado"
 

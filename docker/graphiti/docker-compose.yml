@@ -7,8 +7,7 @@ services:
       - "7474:7474"
       - "7687:7687"
     environment:
-      # Configuración inicial de usuario y contraseña
-      - NEO4J_AUTH=neo4j/mirofish2024
+      - NEO4J_AUTH=neo4j/mirofish.dragonjar
       - NEO4J_PLUGINS=["apoc"]
     volumes:
       # Persistencia de datos

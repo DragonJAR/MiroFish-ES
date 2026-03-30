@@ -13,12 +13,10 @@ import json
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 
-from zep_cloud.client import Zep
-
 from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.llm_client import LLMClient
-from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
+from ..memory import get_memory_backend, EntityNode
 
 # Intentar importar el sistema de prompts i18n (fallback a strings vacios si no existe)
 try:
@@ -463,13 +461,16 @@ class ZepToolsService:
     RETRY_DELAY = 2.0
 
     def __init__(
-        self, api_key: Optional[str] = None, llm_client: Optional[LLMClient] = None
+        self,
+        api_key: Optional[str] = None,
+        llm_client: Optional[LLMClient] = None,
+        backend=None,
     ):
         self.api_key = api_key or Config.ZEP_API_KEY
         if not self.api_key:
             raise ValueError("ZEP_API_KEY no configurada")
 
-        self.client = Zep(api_key=self.api_key)
+        self.backend = backend or get_memory_backend()
         # Cliente LLM para generar sub-preguntas en InsightForge
         self._llm_client = llm_client
         logger.info("ZepToolsService inicializado")
@@ -513,7 +514,7 @@ class ZepToolsService:
         Busqueda semantica del grafo
 
         Utiliza busqueda hibrida (semantica + BM25) para buscar informacion relacionada en el grafo.
-        Si la API de search de Zep Cloud no esta disponible, se degrada a busqueda local por palabras clave.
+        Si la API de search de backend no esta disponible, se degrada a busqueda local por palabras clave.
 
         Args:
             graph_id: ID del grafo (Standalone Graph)
@@ -526,70 +527,33 @@ class ZepToolsService:
         """
         logger.info(f"Busqueda en grafo: graph_id={graph_id}, query={query[:50]}...")
 
-        # Intentar usar Zep Cloud Search API
+        # Intentar usar backend Search API
         try:
             search_results = self._call_with_retry(
-                func=lambda: self.client.graph.search(
+                func=lambda: self.backend.search(
                     graph_id=graph_id,
                     query=query,
                     limit=limit,
-                    scope=scope,
-                    reranker="cross_encoder",
+                    mode="quick" if scope == "edges" else "panorama",
                 ),
                 operation_name=f"Busqueda en grafo(graph={graph_id})",
             )
 
-            facts = []
-            edges = []
-            nodes = []
-
-            # Parsear resultado de busqueda de aristas
-            if hasattr(search_results, "edges") and search_results.edges:
-                for edge in search_results.edges:
-                    if hasattr(edge, "fact") and edge.fact:
-                        facts.append(edge.fact)
-                    edges.append(
-                        {
-                            "uuid": getattr(edge, "uuid_", None)
-                            or getattr(edge, "uuid", ""),
-                            "name": getattr(edge, "name", ""),
-                            "fact": getattr(edge, "fact", ""),
-                            "source_node_uuid": getattr(edge, "source_node_uuid", ""),
-                            "target_node_uuid": getattr(edge, "target_node_uuid", ""),
-                        }
-                    )
-
-            # Parsear resultado de busqueda de nodos
-            if hasattr(search_results, "nodes") and search_results.nodes:
-                for node in search_results.nodes:
-                    nodes.append(
-                        {
-                            "uuid": getattr(node, "uuid_", None)
-                            or getattr(node, "uuid", ""),
-                            "name": getattr(node, "name", ""),
-                            "labels": getattr(node, "labels", []),
-                            "summary": getattr(node, "summary", ""),
-                        }
-                    )
-                    # El resumen del nodo tambien cuenta como hecho
-                    if hasattr(node, "summary") and node.summary:
-                        facts.append(f"[{node.name}]: {node.summary}")
-
             logger.info(
-                f"Busqueda completada: se encontraron {len(facts)} hechos relacionados"
+                f"Busqueda completada: se encontraron {len(search_results.facts)} hechos relacionados"
             )
 
             return SearchResult(
-                facts=facts,
-                edges=edges,
-                nodes=nodes,
+                facts=search_results.facts,
+                edges=search_results.edges,
+                nodes=search_results.nodes,
                 query=query,
-                total_count=len(facts),
+                total_count=search_results.total_count,
             )
 
         except Exception as e:
             logger.warning(
-                f"Zep Search API fallo, degradando a busqueda local: {str(e)}"
+                f"Backend Search API fallo, degradando a busqueda local: {str(e)}"
             )
             # Degradacion: usar busqueda local por palabras clave
             return self._local_search(graph_id, query, limit, scope)
@@ -716,20 +680,17 @@ class ZepToolsService:
         """
         logger.info(f"Obtener todos los nodos del grafo {graph_id}...")
 
-        nodes = fetch_all_nodes(self.client, graph_id)
+        entities = self.backend.get_entities(graph_id=graph_id)
 
         result = []
-        for node in nodes:
-            node_uuid = (
-                getattr(node, "uuid_", None) or getattr(node, "uuid", None) or ""
-            )
+        for entity in entities:
             result.append(
                 NodeInfo(
-                    uuid=str(node_uuid) if node_uuid else "",
-                    name=node.name or "",
-                    labels=node.labels or [],
-                    summary=node.summary or "",
-                    attributes=node.attributes or {},
+                    uuid=entity.uuid,
+                    name=entity.name,
+                    labels=entity.labels,
+                    summary=entity.summary,
+                    attributes=entity.attributes,
                 )
             )
 
@@ -751,39 +712,39 @@ class ZepToolsService:
         """
         logger.info(f"Obtener todas las aristas del grafo {graph_id}...")
 
-        edges = fetch_all_edges(self.client, graph_id)
+        edges = self.backend.get_edges(
+            graph_id=graph_id, include_temporal=include_temporal
+        )
 
         result = []
         for edge in edges:
-            edge_uuid = (
-                getattr(edge, "uuid_", None) or getattr(edge, "uuid", None) or ""
-            )
             edge_info = EdgeInfo(
-                uuid=str(edge_uuid) if edge_uuid else "",
-                name=edge.name or "",
-                fact=edge.fact or "",
-                source_node_uuid=edge.source_node_uuid or "",
-                target_node_uuid=edge.target_node_uuid or "",
+                uuid=edge.get("uuid", ""),
+                name=edge.get("name", ""),
+                fact=edge.get("fact", ""),
+                source_node_uuid=edge.get("source_node_uuid", ""),
+                target_node_uuid=edge.get("target_node_uuid", ""),
             )
 
             # Agregar informacion temporal
             if include_temporal:
-                edge_info.created_at = getattr(edge, "created_at", None)
-                edge_info.valid_at = getattr(edge, "valid_at", None)
-                edge_info.invalid_at = getattr(edge, "invalid_at", None)
-                edge_info.expired_at = getattr(edge, "expired_at", None)
+                edge_info.created_at = edge.get("created_at", None)
+                edge_info.valid_at = edge.get("valid_at", None)
+                edge_info.invalid_at = edge.get("invalid_at", None)
+                edge_info.expired_at = edge.get("expired_at", None)
 
             result.append(edge_info)
 
         logger.info(f"Se obtuvo {len(result)} aristas")
         return result
 
-    def get_node_detail(self, node_uuid: str) -> Optional[NodeInfo]:
+    def get_node_detail(self, node_uuid: str, graph_id: str = "") -> Optional[NodeInfo]:
         """
         Obtener informacion detallada de un solo nodo
 
         Args:
             node_uuid: UUID del nodo
+            graph_id: ID del grafo (requerido para backend)
 
         Returns:
             Informacion del nodo o None
@@ -791,20 +752,22 @@ class ZepToolsService:
         logger.info(f"Obtener detalle del nodo: {node_uuid[:8]}...")
 
         try:
-            node = self._call_with_retry(
-                func=lambda: self.client.graph.node.get(uuid_=node_uuid),
+            entity = self._call_with_retry(
+                func=lambda: self.backend.get_entity_by_uuid(
+                    graph_id=graph_id, uuid=node_uuid
+                ),
                 operation_name=f"Obtener detalle del nodo(uuid={node_uuid[:8]}...)",
             )
 
-            if not node:
+            if not entity:
                 return None
 
             return NodeInfo(
-                uuid=getattr(node, "uuid_", None) or getattr(node, "uuid", ""),
-                name=node.name or "",
-                labels=node.labels or [],
-                summary=node.summary or "",
-                attributes=node.attributes or {},
+                uuid=entity.uuid,
+                name=entity.name,
+                labels=entity.labels,
+                summary=entity.summary,
+                attributes=entity.attributes,
             )
         except Exception as e:
             logger.error(f"Error al obtener detalle del nodo: {str(e)}")
@@ -1092,7 +1055,7 @@ class ZepToolsService:
                 continue
             try:
                 # Obtener informacion de cada nodo relacionado individualmente
-                node = self.get_node_detail(uuid)
+                node = self.get_node_detail(uuid, graph_id=graph_id)
                 if node:
                     node_map[uuid] = node
                     entity_type = next(

@@ -36,17 +36,30 @@ service.interceptors.response.use(
   error => {
     console.error('Response error:', error)
     
-    // 处理超时
+    // Caso 2: Error HTTP (4xx/5xx)
     if (error.code === 'ECONNABORTED' && error.message.includes('timeout')) {
       console.error('Request timeout')
+      return Promise.reject(new Error('Timeout: El servidor tardó demasiado en responder'))
     }
     
-    // 处理网络错误
     if (error.message === 'Network Error') {
       console.error('Network error - please check your connection')
+      return Promise.reject(new Error('Error de red: Verifica tu conexión'))
     }
     
-    return Promise.reject(error)
+    // Caso 3: Error HTTP genérico (4xx/5xx)
+    // ✅ ANTES de rechazar, intenta extraer mensaje del backend
+    let userMessage = 'Error en la solicitud al servidor'
+    if (error.response && error.response.data) {
+      const resData = error.response.data
+      if (resData.error) {
+        userMessage = resData.error  // ← USA EL MENSAJE REAL
+      } else if (resData.message) {
+        userMessage = resData.message
+      }
+    }
+    
+    return Promise.reject(new Error(userMessage))
   }
 )
 

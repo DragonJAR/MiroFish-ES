@@ -42,6 +42,17 @@ class Config:
     # Configuración Zep
     ZEP_API_KEY = os.environ.get("ZEP_API_KEY")
 
+    # Configuración Memory Backend
+    MEMORY_BACKEND = os.environ.get("MEMORY_BACKEND", "zep")
+
+    # Neo4j (solo para graphiti)
+    NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+    NEO4J_USER = os.environ.get("NEO4J_USER", "neo4j")
+    NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", "password")
+
+    # Graphiti LLM Provider: zai | minimax | openai
+    GRAPHITI_LLM_PROVIDER = os.environ.get("GRAPHITI_LLM_PROVIDER", "zai")
+
     # Configuración de subida de archivos
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "../uploads")
@@ -97,6 +108,12 @@ class Config:
         errors = []
         if not cls.LLM_API_KEY:
             errors.append("LLM_API_KEY no está configurado")
-        if not cls.ZEP_API_KEY:
-            errors.append("ZEP_API_KEY no está configurado")
+
+        if cls.MEMORY_BACKEND == "zep":
+            if not cls.ZEP_API_KEY:
+                errors.append("ZEP_API_KEY requerido para backend=zep")
+        elif cls.MEMORY_BACKEND == "graphiti":
+            if not cls.NEO4J_PASSWORD or cls.NEO4J_PASSWORD == "password":
+                errors.append("NEO4J_PASSWORD requerido para backend=graphiti")
+
         return errors

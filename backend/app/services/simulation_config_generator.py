@@ -20,7 +20,7 @@ from openai import OpenAI
 
 from ..config import Config
 from ..utils.logger import get_logger
-from .zep_entity_reader import EntityNode, ZepEntityReader
+from ..memory import EntityNode
 
 # Intentar importar el sistema de prompts i18n (fallback a strings vacíos si no existe)
 try:

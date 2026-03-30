@@ -16,11 +16,10 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from openai import OpenAI
-from zep_cloud.client import Zep
 
 from ..config import Config
 from ..utils.logger import get_logger
-from .zep_entity_reader import EntityNode, ZepEntityReader
+from ..memory import get_memory_backend, EntityNode
 
 # Intentar importar el sistema de prompts i18n
 try:
@@ -228,7 +227,7 @@ class OasisProfileGenerator:
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
         model_name: Optional[str] = None,
-        zep_api_key: Optional[str] = None,
+        backend=None,
         graph_id: Optional[str] = None,
     ):
         self.api_key = api_key or Config.LLM_API_KEY
@@ -240,16 +239,9 @@ class OasisProfileGenerator:
 
         self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
-        # Zep client for retrieval to enrich context
-        self.zep_api_key = zep_api_key or Config.ZEP_API_KEY
-        self.zep_client = None
+        # Memory backend para retrieval
+        self.backend = backend or get_memory_backend()
         self.graph_id = graph_id
-
-        if self.zep_api_key:
-            try:
-                self.zep_client = Zep(api_key=self.zep_api_key)
-            except Exception as e:
-                logger.warning(f"Zep client initialization failed: {e}")
 
     def generate_profile_from_entity(
         self, entity: EntityNode, user_id: int, use_llm: bool = True
@@ -343,11 +335,6 @@ class OasisProfileGenerator:
         """
         import concurrent.futures
 
-        if not self.zep_client:
-            return {"facts": [], "node_summaries": [], "context": ""}
-
-        entity_name = entity.name
-
         results = {"facts": [], "node_summaries": [], "context": ""}
 
         # Debe tener graph_id para buscar
@@ -355,9 +342,120 @@ class OasisProfileGenerator:
             logger.debug(f"Saltar búsqueda Zep: graph_id no configurado")
             return results
 
-        comprehensive_query = (
-            f"Toda la información, actividades, eventos, relaciones y contexto sobre {entity_name}"
-        )
+        entity_name = entity.name
+
+        comprehensive_query = f"Toda la información, actividades, eventos, relaciones y contexto sobre {entity_name}"
+
+        def search_edges():
+            """Buscar edges (hechos/relaciones) - con mecanismo de reintento"""
+            max_retries = 3
+            last_exception = None
+            delay = 2.0
+
+            for attempt in range(max_retries):
+                try:
+                    search_result = self.backend.search(
+                        query=comprehensive_query,
+                        graph_id=self.graph_id,
+                        limit=30,
+                        mode="quick",
+                    )
+                    return search_result
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        logger.debug(
+                            f"Zep edge search attempt {attempt + 1}  failed: {str(e)[:80]}, retrying..."
+                        )
+                        time.sleep(delay)
+                        delay *= 2
+                    else:
+                        logger.debug(
+                            f"Zep edge search after {max_retries}  attempts still failed: {e}"
+                        )
+            return None
+
+        def search_nodes():
+            """Buscar nodos (resumen de entidad) - con mecanismo de reintento"""
+            max_retries = 3
+            last_exception = None
+            delay = 2.0
+
+            for attempt in range(max_retries):
+                try:
+                    search_result = self.backend.search(
+                        query=comprehensive_query,
+                        graph_id=self.graph_id,
+                        limit=20,
+                        mode="quick",
+                    )
+                    return search_result
+                except Exception as e:
+                    last_exception = e
+                    if attempt < max_retries - 1:
+                        logger.debug(
+                            f"Zep node search attempt {attempt + 1}  failed: {str(e)[:80]}, retrying..."
+                        )
+                        time.sleep(delay)
+                        delay *= 2
+                    else:
+                        logger.debug(
+                            f"Zepnodobúsquedaen {max_retries}  attempts still failed: {e}"
+                        )
+            return None
+
+        try:
+            # Ejecutar búsqueda de edges y nodes en paralelo
+            with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+                edge_future = executor.submit(search_edges)
+                node_future = executor.submit(search_nodes)
+
+                # Obtener resultados
+                edge_result = edge_future.result(timeout=30)
+                node_result = node_future.result(timeout=30)
+
+            # Procesar resultados de búsqueda de edges
+            all_facts = set()
+            if edge_result and hasattr(edge_result, "facts"):
+                all_facts = set(edge_result.facts[:20])
+            results["facts"] = list(all_facts)
+
+            # Procesar resultados de búsqueda de nodes
+            all_summaries = set()
+            if node_result and hasattr(node_result, "nodes"):
+                for node in node_result.nodes:
+                    if "summary" in node and node["summary"]:
+                        all_summaries.add(node["summary"])
+                    if "name" in node and node["name"] and node["name"] != entity_name:
+                        all_summaries.add(f"Entidad relacionada: {node['name']}")
+            results["node_summaries"] = list(all_summaries)
+
+            # Construir contexto  (completo)
+            context_parts = []
+            if results["facts"]:
+                context_parts.append(
+                    "Información de hechos:\n"
+                    + "\n".join(f"- {f}" for f in results["facts"][:20])
+                )
+            if results["node_summaries"]:
+                context_parts.append(
+                    "Entidad relacionada:\n"
+                    + "\n".join(f"- {s}" for s in results["node_summaries"][:10])
+                )
+            results["context"] = "\n\n".join(context_parts)
+
+            logger.info(
+                f"Zep hybrid search completed: {entity_name}, obtained {len(results['facts'])}  facts, {len(results['node_summaries'])}  related nodes"
+            )
+
+        except concurrent.futures.TimeoutError:
+            logger.warning(f"Tiempo de espera de búsqueda Zep agotado ({entity_name})")
+        except Exception as e:
+            logger.warning(f"Búsqueda Zep fallida ({entity_name}): {e}")
+
+        return results
+
+        comprehensive_query = f"Toda la información, actividades, eventos, relaciones y contexto sobre {entity_name}"
 
         def search_edges():
             """Buscar edges (hechos/relaciones) - con mecanismo de reintento"""
@@ -383,7 +481,9 @@ class OasisProfileGenerator:
                         time.sleep(delay)
                         delay *= 2
                     else:
-                        logger.debug(f"Zep edge search after {max_retries}  attempts still failed: {e}")
+                        logger.debug(
+                            f"Zep edge search after {max_retries}  attempts still failed: {e}"
+                        )
             return None
 
         def search_nodes():
@@ -410,7 +510,9 @@ class OasisProfileGenerator:
                         time.sleep(delay)
                         delay *= 2
                     else:
-                        logger.debug(f"Zepnodobúsquedaen {max_retries}  attempts still failed: {e}")
+                        logger.debug(
+                            f"Zepnodobúsquedaen {max_retries}  attempts still failed: {e}"
+                        )
             return None
 
         try:
@@ -509,7 +611,9 @@ class OasisProfileGenerator:
                         )
 
             if relationships:
-                context_parts.append("### Hechos y relaciones relacionados\n" + "\n".join(relationships))
+                context_parts.append(
+                    "### Hechos y relaciones relacionados\n" + "\n".join(relationships)
+                )
 
         # 3. Agregar información detallada de nodos relacionados
         if entity.related_nodes:
@@ -530,7 +634,8 @@ class OasisProfileGenerator:
 
             if related_info:
                 context_parts.append(
-                    "### Información de entidades relacionadas\n" + "\n".join(related_info)
+                    "### Información de entidades relacionadas\n"
+                    + "\n".join(related_info)
                 )
 
         # 4. Usar búsqueda híbrida Zep para obtener información más rica
@@ -604,7 +709,8 @@ class OasisProfileGenerator:
                         {"role": "user", "content": prompt},
                     ],
                     response_format={"type": "json_object"},
-                    temperature=0.7 - (attempt * 0.1),  # Reducir temperatura en cada reintento
+                    temperature=0.7
+                    - (attempt * 0.1),  # Reducir temperatura en cada reintento
                     # No establecer max_tokens, dejar que el LLM decida
                 )
 
@@ -652,7 +758,9 @@ class OasisProfileGenerator:
                     last_error = je
 
             except Exception as e:
-                logger.warning(f"Llamada LLM fallida (attempt {attempt + 1}): {str(e)[:80]}")
+                logger.warning(
+                    f"Llamada LLM fallida (attempt {attempt + 1}): {str(e)[:80]}"
+                )
                 last_error = e
                 import time
 
@@ -737,7 +845,9 @@ class OasisProfileGenerator:
 
         # 6. Intentar extraer información parcial del contenido
         bio_match = re.search(r'"bio"\s*:\s*"([^"]*)"', content)
-        persona_match = re.search(r'"persona"\s*:\s*"([^"]*)', content)  # Posiblemente truncado
+        persona_match = re.search(
+            r'"persona"\s*:\s*"([^"]*)', content
+        )  # Posiblemente truncado
 
         bio = (
             bio_match.group(1)
@@ -1050,14 +1160,14 @@ Importante:
 
                 try:
                     if output_platform == "reddit":
-                        # Reddit JSON 
+                        # Reddit JSON
                         profiles_data = [
                             p.to_reddit_format() for p in existing_profiles
                         ]
                         with open(realtime_output_path, "w", encoding="utf-8") as f:
                             json.dump(profiles_data, f, ensure_ascii=False, indent=2)
                     else:
-                        # Twitter CSV 
+                        # Twitter CSV
                         import csv
 
                         profiles_data = [
@@ -1171,7 +1281,9 @@ Importante:
                     save_profiles_realtime()
 
         print(f"\n{'=' * 60}")
-        print(f"perfilgenerarcompletado！generar {len([p for p in profiles if p])} Agent")
+        print(
+            f"perfilgenerarcompletado！generar {len([p for p in profiles if p])} Agent"
+        )
         print(f"{'=' * 60}\n")
 
         return profiles
@@ -1184,7 +1296,9 @@ Importante:
 
         # Construir contenido de salida completo (sin truncar)）
         topics_str = (
-            ", ".join(profile.interested_topics) if profile.interested_topics else "Ninguno"
+            ", ".join(profile.interested_topics)
+            if profile.interested_topics
+            else "Ninguno"
         )
 
         output_lines = [
@@ -1276,7 +1390,7 @@ Importante:
 
                 row = [
                     idx,  # user_id: desde0iniciarID
-                    profile.name,  # name: 
+                    profile.name,  # name:
                     profile.user_name,  # username: usuario
                     user_char,  # user_char: perfil completo (usado internamente por LLM)
                     description,  # description: corta (mostrada externamente)
@@ -1323,16 +1437,16 @@ Importante:
         - user_id: ID de usuario（，en initial_posts  poster_agent_id）
         - username: usuario
         - name: nombre
-        - bio: 
+        - bio:
         - persona: detalladoperfil
         - age: （）
         - gender: "male", "female", o "other"
         - mbti: MBTItipo
-        - country: 
+        - country:
         """
         data = []
         for idx, profile in enumerate(profiles):
-            # usarcon to_reddit_format() 
+            # usarcon to_reddit_format()
             item = {
                 "user_id": profile.user_id
                 if profile.user_id is not None
@@ -1351,7 +1465,7 @@ Importante:
                 "country": profile.country if profile.country else "China",
             }
 
-            # 
+            #
             if profile.profession:
                 item["profession"] = profile.profession
             if profile.interested_topics:
