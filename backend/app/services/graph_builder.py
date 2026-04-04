@@ -363,8 +363,10 @@ class GraphBuilderService:
 
                 if batch_result and isinstance(batch_result, list):
                     for ep in batch_result:
-                        ep_uuid = getattr(ep, "uuid_", None) or getattr(
-                            ep, "uuid", None
+                        ep_uuid = (
+                            getattr(ep, "episode_uuid", None)
+                            or getattr(ep, "uuid_", None)
+                            or getattr(ep, "uuid", None)
                         )
                         if ep_uuid:
                             episode_uuids.append(ep_uuid)
@@ -385,6 +387,15 @@ class GraphBuilderService:
         timeout: int = 600,
     ):
         """Esperar a que todos los episodes se procesen (consultando el estado 'processed' de cada episode)"""
+        # Graphiti procesa episodios de forma síncrona, no necesita espera
+        if getattr(Config, "MEMORY_BACKEND", "zep") == "graphiti":
+            if progress_callback:
+                progress_callback(
+                    "Graphiti backend: procesamiento síncrono, no se requiere espera",
+                    1.0,
+                )
+            return
+
         if not episode_uuids:
             if progress_callback:
                 progress_callback("No hay episodes que esperar", 1.0)
@@ -478,7 +489,8 @@ class GraphBuilderService:
 
         node_map = {}
         for node in nodes:
-            node_map[node.uuid_] = node.name or ""
+            node_uuid = getattr(node, "uuid_", None) or getattr(node, "uuid", "")
+            node_map[node_uuid] = node.name or ""
 
         nodes_data = []
         for node in nodes:
@@ -488,7 +500,7 @@ class GraphBuilderService:
 
             nodes_data.append(
                 {
-                    "uuid": node.uuid_,
+                    "uuid": getattr(node, "uuid_", None) or getattr(node, "uuid", ""),
                     "name": node.name,
                     "labels": node.labels or [],
                     "summary": node.summary or "",
@@ -516,9 +528,9 @@ class GraphBuilderService:
 
             edges_data.append(
                 {
-                    "uuid": edge.uuid_,
+                    "uuid": getattr(edge, "uuid_", None) or getattr(edge, "uuid", ""),
                     "name": edge.name or "",
-                    "fact": edge.fact or "",
+                    "fact": getattr(edge, "fact", "") or getattr(edge, "name", ""),
                     "fact_type": fact_type,
                     "source_node_uuid": edge.source_node_uuid,
                     "target_node_uuid": edge.target_node_uuid,

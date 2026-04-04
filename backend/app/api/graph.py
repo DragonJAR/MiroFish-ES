@@ -292,10 +292,8 @@ def build_graph():
     try:
         logger.info("=== Inicio de construcción del grafo ===")
 
-        # Verificar configuración
-        errors = []
-        if not Config.ZEP_API_KEY:
-            errors.append("ZEP_API_KEY no configurado")
+        # Verificar configuración (validación condicional según MEMORY_BACKEND)
+        errors = Config.validate()
         if errors:
             logger.error(f"Error de configuración: {errors}")
             return jsonify(
@@ -576,9 +574,14 @@ def get_graph_data(graph_id: str):
     Obtener datos del grafo (nodos y aristas)
     """
     try:
-        if not Config.ZEP_API_KEY:
+        # Validación de configuración (condicional según MEMORY_BACKEND)
+        errors = Config.validate()
+        if errors:
             return jsonify(
-                {"success": False, "error": "ZEP_API_KEY no configurado"}
+                {
+                    "success": False,
+                    "error": "Error de configuración: " + "; ".join(errors),
+                }
             ), 500
 
         builder = GraphBuilderService()
@@ -598,9 +601,14 @@ def delete_graph(graph_id: str):
     Eliminar grafo Zep
     """
     try:
-        if not Config.ZEP_API_KEY:
+        # Validación de configuración (condicional según MEMORY_BACKEND)
+        errors = Config.validate()
+        if errors:
             return jsonify(
-                {"success": False, "error": "ZEP_API_KEY no configurado"}
+                {
+                    "success": False,
+                    "error": "Error de configuración: " + "; ".join(errors),
+                }
             ), 500
 
         builder = GraphBuilderService()
