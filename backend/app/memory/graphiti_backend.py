@@ -18,6 +18,38 @@ from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 
 from .base import MemoryBackend, SearchResult, EntityNode, GraphInfo, EpisodeResult
+
+
+def _sanitize_neo4j_value(v):
+    """Convertir valores no-JSON-serializables de Neo4j a tipos nativos de Python."""
+    if v is None:
+        return None
+    if isinstance(v, (str, int, float, bool)):
+        return v
+    if isinstance(v, list):
+        return [_sanitize_neo4j_value(i) for i in v]
+    if isinstance(v, dict):
+        return {k: _sanitize_neo4j_value(val) for k, val in v.items()}
+
+    # Handle Neo4j temporal and spatial types
+    try:
+        from neo4j.time import DateTime, Date, Time, Duration
+
+        if isinstance(v, (DateTime, Date, Time, Duration)):
+            return v.iso_format() if hasattr(v, "iso_format") else str(v)
+    except ImportError:
+        pass
+
+    return str(v)  # Fallback for other types (bytes, etc.)
+
+
+def _sanitize_neo4j_attributes(attrs):
+    """Sanitizar dict de attributes de Neo4j para que sea JSON-serializable."""
+    if not attrs or not isinstance(attrs, dict):
+        return attrs or {}
+    return {k: _sanitize_neo4j_value(v) for k, v in attrs.items()}
+
+
 from ..config import Config
 from ..utils.logger import get_logger
 
@@ -490,7 +522,7 @@ class GraphitiBackend(MemoryBackend):
                     name=data["name"],
                     labels=data["labels"],
                     summary=data["summary"],
-                    attributes=data["attributes"],
+                    attributes=_sanitize_neo4j_attributes(data["attributes"]),
                     related_edges=rel_edges,
                     related_nodes=rel_nodes,
                 )
@@ -530,7 +562,8 @@ class GraphitiBackend(MemoryBackend):
                 graphiti.driver.execute_query(query, group_id=graph_id, uuid=uuid)
             )
 
-            record = result.records[0] if result.records else None
+            if not result or not result.records:
+                return None
             if not record:
                 return None
 
@@ -539,7 +572,7 @@ class GraphitiBackend(MemoryBackend):
                 name=record.get("name", ""),
                 labels=record.get("labels", []),
                 summary=record.get("summary", ""),
-                attributes=record.get("attributes", {}),
+                attributes=_sanitize_neo4j_attributes(record.get("attributes", {})),
             )
 
         except Exception as e:
@@ -603,9 +636,15 @@ class GraphitiBackend(MemoryBackend):
                 }
 
                 if include_temporal:
-                    edge_dict["created_at"] = record.get("created_at", None)
-                    edge_dict["valid_at"] = record.get("valid_at", None)
-                    edge_dict["invalid_at"] = record.get("invalid_at", None)
+                    edge_dict["created_at"] = _sanitize_neo4j_value(
+                        record.get("created_at", None)
+                    )
+                    edge_dict["valid_at"] = _sanitize_neo4j_value(
+                        record.get("valid_at", None)
+                    )
+                    edge_dict["invalid_at"] = _sanitize_neo4j_value(
+                        record.get("invalid_at", None)
+                    )
 
                 edges_data.append(edge_dict)
 

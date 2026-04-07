@@ -109,17 +109,19 @@ class Config:
     def validate(cls):
         """Validar configuraciones necesarias"""
         errors = []
+        warnings = []
+
         if not cls.LLM_API_KEY:
-            errors.append("LLM_API_KEY no está configurado")
+            errors.append("LLM_API_KEY no está configurado (CRÍTICO)")
 
         if cls.MEMORY_BACKEND == "zep":
             if not cls.ZEP_API_KEY:
-                errors.append("ZEP_API_KEY requerido para backend=zep")
+                errors.append("ZEP_API_KEY requerido para backend=zep (CRÍTICO)")
         elif cls.MEMORY_BACKEND == "graphiti":
             if not cls.NEO4J_PASSWORD or cls.NEO4J_PASSWORD == "password":
-                logger.warning(
+                warnings.append(
                     "NEO4J_PASSWORD no configurado o usa valor por defecto 'password'. "
                     "Se recomienda cambiarla en .env para producción."
                 )
 
-        return errors
+        return {"errors": errors, "warnings": warnings}

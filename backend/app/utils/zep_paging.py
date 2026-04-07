@@ -17,7 +17,7 @@ from zep_cloud.client import Zep
 
 from .logger import get_logger
 
-logger = get_logger('mirofish.zep_paging')
+logger = get_logger("mirofish.zep_paging")
 
 _DEFAULT_PAGE_SIZE = 100
 _MAX_NODES = 2000
@@ -34,7 +34,7 @@ def _fetch_page_with_retry(
     **kwargs: Any,
 ) -> list[Any]:
     """Solicitud de pagina unica, reintento con retroceso exponencial en caso de fallo.
-    
+
     Solo reintenta errores transitorios de red/E/S.
     """
     if max_retries < 1:
@@ -55,7 +55,9 @@ def _fetch_page_with_retry(
                 time.sleep(delay)
                 delay *= 2
             else:
-                logger.error(f"Zep {page_description} failed after {max_retries} attempts: {str(e)}")
+                logger.error(
+                    f"Zep {page_description} failed after {max_retries} attempts: {str(e)}"
+                )
 
     assert last_exception is not None
     raise last_exception
@@ -70,14 +72,20 @@ def fetch_all_nodes(
     retry_delay: float = _DEFAULT_RETRY_DELAY,
 ) -> list[Any]:
     """Obtiene nodos del grafo de manera paginada, devolviendo hasta max_items (por defecto 2000).
-    
+
     Cada solicitud de pagina incluye su propio reintento.
     """
     all_nodes: list[Any] = []
     cursor: str | None = None
     page_num = 0
+    max_pages = max_items // page_size + 10  # Safety margin
+    page_count = 0
 
     while True:
+        page_count += 1
+        if page_count > max_pages:
+            logger.warning(f"Pagination exceeded max pages ({max_pages}), stopping")
+            break
         kwargs: dict[str, Any] = {"limit": page_size}
         if cursor is not None:
             kwargs["uuid_cursor"] = cursor
@@ -97,14 +105,18 @@ def fetch_all_nodes(
         all_nodes.extend(batch)
         if len(all_nodes) >= max_items:
             all_nodes = all_nodes[:max_items]
-            logger.warning(f"Node count reached limit ({max_items}), stopping pagination for graph {graph_id}")
+            logger.warning(
+                f"Node count reached limit ({max_items}), stopping pagination for graph {graph_id}"
+            )
             break
         if len(batch) < page_size:
             break
 
         cursor = getattr(batch[-1], "uuid_", None) or getattr(batch[-1], "uuid", None)
         if cursor is None:
-            logger.warning(f"Node missing uuid field, stopping pagination at {len(all_nodes)} nodes")
+            logger.warning(
+                f"Node missing uuid field, stopping pagination at {len(all_nodes)} nodes"
+            )
             break
 
     return all_nodes
@@ -118,14 +130,20 @@ def fetch_all_edges(
     retry_delay: float = _DEFAULT_RETRY_DELAY,
 ) -> list[Any]:
     """Obtiene todas las aristas del grafo de manera paginada, devuelve la lista completa.
-    
+
     Cada solicitud de pagina incluye su propio reintento.
     """
     all_edges: list[Any] = []
     cursor: str | None = None
     page_num = 0
+    max_pages = 2000 // page_size + 10  # Safety margin
+    page_count = 0
 
     while True:
+        page_count += 1
+        if page_count > max_pages:
+            logger.warning(f"Pagination exceeded max pages ({max_pages}), stopping")
+            break
         kwargs: dict[str, Any] = {"limit": page_size}
         if cursor is not None:
             kwargs["uuid_cursor"] = cursor
@@ -148,7 +166,9 @@ def fetch_all_edges(
 
         cursor = getattr(batch[-1], "uuid_", None) or getattr(batch[-1], "uuid", None)
         if cursor is None:
-            logger.warning(f"Edge missing uuid field, stopping pagination at {len(all_edges)} edges")
+            logger.warning(
+                f"Edge missing uuid field, stopping pagination at {len(all_edges)} edges"
+            )
             break
 
     return all_edges

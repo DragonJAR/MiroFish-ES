@@ -37,8 +37,23 @@ try:
     _PROMPTS_AVAILABLE = True
 except ImportError:
     _PROMPTS_AVAILABLE = False
-    _load_prompt = None
-    _get_prompt = None
+
+
+def _load_prompt_fallback(*args, **kwargs):
+    raise RuntimeError(
+        "Prompts module not available. Check installation or ensure prompts/__init__.py exists."
+    )
+
+
+def _get_prompt_fallback(*args, **kwargs):
+    raise RuntimeError(
+        "Prompts module not available. Check installation or ensure prompts/__init__.py exists."
+    )
+
+
+if not _PROMPTS_AVAILABLE:
+    _load_prompt = _load_prompt_fallback
+    _get_prompt = _get_prompt_fallback
 
 logger = get_logger("mirofish.report_agent")
 
@@ -369,7 +384,7 @@ class ReportConsoleLogger:
             if self._file_handler not in target_logger.handlers:
                 target_logger.addHandler(self._file_handler)
 
-    def close():
+    def close(self):
         """Cerrar file handler y remover del logger"""
         import logging
 

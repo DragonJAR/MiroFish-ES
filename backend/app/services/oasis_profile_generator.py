@@ -13,7 +13,7 @@ import random
 import time
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, date
 
 from openai import OpenAI
 
@@ -31,6 +31,16 @@ except ImportError:
     _load_prompt = None
 
 logger = get_logger("mirofish.oasis_profile")
+
+
+def _sanitize_for_json(obj: Any) -> Any:
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_for_json(v) for v in obj]
+    return obj
 
 
 @dataclass
@@ -783,7 +793,7 @@ class OasisProfileGenerator:
         """Construir prompt de perfil detallado para entidad individual"""
 
         attrs_str = (
-            json.dumps(entity_attributes, ensure_ascii=False)
+            json.dumps(_sanitize_for_json(entity_attributes), ensure_ascii=False)
             if entity_attributes
             else "Ninguno"
         )
@@ -849,7 +859,7 @@ debe:
         """Construir prompt de perfil detallado para entidad grupo/institucional"""
 
         attrs_str = (
-            json.dumps(entity_attributes, ensure_ascii=False)
+            json.dumps(_sanitize_for_json(entity_attributes), ensure_ascii=False)
             if entity_attributes
             else "Ninguno"
         )

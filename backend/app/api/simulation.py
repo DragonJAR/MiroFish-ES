@@ -630,11 +630,16 @@ def prepare_simulation():
                 task_manager.fail_task(task_id, str(e))
 
                 # Actualizar estado de simulación a fallido
-                state = manager.get_simulation(simulation_id)
-                if state:
-                    state.status = SimulationStatus.FAILED
-                    state.error = str(e)
-                    manager._save_simulation_state(state)
+                # Get FRESH state, don't use closure variable
+                try:
+                    manager = SimulationManager()
+                    state = manager.get_simulation(simulation_id)
+                    if state:
+                        state.status = SimulationStatus.FAILED
+                        state.error = str(e)
+                        manager._save_simulation_state(state)
+                except Exception as save_err:
+                    logger.error(f"Failed to update error state: {save_err}")
 
         # Iniciar hilo segundo plano
         thread = threading.Thread(target=run_prepare, daemon=True)
@@ -997,7 +1002,15 @@ def get_simulation_history():
 
             # Formatear fecha
             try:
-                created_date = sim_dict.get("created_at", "")[:10]
+                from datetime import datetime
+
+                created_at = sim_dict.get("created_at", "")
+                if isinstance(created_at, datetime):
+                    created_at = created_at.isoformat()
+                elif not isinstance(created_at, str):
+                    created_at = str(created_at)
+                # Now safe to slice
+                created_date = created_at[:10]
                 sim_dict["created_date"] = created_date
             except:
                 sim_dict["created_date"] = ""
@@ -1115,12 +1128,34 @@ def get_simulation_profiles_realtime(simulation_id: str):
 
             try:
                 if platform == "reddit":
-                    with open(profiles_file, "r", encoding="utf-8") as f:
-                        profiles = json.load(f)
+                    try:
+                        with open(profiles_file, "r", encoding="utf-8") as f:
+                            profiles = json.load(f)
+                    except UnicodeDecodeError:
+                        try:
+                            with open(profiles_file, "r", encoding="latin-1") as f:
+                                profiles = json.load(f)
+                        except Exception:
+                            with open(
+                                profiles_file, "r", encoding="utf-8", errors="replace"
+                            ) as f:
+                                profiles = json.load(f)
                 else:
-                    with open(profiles_file, "r", encoding="utf-8") as f:
-                        reader = csv.DictReader(f)
-                        profiles = list(reader)
+                    try:
+                        with open(profiles_file, "r", encoding="utf-8") as f:
+                            reader = csv.DictReader(f)
+                            profiles = list(reader)
+                    except UnicodeDecodeError:
+                        try:
+                            with open(profiles_file, "r", encoding="latin-1") as f:
+                                reader = csv.DictReader(f)
+                                profiles = list(reader)
+                        except Exception:
+                            with open(
+                                profiles_file, "r", encoding="utf-8", errors="replace"
+                            ) as f:
+                                reader = csv.DictReader(f)
+                                profiles = list(reader)
             except (json.JSONDecodeError, Exception) as e:
                 logger.warning(
                     f"lectura profiles archivo falló (posiblemente escribiéndose): {e}"

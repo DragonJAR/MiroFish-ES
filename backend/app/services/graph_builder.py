@@ -154,7 +154,7 @@ class GraphBuilderService:
             self.task_manager.update_task(
                 task_id,
                 progress=60,
-                message="Esperando procesamiento de datos por Zep...",
+                message="Esperando procesamiento de datos...",
             )
 
             self._wait_for_episodes(
@@ -204,11 +204,12 @@ class GraphBuilderService:
                 f"Backend {type(self.backend).__name__} no soporta set_ontology, omitiendo"
             )
 
-        # Solo continuar si el backend tiene un cliente Zep (para set_ontology avanzado)
-        if not hasattr(self.backend, "client"):
-            logger.warning(
-                f"Backend {type(self.backend).__name__} no soporta configuración de ontología avanzada de Zep, omitiendo"
-            )
+        # Check if backend supports advanced ontology configuration
+        has_advanced = hasattr(self.backend, "client") or hasattr(
+            self.backend, "_graphiti"
+        )
+        if not has_advanced:
+            logger.warning(f"Backend no soporta ontología avanzada")
             return
 
         try:
@@ -543,6 +544,8 @@ class GraphBuilderService:
         Returns:
             Diccionario con nodes y edges, incluyendo información temporal, atributos y otros datos detallados
         """
+        import json
+
         nodes = self.backend.get_entities(graph_id=graph_id)
         edges = self.backend.get_edges(graph_id=graph_id)
 
@@ -640,13 +643,15 @@ class GraphBuilderService:
                     }
                 )
 
-        return {
+        result = {
             "graph_id": graph_id,
             "nodes": nodes_data,
             "edges": edges_data,
             "node_count": len(nodes_data),
             "edge_count": len(edges_data),
         }
+
+        return json.loads(json.dumps(result, default=str))
 
     def delete_graph(self, graph_id: str):
         """Eliminar grafo"""

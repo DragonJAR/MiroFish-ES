@@ -7,6 +7,7 @@ Utiliza scripts predefinidos + generación inteligente de parámetros de configu
 import os
 import json
 import shutil
+import threading
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -136,6 +137,7 @@ class SimulationManager:
 
         # simulaciónestadocache
         self._simulations: Dict[str, SimulationState] = {}
+        self._lock = threading.Lock()
 
     def _get_simulation_dir(self, simulation_id: str) -> str:
         """Obtener directorio de datos de simulación"""
@@ -153,12 +155,14 @@ class SimulationManager:
         with open(state_file, "w", encoding="utf-8") as f:
             json.dump(state.to_dict(), f, ensure_ascii=False, indent=2)
 
-        self._simulations[state.simulation_id] = state
+        with self._lock:
+            self._simulations[state.simulation_id] = state
 
     def _load_simulation_state(self, simulation_id: str) -> Optional[SimulationState]:
         """Cargar estado de simulación desde archivo"""
-        if simulation_id in self._simulations:
-            return self._simulations[simulation_id]
+        with self._lock:
+            if simulation_id in self._simulations:
+                return self._simulations[simulation_id]
 
         sim_dir = self._get_simulation_dir(simulation_id)
         state_file = os.path.join(sim_dir, "state.json")
@@ -189,7 +193,8 @@ class SimulationManager:
             error=data.get("error"),
         )
 
-        self._simulations[simulation_id] = state
+        with self._lock:
+            self._simulations[simulation_id] = state
         return state
 
     def create_simulation(
@@ -418,7 +423,7 @@ class SimulationManager:
                 graph_id=state.graph_id,
                 simulation_requirement=simulation_requirement,
                 document_text=document_text,
-                entities=filtered.entities,
+                entities=filtered,
                 enable_twitter=state.enable_twitter,
                 enable_reddit=state.enable_reddit,
             )

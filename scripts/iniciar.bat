@@ -25,26 +25,46 @@ for /f "usebackq tokens=1,2 delims==" %%a in (".env") do (
 )
 
 if not defined MEMORY_BACKEND set MEMORY_BACKEND=zep
-if not defined NEO4J_PASSWORD set NEO4J_PASSWORD=password
+if not defined NEO4J_PASSWORD set NEO4J_PASSWORD=mirofish.dragonjar
 
 REM === DETENER ANTERIOR ===
 echo [MiroFish] Deteniendo procesos anteriores...
-docker compose --profile graphiti down >nul 2>&1
-taskkill /F /IM node.exe >nul 2>&1
+if exist docker\graphiti\docker-compose.yml (
+    docker compose -f docker\graphiti\docker-compose.yml down >nul 2>&1
+)
+REM Matar procesos específicos de MiroFish (Vite)
+wmic process where "name='node.exe' and commandline like '%%vite%%'" delete >nul 2>&1
 
 REM === BACKEND SELECTION ===
 echo [INFO] Memory backend: %MEMORY_BACKEND%
 
-if "%MEMORY_BACKEND%"=="graphiti" (
-    where docker >nul 2>nul
-    if !ERRORLEVEL! neq 0 (
-        echo [ERROR] Docker no esta instalado. Necesario para Neo4j con Graphiti.
+REM Detectar Docker Compose versión
+docker --version >nul 2>&1
+if !ERRORLEVEL! neq 0 (
+    echo [ERROR] Docker no esta instalado.
+    pause
+    exit /b 1
+)
+
+REM Probar docker compose (v2) primero
+docker compose version >nul 2>&1
+if !ERRORLEVEL! equ 0 (
+    set "DCOMPOSE=docker compose"
+) else (
+    REM Fallback a docker-compose (v1)
+    docker-compose --version >nul 2>&1
+    if !ERRORLEVEL! equ 0 (
+        set "DCOMPOSE=docker-compose"
+    ) else (
+        echo [ERROR] Ni docker compose ni docker-compose encontrados.
         pause
         exit /b 1
     )
+)
 
+if "%MEMORY_BACKEND%"=="graphiti" (
     echo [MiroFish] Iniciando Neo4j (Graphiti mode)...
-    docker compose --profile graphiti up -d neo4j
+    %DCOMPOSE% -f docker\graphiti\docker-compose.yml up -d neo4j
 
     echo [MiroFish] Esperando Neo4j (max 60s)...
     set /a waited=0
@@ -59,7 +79,7 @@ if "%MEMORY_BACKEND%"=="graphiti" (
         )
         echo.
         echo [ERROR] Neo4j no respondio en 60s
-        docker compose --profile graphiti down
+        %DCOMPOSE% -f docker\graphiti\docker-compose.yml down
         pause
         exit /b 1
     )
@@ -91,5 +111,7 @@ npm run dev
 REM === LIMPIEZA ===
 echo.
 echo [MiroFish] Deteniendo...
-docker compose --profile graphiti down >nul 2>&1
+if exist docker\graphiti\docker-compose.yml (
+    %DCOMPOSE% -f docker\graphiti\docker-compose.yml down >nul 2>&1
+)
 echo [MiroFish] Detenido

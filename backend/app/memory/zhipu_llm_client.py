@@ -66,6 +66,7 @@ def _extract_json_from_response(text: str) -> dict[str, Any]:
     3. Buscar el primer { ... } o [ ... ] en el texto
     """
     text = text.strip()
+    cleaned = text
 
     # 1. Directo
     try:
@@ -190,11 +191,15 @@ def _detect_and_wrap_container(result: Any, response_model: type) -> Any:
     B) Response es dict con >50% overlap con inner model → wrap como lista de 1 item
     C) Algún key del response contiene una lista que coincide con inner model → usar ese key
     """
-    if not isinstance(result, dict):
+    if not isinstance(result, (dict, list)):
         return result
 
     schema_fields = response_model.model_fields
-    result_keys = set(result.keys())
+
+    if isinstance(result, dict):
+        result_keys = set(result.keys())
+    else:
+        result_keys = set()
 
     # Encontrar keys faltantes (los que el schema requiere pero no están en result)
     missing_keys = [
@@ -208,6 +213,14 @@ def _detect_and_wrap_container(result: Any, response_model: type) -> Any:
         return result
 
     missing_key = missing_keys[0]
+
+    if isinstance(result, list):
+        logger.debug(f"Strategy A: Wrapping list result in '{missing_key}'")
+        return {missing_key: result}
+
+    if not isinstance(result, dict):
+        return result
+
     field_annotation = schema_fields[missing_key].annotation
 
     # Verificar si el campo faltante es list[SomeModel]
@@ -626,6 +639,8 @@ class ZhipuAILLMClient(OpenAIGenericClient):
                     response_format=response_format,
                 )
 
+                if not response.choices:
+                    raise ValueError("API returned empty choices array")
                 raw_content = response.choices[0].message.content or ""
 
                 # Si el content está vacío pero hay reasoning_content,

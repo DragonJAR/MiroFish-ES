@@ -22,6 +22,47 @@ warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1" >&2; }
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 
+# Filtrar y colorear líneas de log
+filter_log_line() {
+    local line="$1"
+    local startup_mode="${2:-false}"
+
+    # Patrones de prioridad - siempre mostrar estos
+    if echo "$line" | grep -qiE "ERROR|Exception|Traceback|Failed|failed"; then
+        echo -e "${RED}[Backend]${NC} $line"
+        return 0
+    fi
+
+    if echo "$line" | grep -qiE "WARNING|Warning"; then
+        echo -e "${YELLOW}[Backend]${NC} $line"
+        return 0
+    fi
+
+    # Hitos importantes de inicio
+    if echo "$line" | grep -qiE "Running on http|ready in|Connected|Started|Initialized|Application startup complete"; then
+        echo -e "${GREEN}[Backend]${NC} $line"
+        return 0
+    fi
+
+    # Servicios de memoria
+    if echo "$line" | grep -qiE "Graphiti|Zep|Neo4j|neo4j"; then
+        echo -e "${BLUE}[Backend]${NC} $line"
+        return 0
+    fi
+
+    # Información útil (solo durante startup o si es importante)
+    if [ "$startup_mode" = "true" ]; then
+        # Durante startup, mostrar más cosas útiles
+        if echo "$line" | grep -qiE "INFO|INFO:|Starting|Loading|Config"; then
+            echo -e "${BLUE}[Backend]${NC} $line"
+            return 0
+        fi
+    fi
+
+    # Ruido - no mostrar
+    return 1
+}
+
 # === VERIFICACIONES ===
 if [ ! -f .env ]; then
     error ".env no encontrado. Copia .env.example a .env y configura las variables."
@@ -36,7 +77,7 @@ LLM_BASE_URL=$(grep -E '^LLM_BASE_URL=' .env 2>/dev/null | cut -d'=' -f2- | tr -
 LLM_MODEL_NAME=$(grep -E '^LLM_MODEL_NAME=' .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
 
 MEMORY_BACKEND="${MEMORY_BACKEND:-zep}"
-NEO4J_PASSWORD="${NEO4J_PASSWORD:-password}"
+NEO4J_PASSWORD="${NEO4J_PASSWORD:-mirofish.dragonjar}"
 
 if [ -z "$LLM_API_KEY" ]; then
     error "LLM_API_KEY no está configurada en .env"
@@ -187,20 +228,31 @@ BACKEND_LOG_PID=""
 cleanup() {
     echo ""
     log "Deteniendo MiroFish..."
-    
+
     # Detener proceso de monitoreo de logs si existe
     if [ -n "$BACKEND_LOG_PID" ] && kill -0 $BACKEND_LOG_PID 2>/dev/null; then
         kill $BACKEND_LOG_PID 2>/dev/null || true
     fi
-    
-    if [ -n "$BACKEND_PID" ] && kill -0 $BACKEND_PID 2>/dev/null; then
-        kill $BACKEND_PID 2>/dev/null || true
-        info "Backend detenido (PID: $BACKEND_PID)"
+
+    # Leer PIDs de archivos y matar específicamente
+    if [ -f /tmp/mirofish_backend.pid ]; then
+        BACKEND_PID=$(cat /tmp/mirofish_backend.pid)
+        if [ -n "$BACKEND_PID" ] && kill -0 $BACKEND_PID 2>/dev/null; then
+            kill $BACKEND_PID 2>/dev/null || true
+            info "Backend detenido (PID: $BACKEND_PID)"
+        fi
+        rm -f /tmp/mirofish_backend.pid
     fi
-    if [ -n "$FRONTEND_PID" ] && kill -0 $FRONTEND_PID 2>/dev/null; then
-        kill $FRONTEND_PID 2>/dev/null || true
-        info "Frontend detenido (PID: $FRONTEND_PID)"
+
+    if [ -f /tmp/mirofish_frontend.pid ]; then
+        FRONTEND_PID=$(cat /tmp/mirofish_frontend.pid)
+        if [ -n "$FRONTEND_PID" ] && kill -0 $FRONTEND_PID 2>/dev/null; then
+            kill $FRONTEND_PID 2>/dev/null || true
+            info "Frontend detenido (PID: $FRONTEND_PID)"
+        fi
+        rm -f /tmp/mirofish_frontend.pid
     fi
+
     if [ "$NEO4J_STARTED" = true ]; then
         log "Deteniendo Neo4j..."
         docker compose -f docker/graphiti/docker-compose.yml down
@@ -218,40 +270,41 @@ cd backend
 # Backend escribe a app.log, monitoreamos ese archivo en background
 uv run python run.py > "$PROJECT_ROOT/backend/logs/app.log" 2>&1 &
 BACKEND_PID=$!
+echo "$BACKEND_PID" > /tmp/mirofish_backend.pid
 cd "$PROJECT_ROOT"
 
-# Iniciar monitoreo de logs filtrados en vivo
+# Guardar timestamp de inicio para modo startup (primeros 30s)
+START_TIME=$(date +%s)
+
+# Iniciar monitoreo de logs inteligente en background
 (
     LOG_FILE="$PROJECT_ROOT/backend/logs/app.log"
-    
+
     # Esperar a que el archivo exista
     for i in $(seq 1 30); do
         [ -s "$LOG_FILE" ] && break
         ! kill -0 $BACKEND_PID 2>/dev/null && exit 0
         sleep 0.2
     done
-    
-    # Primero mostrar líneas ya escritas (startup que pasó mientras esperábamos)
+
+    # Mostrar líneas ya escritas (startup que pasó mientras esperábamos)
     if [ -s "$LOG_FILE" ]; then
-        grep -vE '^\d+\.\d+\.\d+\.\d+ .* "(GET|POST|PUT|DELETE) /api/' "$LOG_FILE" | while IFS= read -r line; do
-            if echo "$line" | grep -qiE "ERROR|Traceback|Exception|failed|Failed|Address already|refused"; then
-                echo -e "${RED}[Backend]${NC} $line"
-            elif echo "$line" | grep -qiE "WARNING"; then
-                echo -e "${YELLOW}[Backend]${NC} $line"
-            else
-                echo -e "${BLUE}[Backend]${NC} $line"
-            fi
-        done
+        while IFS= read -r line; do
+            filter_log_line "$line" "true"
+        done < "$LOG_FILE"
     fi
-    
-    # Luego hacer tail -f para líneas nuevas (se detiene cuando backend muere)
-    tail -f --pid=$BACKEND_PID "$LOG_FILE" 2>/dev/null | grep --line-buffered -vE '^\d+\.\d+\.\d+\.\d+ .* "(GET|POST|PUT|DELETE) /api/' | while IFS= read -r line; do
-        if echo "$line" | grep -qiE "ERROR|Traceback|Exception|failed|Failed|Address already|refused"; then
-            echo -e "${RED}[Backend]${NC} $line"
-        elif echo "$line" | grep -qiE "WARNING"; then
-            echo -e "${YELLOW}[Backend]${NC} $line"
+
+    # Monitorear logs en tiempo real (se detiene cuando backend muere)
+    tail -f --pid=$BACKEND_PID "$LOG_FILE" 2>/dev/null | while IFS= read -r line; do
+        CURRENT_TIME=$(date +%s)
+        ELAPSED=$((CURRENT_TIME - START_TIME))
+
+        # Primeros 30s: mostrar todo lo relevante
+        # Después de 30s: solo mostrar errores y eventos importantes
+        if [ $ELAPSED -lt 30 ]; then
+            filter_log_line "$line" "true"
         else
-            echo -e "${BLUE}[Backend]${NC} $line"
+            filter_log_line "$line" "false"
         fi
     done
 ) &
@@ -260,6 +313,7 @@ BACKEND_LOG_PID=$!
 # Lanzar frontend (silencioso como antes)
 cd frontend && npx vite --host 0.0.0.0 --port 3000 > /dev/null 2>&1 &
 FRONTEND_PID=$!
+echo "$FRONTEND_PID" > /tmp/mirofish_frontend.pid
 cd "$PROJECT_ROOT"
 
 # Esperar y verificar que levantaron con health checks
@@ -271,10 +325,7 @@ info "Verificando servicios..."
 # Verificar backend (usar /health endpoint, no / que devuelve 404)
 if wait_for_service "Backend Flask" "http://localhost:5001/health" 30 1; then
     BACKEND_OK=true
-    # Detener monitoreo de logs - backend está UP
-    if [ -n "$BACKEND_LOG_PID" ] && kill -0 $BACKEND_LOG_PID 2>/dev/null; then
-        kill $BACKEND_LOG_PID 2>/dev/null || true
-    fi
+    info "Backend health check pasó - monitoreo de logs continúa"
 else
     # Si backend falló, mostrar las últimas líneas de error
     warn "Backend no respondió. Mostrando últimas líneas del log:"
