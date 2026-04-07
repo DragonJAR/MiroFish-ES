@@ -632,12 +632,12 @@ def prepare_simulation():
                 # Actualizar estado de simulación a fallido
                 # Get FRESH state, don't use closure variable
                 try:
-                    manager = SimulationManager()
-                    state = manager.get_simulation(simulation_id)
+                    error_manager = SimulationManager()
+                    state = error_manager.get_simulation(simulation_id)
                     if state:
                         state.status = SimulationStatus.FAILED
                         state.error = str(e)
-                        manager._save_simulation_state(state)
+                        error_manager._save_simulation_state(state)
                 except Exception as save_err:
                     logger.error(f"Failed to update error state: {save_err}")
 
