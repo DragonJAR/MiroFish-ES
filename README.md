@@ -124,7 +124,7 @@ Backend local usando Neo4j con Graphiti para extracción avanzada de entidades.
 MEMORY_BACKEND=graphiti
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
-NEO4J_PASSWORD=mirofish2024
+NEO4J_PASSWORD=mirofish.dragonjar
 ```
 
 **Iniciar Neo4j con Docker:**
@@ -132,7 +132,7 @@ NEO4J_PASSWORD=mirofish2024
 docker compose -f docker/graphiti/docker-compose.yml up -d
 ```
 
-Neo4j UI estará disponible en `http://localhost:7474` (usuario: `neo4j`, contraseña: `mirofish2024`)
+Neo4j UI estará disponible en `http://localhost:7474` (usuario: `neo4j`, contraseña: `mirofish.dragonjar`)
 
 ## 🚀 Inicio Rápido
 
