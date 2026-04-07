@@ -74,14 +74,42 @@ fi
 
 info "Memory backend: $MEMORY_BACKEND"
 
-# === LIMPIEZA DE PUERTOS ===
+# === DETECCIÓN DE OS ===
+detect_os() {
+    case "$(uname -s)" in
+        Darwin*) echo "macos" ;;
+        Linux*)  echo "linux" ;;
+        *)       echo "unknown" ;;
+    esac
+}
+
+OS_TYPE=$(detect_os)
+
+# === LIMPIEZA DE PUERTOS (CROSS-PLATFORM) ===
 log "Limpiando procesos anteriores..."
 
 kill_port() {
     local port=$1
-    local pids=$(lsof -ti :$port 2>/dev/null)
+    local pids=""
+
+    case "$OS_TYPE" in
+        macos)
+            pids=$(lsof -ti :$port 2>/dev/null)
+            ;;
+        linux)
+            pids=$(ss -tlnp 2>/dev/null | grep ":$port " | awk '{print $NF}' | grep -oP 'pid=\K[0-9]+')
+            if [ -z "$pids" ]; then
+                pids=$(fuser $port/tcp 2>/dev/null)
+            fi
+            ;;
+        *)
+            warn "OS no soportado para limpieza de puertos: $OS_TYPE"
+            return
+            ;;
+    esac
+
     if [ -n "$pids" ]; then
-        warn "Puerto $port ocupado — matando proceso(es)..."
+        warn "Puerto $port ocupado — matando proceso(es): $pids"
         echo "$pids" | xargs kill -9 2>/dev/null || true
         sleep 1
     fi
@@ -91,6 +119,32 @@ kill_port 5001  # Backend Flask
 kill_port 3000  # Frontend Vite
 
 log "Puertos limpios"
+
+# === ESPERA DE SERVICIO (HEALTH CHECK) ===
+wait_for_service() {
+    local name=$1
+    local url=$2
+    local max_wait=${3:-30}
+    local check_interval=${4:-1}
+
+    info "Esperando $name..."
+    local waited=0
+
+    while [ $waited -lt $max_wait ]; do
+        if curl -sSf "$url" >/dev/null 2>&1; then
+            echo ""
+            log "$name listo"
+            return 0
+        fi
+        printf "."
+        sleep $check_interval
+        waited=$((waited + check_interval))
+    done
+
+    echo ""
+    error "$name no respondió en ${max_wait}s"
+    return 1
+}
 
 # === NEO4J (solo Graphiti) ===
 NEO4J_STARTED=false
@@ -108,20 +162,7 @@ if [ "$MEMORY_BACKEND" = "graphiti" ]; then
         mkdir -p backend/neo4j/data backend/neo4j/logs
         docker compose -f docker/graphiti/docker-compose.yml up -d neo4j
 
-        log "Esperando Neo4j (max 60s)..."
-        waited=0
-        while [ $waited -lt 60 ]; do
-            if docker exec mirofish-neo4j cypher-shell \
-                -u neo4j -p "$NEO4J_PASSWORD" "RETURN 1" >/dev/null 2>&1; then
-                break
-            fi
-            sleep 2
-            waited=$((waited + 2))
-            printf "."
-        done
-        echo ""
-
-        if [ $waited -ge 60 ]; then
+        if ! wait_for_service "Neo4j" "http://localhost:7474" 60 2; then
             error "Neo4j no respondió en 60s. Verifica: docker logs mirofish-neo4j"
             docker compose -f docker/graphiti/docker-compose.yml down
             exit 1
@@ -135,11 +176,31 @@ fi
 # === INICIAR MIROFISH ===
 log "Iniciando MiroFish..."
 
+# Asegurar directorio de logs existe
+mkdir -p "$PROJECT_ROOT/backend/logs"
+
+# PIDs para cleanup
+BACKEND_PID=""
+FRONTEND_PID=""
+BACKEND_LOG_PID=""
+
 cleanup() {
     echo ""
     log "Deteniendo MiroFish..."
-    kill_port 5001
-    kill_port 3000
+    
+    # Detener proceso de monitoreo de logs si existe
+    if [ -n "$BACKEND_LOG_PID" ] && kill -0 $BACKEND_LOG_PID 2>/dev/null; then
+        kill $BACKEND_LOG_PID 2>/dev/null || true
+    fi
+    
+    if [ -n "$BACKEND_PID" ] && kill -0 $BACKEND_PID 2>/dev/null; then
+        kill $BACKEND_PID 2>/dev/null || true
+        info "Backend detenido (PID: $BACKEND_PID)"
+    fi
+    if [ -n "$FRONTEND_PID" ] && kill -0 $FRONTEND_PID 2>/dev/null; then
+        kill $FRONTEND_PID 2>/dev/null || true
+        info "Frontend detenido (PID: $FRONTEND_PID)"
+    fi
     if [ "$NEO4J_STARTED" = true ]; then
         log "Deteniendo Neo4j..."
         docker compose -f docker/graphiti/docker-compose.yml down
@@ -150,35 +211,89 @@ cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
-# Lanzar backend y frontend directamente (no via npm para preservar env vars)
-cd backend && uv run python run.py > "$PROJECT_ROOT/backend/logs/app.log" 2>&1 &
+# Lanzar backend con logs filtrados en vivo
+info "Iniciando backend..."
+
+cd backend
+# Backend escribe a app.log, monitoreamos ese archivo en background
+uv run python run.py > "$PROJECT_ROOT/backend/logs/app.log" 2>&1 &
 BACKEND_PID=$!
 cd "$PROJECT_ROOT"
 
+# Iniciar monitoreo de logs filtrados en vivo
+(
+    LOG_FILE="$PROJECT_ROOT/backend/logs/app.log"
+    
+    # Esperar a que el archivo exista
+    for i in $(seq 1 30); do
+        [ -s "$LOG_FILE" ] && break
+        ! kill -0 $BACKEND_PID 2>/dev/null && exit 0
+        sleep 0.2
+    done
+    
+    # Primero mostrar líneas ya escritas (startup que pasó mientras esperábamos)
+    if [ -s "$LOG_FILE" ]; then
+        grep -vE '^\d+\.\d+\.\d+\.\d+ .* "(GET|POST|PUT|DELETE) /api/' "$LOG_FILE" | while IFS= read -r line; do
+            if echo "$line" | grep -qiE "ERROR|Traceback|Exception|failed|Failed|Address already|refused"; then
+                echo -e "${RED}[Backend]${NC} $line"
+            elif echo "$line" | grep -qiE "WARNING"; then
+                echo -e "${YELLOW}[Backend]${NC} $line"
+            else
+                echo -e "${BLUE}[Backend]${NC} $line"
+            fi
+        done
+    fi
+    
+    # Luego hacer tail -f para líneas nuevas (se detiene cuando backend muere)
+    tail -f --pid=$BACKEND_PID "$LOG_FILE" 2>/dev/null | grep --line-buffered -vE '^\d+\.\d+\.\d+\.\d+ .* "(GET|POST|PUT|DELETE) /api/' | while IFS= read -r line; do
+        if echo "$line" | grep -qiE "ERROR|Traceback|Exception|failed|Failed|Address already|refused"; then
+            echo -e "${RED}[Backend]${NC} $line"
+        elif echo "$line" | grep -qiE "WARNING"; then
+            echo -e "${YELLOW}[Backend]${NC} $line"
+        else
+            echo -e "${BLUE}[Backend]${NC} $line"
+        fi
+    done
+) &
+BACKEND_LOG_PID=$!
+
+# Lanzar frontend (silencioso como antes)
 cd frontend && npx vite --host 0.0.0.0 --port 3000 > /dev/null 2>&1 &
 FRONTEND_PID=$!
 cd "$PROJECT_ROOT"
 
-# Esperar y verificar que levantaron
-sleep 5
-
+# Esperar y verificar que levantaron con health checks
 BACKEND_OK=false
 FRONTEND_OK=false
 
-if kill -0 $BACKEND_PID 2>/dev/null && lsof -i :5001 >/dev/null 2>&1; then
+info "Verificando servicios..."
+
+# Verificar backend (usar /health endpoint, no / que devuelve 404)
+if wait_for_service "Backend Flask" "http://localhost:5001/health" 30 1; then
     BACKEND_OK=true
+    # Detener monitoreo de logs - backend está UP
+    if [ -n "$BACKEND_LOG_PID" ] && kill -0 $BACKEND_LOG_PID 2>/dev/null; then
+        kill $BACKEND_LOG_PID 2>/dev/null || true
+    fi
+else
+    # Si backend falló, mostrar las últimas líneas de error
+    warn "Backend no respondió. Mostrando últimas líneas del log:"
+    if [ -f "$PROJECT_ROOT/backend/logs/app.log" ]; then
+        echo -e "${RED}$(tail -20 "$PROJECT_ROOT/backend/logs/app.log" | sed 's/^/  /')${NC}"
+    fi
 fi
 
-if kill -0 $FRONTEND_PID 2>/dev/null && lsof -i :3000 >/dev/null 2>&1; then
+# Verificar frontend
+if wait_for_service "Frontend Vite" "http://localhost:3000" 30 1; then
     FRONTEND_OK=true
+else
+    warn "Frontend no respondió, pero proceso sigue corriendo."
 fi
 
 if [ "$BACKEND_OK" = false ] && [ "$FRONTEND_OK" = false ]; then
-    error "MiroFish no pudo iniciar. Revisá los logs:"
+    error "MiroFish no pudo iniciar correctamente. Revisá los logs:"
     echo "  tail -20 backend/logs/app.log"
-    kill $BACKEND_PID 2>/dev/null || true
-    kill $FRONTEND_PID 2>/dev/null || true
-    [ "$NEO4J_STARTED" = true ] && docker compose -f docker/graphiti/docker-compose.yml down
+    cleanup
     exit 1
 fi
 
