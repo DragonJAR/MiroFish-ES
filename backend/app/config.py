@@ -4,7 +4,10 @@ Cargar configuración uniformemente desde el archivo .env en la raíz del proyec
 """
 
 import os
+import logging
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 # Cargar el archivo .env desde la raíz del proyecto
 # Ruta: MiroFish/.env (relativo a backend/app/config.py)
@@ -114,6 +117,9 @@ class Config:
                 errors.append("ZEP_API_KEY requerido para backend=zep")
         elif cls.MEMORY_BACKEND == "graphiti":
             if not cls.NEO4J_PASSWORD or cls.NEO4J_PASSWORD == "password":
-                errors.append("NEO4J_PASSWORD requerido para backend=graphiti")
+                logger.warning(
+                    "NEO4J_PASSWORD no configurado o usa valor por defecto 'password'. "
+                    "Se recomienda cambiarla en .env para producción."
+                )
 
         return errors

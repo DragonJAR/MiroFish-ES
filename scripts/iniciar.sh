@@ -6,9 +6,6 @@
 # Detiene con: Ctrl+C o ./scripts/detener.sh
 # ============================================
 
-set -e
-
-# Detectar project root (scripts/ está en la raíz)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_ROOT"
@@ -31,61 +28,84 @@ if [ ! -f .env ]; then
     exit 1
 fi
 
-# Leer MEMORY_BACKEND y NEO4J_PASSWORD del .env
+# Leer config del .env (sin exportar todavía)
 MEMORY_BACKEND=$(grep -E '^MEMORY_BACKEND=' .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
 NEO4J_PASSWORD=$(grep -E '^NEO4J_PASSWORD=' .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
+LLM_API_KEY=$(grep -E '^LLM_API_KEY=' .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
+LLM_BASE_URL=$(grep -E '^LLM_BASE_URL=' .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
+LLM_MODEL_NAME=$(grep -E '^LLM_MODEL_NAME=' .env 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'" | xargs)
 
 MEMORY_BACKEND="${MEMORY_BACKEND:-zep}"
 NEO4J_PASSWORD="${NEO4J_PASSWORD:-password}"
 
-# === CONFIGURACIÓN DE VARIABLES DE ENTORNO PARA GRAPHITI ===
-# Cargar variables desde .env
-export $(grep -v '^#' .env | grep -v '^$' | xargs)
+if [ -z "$LLM_API_KEY" ]; then
+    error "LLM_API_KEY no está configurada en .env"
+    exit 1
+fi
 
+# === EXPORTAR VARIABLES PARA PROCESOS HIJOS ===
+# Exportar TODO el .env al entorno (necesario para Graphiti OPENAI_*)
+set -a
+while IFS='=' read -r key value; do
+    # Solo exportar si tiene key y no es comentario/vacío
+    if [[ -n "$key" && ! "$key" =~ ^# && ! "$key" =~ ^[[:space:]] ]]; then
+        # Limpiar value de comillas
+        value="${value%\"}"
+        value="${value#\"}"
+        value="${value%\'}"
+        value="${value#\'}"
+        export "$key=$value"
+    fi
+done < <(grep -v '^#' .env | grep -v '^$' | grep -v '^ ')
+set +a
+
+# Para Graphiti, mapear LLM_* a OPENAI_* (Graphiti usa la SDK de OpenAI internamente)
 if [ "$MEMORY_BACKEND" = "graphiti" ]; then
-    info "Configurando variables de entorno para Graphiti..."
-    
-    # Graphiti usa OPENAI_* para el LLM (lee desde LLM_* del proyecto)
     export OPENAI_API_KEY="${LLM_API_KEY}"
     export OPENAI_BASE_URL="${LLM_BASE_URL}"
     export OPENAI_MODEL_NAME="${LLM_MODEL_NAME}"
-    
+    info "Configurando variables de entorno para Graphiti..."
     info "  OPENAI_API_KEY=****"
     info "  OPENAI_BASE_URL=${LLM_BASE_URL}"
     info "  OPENAI_MODEL_NAME=${LLM_MODEL_NAME}"
 else
-    info "Zep Cloud seleccionado - sin variables OPENAI_* adicionales"
+    info "Zep Cloud seleccionado"
 fi
 
-# === LIMPIEZA DE PROCESOS ANTERIORES ===
-log "Deteniendo procesos anteriores..."
-docker compose --profile graphiti down >/dev/null 2>&1 || true
-# Matar procesos npm/uvicorn que puedan quedar
-pkill -f "uvicorn.*run:app" 2>/dev/null || true
-pkill -f "vite.*--host" 2>/dev/null || true
-sleep 1
-
-# === BACKEND SELECTION ===
 info "Memory backend: $MEMORY_BACKEND"
 
+# === LIMPIEZA DE PUERTOS ===
+log "Limpiando procesos anteriores..."
+
+kill_port() {
+    local port=$1
+    local pids=$(lsof -ti :$port 2>/dev/null)
+    if [ -n "$pids" ]; then
+        warn "Puerto $port ocupado — matando proceso(es)..."
+        echo "$pids" | xargs kill -9 2>/dev/null || true
+        sleep 1
+    fi
+}
+
+kill_port 5001  # Backend Flask
+kill_port 3000  # Frontend Vite
+
+log "Puertos limpios"
+
+# === NEO4J (solo Graphiti) ===
 NEO4J_STARTED=false
 
 if [ "$MEMORY_BACKEND" = "graphiti" ]; then
-    # Verificar Docker disponible
     if ! command -v docker >/dev/null 2>&1; then
         error "Docker no está instalado. Necesario para Neo4j con Graphiti."
         exit 1
     fi
 
-    log "Iniciando Neo4j (Graphiti mode)..."
-
-    # Crear directorios de datos
-    mkdir -p backend/neo4j/data backend/neo4j/logs
-
-    # Verificar si ya está corriendo
-    if docker ps --format '{{.Names}}' | grep -q "^mirofish-neo4j$"; then
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^mirofish-neo4j$"; then
         warn "Neo4j ya está corriendo"
     else
+        log "Iniciando Neo4j..."
+        mkdir -p backend/neo4j/data backend/neo4j/logs
         docker compose -f docker/graphiti/docker-compose.yml up -d neo4j
 
         log "Esperando Neo4j (max 60s)..."
@@ -102,7 +122,7 @@ if [ "$MEMORY_BACKEND" = "graphiti" ]; then
         echo ""
 
         if [ $waited -ge 60 ]; then
-            error "Neo4j no respondió en 60s. Verifica logs: docker logs mirofish-neo4j"
+            error "Neo4j no respondió en 60s. Verifica: docker logs mirofish-neo4j"
             docker compose -f docker/graphiti/docker-compose.yml down
             exit 1
         fi
@@ -110,60 +130,72 @@ if [ "$MEMORY_BACKEND" = "graphiti" ]; then
         log "Neo4j listo (http://localhost:7474)"
         NEO4J_STARTED=true
     fi
-else
-    info "Zep Cloud seleccionado - sin Neo4j local"
 fi
 
-# === INICIAR MIROFISH LOCAL ===
-log "Iniciando MiroFish (local)..."
+# === INICIAR MIROFISH ===
+log "Iniciando MiroFish..."
 
 cleanup() {
     echo ""
     log "Deteniendo MiroFish..."
-
-    # Matar procesos hijos
-    pkill -f "uvicorn.*run:app" 2>/dev/null || true
-    pkill -f "vite.*--host" 2>/dev/null || true
-
-    # Detener Neo4j si lo iniciamos nosotros
+    kill_port 5001
+    kill_port 3000
     if [ "$NEO4J_STARTED" = true ]; then
         log "Deteniendo Neo4j..."
         docker compose -f docker/graphiti/docker-compose.yml down
     fi
-
     log "Listo!"
     exit 0
 }
 
 trap cleanup SIGINT SIGTERM
 
-# Iniciar con npm run dev (backend + frontend)
-npm run dev &
-APP_PID=$!
+# Lanzar backend y frontend directamente (no via npm para preservar env vars)
+cd backend && uv run python run.py > "$PROJECT_ROOT/backend/logs/app.log" 2>&1 &
+BACKEND_PID=$!
+cd "$PROJECT_ROOT"
 
-# Esperar un poco y verificar que arrancó
-sleep 3
-if ! kill -0 $APP_PID 2>/dev/null; then
-    error "MiroFish falló al iniciar. Verifica npm run dev"
-    [ "$NEO4J_STARTED" = true ] && docker compose --profile graphiti down
+cd frontend && npx vite --host 0.0.0.0 --port 3000 > /dev/null 2>&1 &
+FRONTEND_PID=$!
+cd "$PROJECT_ROOT"
+
+# Esperar y verificar que levantaron
+sleep 5
+
+BACKEND_OK=false
+FRONTEND_OK=false
+
+if kill -0 $BACKEND_PID 2>/dev/null && lsof -i :5001 >/dev/null 2>&1; then
+    BACKEND_OK=true
+fi
+
+if kill -0 $FRONTEND_PID 2>/dev/null && lsof -i :3000 >/dev/null 2>&1; then
+    FRONTEND_OK=true
+fi
+
+if [ "$BACKEND_OK" = false ] && [ "$FRONTEND_OK" = false ]; then
+    error "MiroFish no pudo iniciar. Revisá los logs:"
+    echo "  tail -20 backend/logs/app.log"
+    kill $BACKEND_PID 2>/dev/null || true
+    kill $FRONTEND_PID 2>/dev/null || true
+    [ "$NEO4J_STARTED" = true ] && docker compose -f docker/graphiti/docker-compose.yml down
     exit 1
 fi
 
 # === MOSTRAR INFO ===
 echo ""
 echo "=========================================="
-echo -e "  ${GREEN}MiroFish iniciado exitosamente${NC}"
+echo -e "  ${GREEN}MiroFish iniciado${NC}"
 echo "=========================================="
 echo ""
-echo -e "  Frontend:  ${BLUE}http://localhost:3000${NC}"
-echo -e "  Backend:   ${BLUE}http://localhost:5001${NC}"
+[ "$BACKEND_OK" = true ]  && echo -e "  Backend:   ${GREEN}✓${NC} ${BLUE}http://localhost:5001${NC}" || echo -e "  Backend:   ${RED}✗${NC} puerto 5001"
+[ "$FRONTEND_OK" = true ] && echo -e "  Frontend:  ${GREEN}✓${NC} ${BLUE}http://localhost:3000${NC}" || echo -e "  Frontend:  ${RED}✗${NC} puerto 3000"
 echo -e "  Memory:    ${BLUE}$MEMORY_BACKEND${NC}"
-if [ "$MEMORY_BACKEND" = "graphiti" ]; then
-    echo -e "  Neo4j UI:  ${BLUE}http://localhost:7474${NC}"
-fi
+[ "$MEMORY_BACKEND" = "graphiti" ] && echo -e "  Neo4j UI:  ${BLUE}http://localhost:7474${NC}"
 echo ""
+echo -e "  Logs:      ${BLUE}backend/logs/app.log${NC}"
 echo -e "  Para detener: ${YELLOW}Ctrl+C${NC} o ${YELLOW}./scripts/detener.sh${NC}"
 echo ""
 
 # Mantener vivo hasta Ctrl+C
-wait $APP_PID
+wait $BACKEND_PID $FRONTEND_PID

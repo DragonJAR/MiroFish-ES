@@ -46,6 +46,23 @@ def create_app(config_class=Config):
     from .services.simulation_runner import SimulationRunner
 
     SimulationRunner.register_cleanup()
+
+    # Inicializar backend de memoria en main thread (evita meta tensor error
+    # de PyTorch cuando Graphiti carga HuggingFaceEmbedder desde un thread).
+    # SIEMPRE correr, sin importar debug mode — el proceso que sirve requests
+    # necesita el embedder cargado en su propio thread.
+    from .memory import get_memory_backend
+
+    try:
+        backend = get_memory_backend()
+        # Forzar inicialización completa (incluye HuggingFaceEmbedder)
+        if hasattr(backend, "_get_graphiti"):
+            backend._get_graphiti()
+    except Exception as e:
+        # Bug 4 fix: log the error instead of silently swallowing it
+        logger = get_logger("mirofish.app")
+        logger.error(f"Failed to initialize Graphiti backend: {e}", exc_info=True)
+
     if should_log_startup:
         logger.info("Funcion de limpieza de procesos registrada")
 

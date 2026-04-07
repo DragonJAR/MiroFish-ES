@@ -52,7 +52,7 @@ def _get_shared_loop():
     return _loop
 
 
-def _run_async(coro, timeout: float = 60.0):
+def _run_async(coro, timeout: float = 600.0):
     """
     Ejecutar coroutine async en contexto sync.
 
@@ -190,10 +190,80 @@ class GraphitiBackend(MemoryBackend):
             try:
                 graphiti = self._get_graphiti()
                 _run_async(graphiti.build_indices_and_constraints())
+
+                # =========================================================
+                # ÍNDICES VECTORIALES NECESARIOS PARA Neo4j 5 Community
+                # =========================================================
+                # Graphiti internamente usa vector.similarity.cosine() para
+                # deduplicar entidades en add_episode(). Neo4j 5 Community
+                # requiere un VECTOR INDEX en la propiedad para que
+                # vector.similarity.cosine() funcione con LIST<FLOAT>.
+                # Sin este índice, add_episode() falla con:
+                # "Invalid input for 'vector.similarity.cosine()':
+                #  Argument b is not a valid vector"
+                #
+                # Graphiti.build_indices_and_constraints() NO crea este índice.
+                self._create_vector_index(graphiti)
+
                 self._indices_built = True
                 logger.info("Índices de Graphiti construidos")
             except Exception as e:
                 logger.warning(f"No se pudieron construir índices: {e}")
+
+    def _create_vector_index(self, graphiti):
+        """
+        Crear índice vectorial en Entity.name_embedding.
+
+        Neo4j 5 Community necesita un vector index para que
+        vector.similarity.cosine() funcione correctamente.
+
+        El índice se crea con:
+        - Nombre: entity_name_embedding_idx
+        - Solo en nodos Entity
+        - Propiedad: name_embedding
+        - Dimensión: según HF_EMBEDDING_MODEL (default all-MiniLM-L6-v2=384)
+        - Función: cosine
+        """
+        import os
+
+        try:
+            # Obtener dimensión del embedding desde el modelo configurado
+            from .hf_embedder import HuggingFaceEmbedder
+
+            model_name = os.environ.get("HF_EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+            dim = HuggingFaceEmbedder.MODELS.get(model_name, 384)
+
+            # Cypher para crear el índice vectorial con sintaxis de procedimiento
+            # Neo4j 5.26+ requiere CALL db.index.vector.createNodeIndex(...) en lugar
+            # de la sintaxis declarativa CREATE VECTOR INDEX ... OPTIONS
+            cypher = f"""CALL db.index.vector.createNodeIndex(
+              'entity_name_embedding_idx',
+              'Entity',
+              'name_embedding',
+              {dim},
+              'cosine'
+            )"""
+
+            _run_async(graphiti.driver.execute_query(cypher))
+            logger.info(
+                f"Índice vectorial entity_name_embedding_idx creado (dim={dim})"
+            )
+
+        except Exception as e:
+            # Bug B fix: Handle "index already exists" error specifically
+            error_str = str(e)
+            if (
+                "EquivalentSchemaRuleAlreadyExistsException" in error_str
+                or "already exists" in error_str.lower()
+            ):
+                index_name = "entity_name_embedding_idx"
+                logger.info(
+                    f"Vector index '{index_name}' ya existe, omitiendo creación"
+                )
+                return True
+            # No crashar si el índice no se puede crear
+            # (puede fallar si Neo4j no soporta la sintaxis o hay otro error)
+            logger.warning(f"No se pudo crear índice vectorial: {e}")
 
     def search(
         self,
@@ -203,9 +273,10 @@ class GraphitiBackend(MemoryBackend):
         limit: int = 10,
     ) -> SearchResult:
         """
-        Búsqueda en el grafo Graphiti usando search()
+        Búsqueda en el grafo Graphiti usando search().
 
-        v0.28.x usa group_ids (plural) y retorna EntityEdge objects
+        EntityEdge solo tiene source_node_uuid/target_node_uuid (strings),
+        NO objetos nodo. Obtenemos nombres via Cypher JOIN.
         """
         logger.info(
             f"Búsqueda Graphiti: graph_id={graph_id}, query={query[:50]}..., mode={mode}"
@@ -215,7 +286,6 @@ class GraphitiBackend(MemoryBackend):
             self._ensure_indices()
             graphiti = self._get_graphiti()
 
-            # v0.28.x: search() usa group_ids (plural, lista)
             search_results = _run_async(
                 graphiti.search(
                     query=query,
@@ -226,53 +296,67 @@ class GraphitiBackend(MemoryBackend):
 
             facts = []
             edges = []
+            seen_node_uuids = set()
             nodes = []
 
-            # Parsear EntityEdge results de v0.28.x
+            # Recopilar todos los UUIDs de nodos que necesitamos resolver
             for edge in search_results:
                 fact = getattr(edge, "fact", "")
                 if fact:
                     facts.append(fact)
 
-                # Extraer nodos fuente y destino
-                source = getattr(edge, "source_node", None)
-                target = getattr(edge, "target_node", None)
-
-                if source:
-                    nodes.append(
-                        {
-                            "uuid": getattr(source, "uuid", ""),
-                            "name": getattr(source, "name", ""),
-                            "labels": getattr(source, "labels", []),
-                            "summary": getattr(source, "summary", ""),
-                        }
-                    )
-
-                if target:
-                    nodes.append(
-                        {
-                            "uuid": getattr(target, "uuid", ""),
-                            "name": getattr(target, "name", ""),
-                            "labels": getattr(target, "labels", []),
-                            "summary": getattr(target, "summary", ""),
-                        }
-                    )
+                src_uuid = getattr(edge, "source_node_uuid", "")
+                tgt_uuid = getattr(edge, "target_node_uuid", "")
+                if src_uuid:
+                    seen_node_uuids.add(src_uuid)
+                if tgt_uuid:
+                    seen_node_uuids.add(tgt_uuid)
 
                 edges.append(
                     {
                         "uuid": getattr(edge, "uuid", ""),
                         "name": getattr(edge, "name", ""),
                         "fact": fact,
-                        "source_node_uuid": getattr(source, "uuid", "")
-                        if source
-                        else "",
-                        "target_node_uuid": getattr(target, "uuid", "")
-                        if target
-                        else "",
+                        "source_node_uuid": src_uuid,
+                        "target_node_uuid": tgt_uuid,
                     }
                 )
 
-            logger.info(f"Búsqueda completada: {len(facts)} hechos encontrados")
+            # Resolver nombres de nodos en batch via Cypher (una sola query)
+            if seen_node_uuids:
+                uuid_list = list(seen_node_uuids)
+                node_query = """
+                MATCH (n:Entity)
+                WHERE n.uuid IN $uuids
+                RETURN n.uuid AS uuid, n.name AS name,
+                       labels(n) AS labels,
+                       n.summary AS summary
+                """
+                node_result = _run_async(
+                    graphiti.driver.execute_query(node_query, uuids=uuid_list)
+                )
+                node_map = {}
+                for record in node_result.records:
+                    node_map[record["uuid"]] = record
+
+                # Bug 3 fix: deduplicate nodes — same UUID can appear as source and target
+                nodes_seen = set()
+                for edge_dict in edges:
+                    for key in ["source_node_uuid", "target_node_uuid"]:
+                        uuid = edge_dict[key]
+                        if uuid in node_map and uuid not in nodes_seen:
+                            r = node_map[uuid]
+                            nodes.append(
+                                {
+                                    "uuid": r["uuid"],
+                                    "name": r["name"],
+                                    "labels": r.get("labels", []),
+                                    "summary": r.get("summary", ""),
+                                }
+                            )
+                            nodes_seen.add(uuid)
+
+            logger.info(f"Búsqueda completada: {len(facts)} hechos, {len(nodes)} nodos")
 
             return SearchResult(
                 facts=facts,
@@ -295,9 +379,11 @@ class GraphitiBackend(MemoryBackend):
         enrich_with_edges: bool = True,
     ) -> List[EntityNode]:
         """
-        Obtener entidades del grafo Graphiti via search()
+        Obtener entidades del grafo Graphiti via Cypher directo.
 
-        v0.28.x no tiene graphiti.nodes.* — usamos search_() con config de nodos
+        Graphiti v0.28.x NO usa labels de entity_type en Neo4j (solo pone "Entity").
+        Por eso no filtramos por custom_labels — retornamos TODOS los nodos Entity
+        del grupo y usamos "Entity" como entity_type.
         """
         logger.info(f"Obteniendo entidades de grafo {graph_id}...")
 
@@ -305,41 +391,108 @@ class GraphitiBackend(MemoryBackend):
             self._ensure_indices()
             graphiti = self._get_graphiti()
 
-            from graphiti_core.search.search_config_recipes import (
-                NODE_HYBRID_SEARCH_RRF,
+            # Query 1: Get all entities
+            query_entities = """
+            MATCH (n:Entity {group_id: $group_id})
+            RETURN n.uuid AS uuid, n.name AS name, labels(n) AS labels,
+                   n.summary AS summary, n.created_at AS created_at,
+                   properties(n) AS attributes
+            """
+
+            result = _run_async(
+                graphiti.driver.execute_query(query_entities, group_id=graph_id)
             )
 
-            # Usar recipe de búsqueda de nodos con group_ids
-            node_config = NODE_HYBRID_SEARCH_RRF.model_copy(deep=True)
-            node_config.limit = 100 if not entity_types else 50
+            # Build UUID → entity map
+            entity_map = {}
+            for record in result.records:
+                entity_map[record["uuid"]] = {
+                    "uuid": record.get("uuid", ""),
+                    "name": record.get("name", ""),
+                    "labels": record.get("labels", []) or [],
+                    "summary": record.get("summary", ""),
+                    "attributes": record.get("attributes", {}),
+                }
 
-            results = _run_async(
-                graphiti._search(
-                    query=graph_id,
-                    config=node_config,
-                    group_ids=[graph_id],
+            # Query 2: Get all edges between entities in this group
+            query_edges = """
+            MATCH (src:Entity {group_id: $group_id})-[r]-(tgt:Entity {group_id: $group_id})
+            RETURN src.uuid AS source_uuid, tgt.uuid AS target_uuid,
+                   type(r) AS edge_name,
+                   properties(r) AS rel_props
+            """
+
+            try:
+                edge_result = _run_async(
+                    graphiti.driver.execute_query(query_edges, group_id=graph_id)
                 )
-            )
 
+                # Build adjacency: uuid → list of {source_uuid, target_uuid, edge_name, direction}
+                outgoing = {}  # source_uuid → [edges]
+                incoming = {}  # target_uuid → [edges]
+
+                for rec in edge_result.records:
+                    src = rec.get("source_uuid", "")
+                    tgt = rec.get("target_uuid", "")
+                    ename = rec.get("edge_name", "") or ""
+                    rprops = rec.get("rel_props") or {}
+                    fact = rprops.get("fact", "")
+
+                    edge_out = {
+                        "fact": fact,
+                        "edge_name": ename,
+                        "direction": "outgoing",
+                        "target_uuid": tgt,
+                    }
+                    edge_in = {
+                        "fact": fact,
+                        "edge_name": ename,
+                        "direction": "incoming",
+                        "source_uuid": src,
+                    }
+
+                    outgoing.setdefault(src, []).append(edge_out)
+                    incoming.setdefault(tgt, []).append(edge_in)
+            except Exception as e:
+                logger.warning(f"No se pudieron obtener edges: {e}")
+                outgoing = {}
+                incoming = {}
+
+            # Build EntityNode objects with populated related_edges and related_nodes
             entities = []
-            for node in results.nodes:
-                labels = getattr(node, "labels", [])
-                custom_labels = [l for l in labels if l not in ["Entity", "Node"]]
+            for uuid, data in entity_map.items():
+                # Collect related edges (outgoing + incoming)
+                rel_edges = outgoing.get(uuid, []) + incoming.get(uuid, [])
 
-                if not custom_labels:
-                    continue
-
-                if entity_types:
-                    matching = [l for l in custom_labels if l in entity_types]
-                    if not matching:
-                        continue
+                # Collect related nodes (unique, excluding self)
+                seen_nodes = set()
+                rel_nodes = []
+                for edge in rel_edges:
+                    other_uuid = edge.get("target_uuid") or edge.get("source_uuid", "")
+                    if (
+                        other_uuid
+                        and other_uuid != uuid
+                        and other_uuid not in seen_nodes
+                    ):
+                        seen_nodes.add(other_uuid)
+                        other = entity_map.get(other_uuid)
+                        if other:
+                            rel_nodes.append(
+                                {
+                                    "name": other["name"],
+                                    "labels": other["labels"],
+                                    "summary": other["summary"],
+                                }
+                            )
 
                 entity = EntityNode(
-                    uuid=getattr(node, "uuid", ""),
-                    name=getattr(node, "name", ""),
-                    labels=labels,
-                    summary=getattr(node, "summary", ""),
-                    attributes=getattr(node, "attributes", {}),
+                    uuid=data["uuid"],
+                    name=data["name"],
+                    labels=data["labels"],
+                    summary=data["summary"],
+                    attributes=data["attributes"],
+                    related_edges=rel_edges,
+                    related_nodes=rel_nodes,
                 )
                 entities.append(entity)
 
@@ -356,41 +509,38 @@ class GraphitiBackend(MemoryBackend):
         uuid: str,
     ) -> Optional[EntityNode]:
         """
-        Obtener una entidad por UUID via search()
+        Obtener una entidad por UUID via Cypher directo.
 
-        v0.28.x no tiene graphiti.nodes.get() — usamos búsqueda directa
+        NOTA: graphiti._search() usa vector.similarity.cosine() que NO funciona
+        en Neo4j 5 Community. Usamos Cypher directo para evitar el problema.
         """
         try:
             self._ensure_indices()
             graphiti = self._get_graphiti()
 
-            from graphiti_core.search.search_config_recipes import (
-                NODE_HYBRID_SEARCH_RRF,
+            # Cypher directo para obtener entidad por uuid
+            query = """
+            MATCH (n:Entity {group_id: $group_id, uuid: $uuid})
+            RETURN n.uuid AS uuid, n.name AS name, labels(n) AS labels,
+                   n.summary AS summary, n.created_at AS created_at,
+                   properties(n) AS attributes
+            """
+
+            result = _run_async(
+                graphiti.driver.execute_query(query, group_id=graph_id, uuid=uuid)
             )
 
-            node_config = NODE_HYBRID_SEARCH_RRF.model_copy(deep=True)
-            node_config.limit = 1
+            record = result.records[0] if result.records else None
+            if not record:
+                return None
 
-            # Buscar nodos que coincidan con el UUID
-            results = _run_async(
-                graphiti._search(
-                    query=uuid,
-                    config=node_config,
-                    group_ids=[graph_id],
-                )
+            return EntityNode(
+                uuid=record.get("uuid", ""),
+                name=record.get("name", ""),
+                labels=record.get("labels", []),
+                summary=record.get("summary", ""),
+                attributes=record.get("attributes", {}),
             )
-
-            for node in results.nodes:
-                if getattr(node, "uuid", "") == uuid:
-                    return EntityNode(
-                        uuid=getattr(node, "uuid", ""),
-                        name=getattr(node, "name", ""),
-                        labels=getattr(node, "labels", []),
-                        summary=getattr(node, "summary", ""),
-                        attributes=getattr(node, "attributes", {}),
-                    )
-
-            return None
 
         except Exception as e:
             logger.error(f"Error al obtener entidad {uuid}: {str(e)}")
@@ -403,9 +553,11 @@ class GraphitiBackend(MemoryBackend):
         include_temporal: bool = True,
     ) -> List[Dict[str, Any]]:
         """
-        Obtener bordes del grafo Graphiti via search()
+        Obtener bordes del grafo Graphiti via Cypher directo.
 
-        v0.28.x no tiene graphiti.edges.* — usamos search()
+        NOTA: graphiti.search() y graphiti._search() usan vector.similarity.cosine()
+        que NO funciona en Neo4j 5 Community. Usamos Cypher directo para evitar
+        el problema y obtener todos los bordes RELATES_TO del grupo.
         """
         logger.info(f"Obteniendo bordes de grafo {graph_id}...")
 
@@ -413,41 +565,47 @@ class GraphitiBackend(MemoryBackend):
             self._ensure_indices()
             graphiti = self._get_graphiti()
 
-            # Buscar todo en el grupo (sin query específico usa BFS)
-            search_results = _run_async(
-                graphiti.search(
-                    query="*",
-                    group_ids=[graph_id],
-                    num_results=100,
-                )
-            )
+            # Cypher directo para obtener todas las relaciones RELATES_TO del grupo
+            # Incluye nombres de nodos source/target via MATCH
+            query = """
+            MATCH (source:Entity {group_id: $group_id})-[r:RELATES_TO]->(target:Entity {group_id: $group_id})
+            RETURN r.uuid AS uuid, r.name AS name, r.fact AS fact,
+                   source.uuid AS source_node_uuid, source.name AS source_node_name,
+                   target.uuid AS target_node_uuid, target.name AS target_node_name,
+                   r.created_at AS created_at, r.valid_at AS valid_at, r.invalid_at AS invalid_at,
+                   properties(r) AS attributes
+            """
+
+            result = _run_async(graphiti.driver.execute_query(query, group_id=graph_id))
 
             edges_data = []
-            for edge in search_results:
-                source = getattr(edge, "source_node", None)
-                target = getattr(edge, "target_node", None)
-
-                edge_dict = {
-                    "uuid": getattr(edge, "uuid", ""),
-                    "name": getattr(edge, "name", ""),
-                    "fact": getattr(edge, "fact", ""),
-                    "source_node_uuid": getattr(source, "uuid", "") if source else "",
-                    "target_node_uuid": getattr(target, "uuid", "") if target else "",
-                    "attributes": getattr(edge, "attributes", {}),
-                }
-
-                if include_temporal:
-                    edge_dict["created_at"] = getattr(edge, "created_at", None)
-                    edge_dict["valid_at"] = getattr(edge, "valid_at", None)
-                    edge_dict["invalid_at"] = getattr(edge, "invalid_at", None)
+            for record in result.records:
+                source_node_uuid = record.get("source_node_uuid", "")
+                target_node_uuid = record.get("target_node_uuid", "")
 
                 # Filtrar por entity_uuid si se proporciona
                 if entity_uuid:
                     if (
-                        edge_dict["source_node_uuid"] != entity_uuid
-                        and edge_dict["target_node_uuid"] != entity_uuid
+                        source_node_uuid != entity_uuid
+                        and target_node_uuid != entity_uuid
                     ):
                         continue
+
+                edge_dict = {
+                    "uuid": record.get("uuid", ""),
+                    "name": record.get("name", ""),
+                    "fact": record.get("fact", ""),
+                    "source_node_uuid": source_node_uuid,
+                    "source_node_name": record.get("source_node_name", ""),
+                    "target_node_uuid": target_node_uuid,
+                    "target_node_name": record.get("target_node_name", ""),
+                    "attributes": record.get("attributes", {}),
+                }
+
+                if include_temporal:
+                    edge_dict["created_at"] = record.get("created_at", None)
+                    edge_dict["valid_at"] = record.get("valid_at", None)
+                    edge_dict["invalid_at"] = record.get("invalid_at", None)
 
                 edges_data.append(edge_dict)
 
@@ -474,47 +632,62 @@ class GraphitiBackend(MemoryBackend):
         """
         logger.info(f"Agregando episodio a grafo {graph_id}...")
 
-        try:
-            self._ensure_indices()
-            graphiti = self._get_graphiti()
+        max_timeout_retries = 2
+        last_error = None
+        for timeout_attempt in range(max_timeout_retries + 1):
+            try:
+                self._ensure_indices()
+                graphiti = self._get_graphiti()
 
-            from graphiti_core.nodes import EpisodeType
+                from graphiti_core.nodes import EpisodeType
 
-            # Convertir reference_time a datetime si es string
-            ref_time = None
-            if reference_time:
-                try:
-                    ref_time = datetime.fromisoformat(reference_time)
-                    if ref_time.tzinfo is None:
-                        ref_time = ref_time.replace(tzinfo=timezone.utc)
-                except (ValueError, TypeError):
-                    ref_time = datetime.now(timezone.utc)
+                # Convertir reference_time a datetime si es string
+                ref_time = None
+                if reference_time:
+                    try:
+                        ref_time = datetime.fromisoformat(reference_time)
+                        if ref_time.tzinfo is None:
+                            ref_time = ref_time.replace(tzinfo=timezone.utc)
+                    except (ValueError, TypeError):
+                        ref_time = datetime.now(timezone.utc)
 
-            episode_name = name or f"Episode_{ref_time or 'now'}"
+                episode_name = name or f"Episode_{ref_time or 'now'}"
 
-            result = _run_async(
-                graphiti.add_episode(
-                    name=episode_name,
-                    episode_body=content,
-                    source_description=source_type,
-                    reference_time=ref_time or datetime.now(timezone.utc),
-                    source=EpisodeType.message,
-                    group_id=graph_id,
+                result = _run_async(
+                    graphiti.add_episode(
+                        name=episode_name,
+                        episode_body=content,
+                        source_description=source_type,
+                        reference_time=ref_time or datetime.now(timezone.utc),
+                        source=EpisodeType.message,
+                        group_id=graph_id,
+                    )
                 )
-            )
 
-            episode_uuid = getattr(result, "uuid", "")
+                episode_uuid = getattr(result, "uuid", "")
 
-            logger.info(f"Episodio agregado: {episode_uuid}")
+                logger.info(f"Episodio agregado: {episode_uuid}")
 
-            return EpisodeResult(
-                episode_uuid=episode_uuid,
-                status="completed",
-            )
+                return EpisodeResult(
+                    episode_uuid=episode_uuid,
+                    status="completed",
+                )
 
-        except Exception as e:
-            logger.error(f"Error al agregar episodio: {str(e)}")
-            raise
+            except TimeoutError as e:
+                last_error = e
+                if timeout_attempt < max_timeout_retries:
+                    logger.warning(
+                        f"Timeout al agregar episodio (intento {timeout_attempt + 1}/{max_timeout_retries + 1}), reintentando..."
+                    )
+                    continue
+                logger.error(
+                    f"Timeout después de {max_timeout_retries + 1} intentos: {e}"
+                )
+                raise
+
+            except Exception as e:
+                logger.error(f"Error al agregar episodio: {str(e)}")
+                raise
 
     def create_graph(
         self,
@@ -548,7 +721,7 @@ class GraphitiBackend(MemoryBackend):
             MATCH (n {group_id: $group_id})
             DETACH DELETE n
             """
-            _run_async(graphiti._driver.execute_query(query, {"group_id": graph_id}))
+            _run_async(graphiti.driver.execute_query(query, group_id=graph_id))
 
             logger.info(f"Grafo eliminado: {graph_id}")
             return True

@@ -6,6 +6,7 @@ Utiliza formato OpenAI para todas las llamadas
 import json
 import re
 import time
+import json_repair
 from typing import Optional, Dict, Any, List
 from openai import OpenAI
 from openai import RateLimitError, APIError, Timeout
@@ -227,4 +228,23 @@ class LLMClient:
         try:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
-            raise ValueError(f"El JSON devuelto por el LLM es invalido: {cleaned_response}")
+            try:
+                # First attempt: strict mode — only fix syntax errors
+                repaired = json_repair.loads(cleaned_response, strict=True)
+                return repaired
+            except Exception:
+                try:
+                    # Second attempt: lenient mode — may restructure
+                    # Use with caution as it can change JSON semantics
+                    import logging as _log
+
+                    _log.getLogger(__name__).warning(
+                        f"JSON repair strict mode failed, trying lenient. "
+                        f"First 200 chars: {cleaned_response[:200]}"
+                    )
+                    repaired = json_repair.loads(cleaned_response, strict=False)
+                    return repaired
+                except Exception:
+                    raise ValueError(
+                        f"El JSON devuelto por el LLM es invalido (tampoco se pudo reparar): {cleaned_response}"
+                    )

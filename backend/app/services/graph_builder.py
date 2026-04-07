@@ -371,12 +371,71 @@ class GraphBuilderService:
                         if ep_uuid:
                             episode_uuids.append(ep_uuid)
 
-                time.sleep(1)
+                time.sleep(3)  # Espera entre lotes para evitar rate limits del LLM
 
             except Exception as e:
-                if progress_callback:
-                    progress_callback(f"Error al enviar lote {batch_num}: {str(e)}", 0)
-                raise
+                error_msg = str(e)
+                # Retry con exponential backoff para rate limits (429)
+                if "429" in error_msg or "rate limit" in error_msg.lower():
+                    max_retries = 5
+                    for attempt in range(max_retries):
+                        wait_time = 60 * (2**attempt)  # 60s, 120s, 240s, 480s, 960s
+                        logger.warning(
+                            f"Rate limit en lote {batch_num}, reintentando en {wait_time}s "
+                            f"(intento {attempt + 1}/{max_retries})..."
+                        )
+                        if progress_callback:
+                            progress_callback(
+                                f"Rate limit — esperando {wait_time}s antes de reintentar lote {batch_num}...",
+                                i / total_chunks,
+                            )
+                        time.sleep(wait_time)
+                        try:
+                            batch_result = []
+                            for idx, chunk in enumerate(batch_chunks):
+                                result = self.backend.add_episode(
+                                    graph_id=graph_id,
+                                    content=chunk,
+                                    reference_time=datetime.now(timezone.utc),
+                                    name=f"chunk-{i + idx}",
+                                    source_type="text",
+                                )
+                                batch_result.append(result)
+                            if batch_result and isinstance(batch_result, list):
+                                for ep in batch_result:
+                                    ep_uuid = (
+                                        getattr(ep, "episode_uuid", None)
+                                        or getattr(ep, "uuid_", None)
+                                        or getattr(ep, "uuid", None)
+                                    )
+                                    if ep_uuid:
+                                        episode_uuids.append(ep_uuid)
+                            logger.info(f"Lote {batch_num} reintentado exitosamente")
+                            break
+                        except Exception as retry_e:
+                            if (
+                                "429" not in str(retry_e)
+                                and "rate limit" not in str(retry_e).lower()
+                            ):
+                                if progress_callback:
+                                    progress_callback(
+                                        f"Error al enviar lote {batch_num}: {str(retry_e)}",
+                                        0,
+                                    )
+                                raise
+                            if attempt == max_retries - 1:
+                                if progress_callback:
+                                    progress_callback(
+                                        f"Error al enviar lote {batch_num}: rate limit persistente después de {max_retries} intentos",
+                                        0,
+                                    )
+                                raise
+                else:
+                    if progress_callback:
+                        progress_callback(
+                            f"Error al enviar lote {batch_num}: {error_msg}", 0
+                        )
+                    raise
 
         return episode_uuids
 
