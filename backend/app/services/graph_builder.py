@@ -570,39 +570,75 @@ class GraphBuilderService:
 
         edges_data = []
         for edge in edges:
-            created_at = getattr(edge, "created_at", None)
-            valid_at = getattr(edge, "valid_at", None)
-            invalid_at = getattr(edge, "invalid_at", None)
-            expired_at = getattr(edge, "expired_at", None)
+            if isinstance(edge, dict):
+                src_uuid = edge.get("source_node_uuid", "")
+                tgt_uuid = edge.get("target_node_uuid", "")
+                edges_data.append(
+                    {
+                        "uuid": edge.get("uuid", ""),
+                        "name": edge.get("name", ""),
+                        "fact": edge.get("fact", "") or edge.get("name", ""),
+                        "fact_type": edge.get("fact_type", None)
+                        or edge.get("name", ""),
+                        "source_node_uuid": src_uuid,
+                        "target_node_uuid": tgt_uuid,
+                        "source_node_name": edge.get("source_node_name", "")
+                        or node_map.get(src_uuid, ""),
+                        "target_node_name": edge.get("target_node_name", "")
+                        or node_map.get(tgt_uuid, ""),
+                        "attributes": edge.get("attributes", {}) or {},
+                        "created_at": str(edge["created_at"])
+                        if edge.get("created_at")
+                        else None,
+                        "valid_at": str(edge["valid_at"])
+                        if edge.get("valid_at")
+                        else None,
+                        "invalid_at": str(edge["invalid_at"])
+                        if edge.get("invalid_at")
+                        else None,
+                        "expired_at": str(edge["expired_at"])
+                        if edge.get("expired_at")
+                        else None,
+                        "episodes": edge.get("episodes", []) or [],
+                    }
+                )
+            else:
+                created_at = getattr(edge, "created_at", None)
+                valid_at = getattr(edge, "valid_at", None)
+                invalid_at = getattr(edge, "invalid_at", None)
+                expired_at = getattr(edge, "expired_at", None)
 
-            episodes = getattr(edge, "episodes", None) or getattr(
-                edge, "episode_ids", None
-            )
-            if episodes and not isinstance(episodes, list):
-                episodes = [str(episodes)]
-            elif episodes:
-                episodes = [str(e) for e in episodes]
+                episodes = getattr(edge, "episodes", None) or getattr(
+                    edge, "episode_ids", None
+                )
+                if episodes and not isinstance(episodes, list):
+                    episodes = [str(episodes)]
+                elif episodes:
+                    episodes = [str(e) for e in episodes]
 
-            fact_type = getattr(edge, "fact_type", None) or edge.name or ""
+                fact_type = getattr(edge, "fact_type", None) or edge.name or ""
+                src_uuid = getattr(edge, "source_node_uuid", "")
+                tgt_uuid = getattr(edge, "target_node_uuid", "")
 
-            edges_data.append(
-                {
-                    "uuid": getattr(edge, "uuid_", None) or getattr(edge, "uuid", ""),
-                    "name": edge.name or "",
-                    "fact": getattr(edge, "fact", "") or getattr(edge, "name", ""),
-                    "fact_type": fact_type,
-                    "source_node_uuid": edge.source_node_uuid,
-                    "target_node_uuid": edge.target_node_uuid,
-                    "source_node_name": node_map.get(edge.source_node_uuid, ""),
-                    "target_node_name": node_map.get(edge.target_node_uuid, ""),
-                    "attributes": edge.attributes or {},
-                    "created_at": str(created_at) if created_at else None,
-                    "valid_at": str(valid_at) if valid_at else None,
-                    "invalid_at": str(invalid_at) if invalid_at else None,
-                    "expired_at": str(expired_at) if expired_at else None,
-                    "episodes": episodes or [],
-                }
-            )
+                edges_data.append(
+                    {
+                        "uuid": getattr(edge, "uuid_", None)
+                        or getattr(edge, "uuid", ""),
+                        "name": edge.name or "",
+                        "fact": getattr(edge, "fact", "") or getattr(edge, "name", ""),
+                        "fact_type": fact_type,
+                        "source_node_uuid": src_uuid,
+                        "target_node_uuid": tgt_uuid,
+                        "source_node_name": node_map.get(src_uuid, ""),
+                        "target_node_name": node_map.get(tgt_uuid, ""),
+                        "attributes": edge.attributes or {},
+                        "created_at": str(created_at) if created_at else None,
+                        "valid_at": str(valid_at) if valid_at else None,
+                        "invalid_at": str(invalid_at) if invalid_at else None,
+                        "expired_at": str(expired_at) if expired_at else None,
+                        "episodes": episodes or [],
+                    }
+                )
 
         return {
             "graph_id": graph_id,
