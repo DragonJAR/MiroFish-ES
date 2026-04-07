@@ -564,8 +564,7 @@ class GraphitiBackend(MemoryBackend):
 
             if not result or not result.records:
                 return None
-            if not record:
-                return None
+            record = result.records[0]
 
             return EntityNode(
                 uuid=record.get("uuid", ""),
