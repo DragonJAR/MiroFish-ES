@@ -92,9 +92,9 @@ const viewMode = ref('split')
 
 // Data State
 const currentSimulationId = ref(route.params.simulationId)
-// 直接在Inicializando时从 query 参数获取 maxRounds，确保子组件能立即获取到值
+// Obtener maxRounds directamente desde query params durante la inicialización, asegurando que los componentes hijos puedan obtener el valor inmediatamente
 const maxRounds = ref(route.query.maxRounds ? parseInt(route.query.maxRounds) : null)
-const minutesPerRound = ref(30) // 默认每rondas30minutos
+const minutesPerRound = ref(30) // Por defecto 30 minutos por ronda
 const projectData = ref(null)
 const graphData = ref(null)
 const graphLoading = ref(false)
@@ -150,14 +150,14 @@ const toggleMaximize = (target) => {
 }
 
 const handleGoBack = async () => {
-  // 在Volver Step 2 之前，先Cerrar正在运行的模拟
+  // Antes de volver a Step 2, primero cerrar la simulación en ejecución
   addLog(t('log.preparingGoBack'))
   
-  // 停止rondas询
+  // Detener actualización de rondas
   stopGraphRefresh()
   
   try {
-    // 先尝试优雅Cerrar模拟环境
+    // Primero intentar cerrar el entorno de simulación de forma elegante
     const envStatusRes = await getEnvStatus({ simulation_id: currentSimulationId.value })
     
     if (envStatusRes.success && envStatusRes.data?.env_alive) {
@@ -178,7 +178,7 @@ const handleGoBack = async () => {
         }
       }
     } else {
-      // 环境未运行，检查是否需要停止进程
+      // Entorno no está en ejecución, verificar si es necesario detener el proceso
       if (isSimulating.value) {
         addLog(t('log.stoppingSimProcess'))
         try {
@@ -193,13 +193,13 @@ const handleGoBack = async () => {
     addLog(t('log.checkStatusFailed', { error: err.message }))
   }
   
-  // Volver到 Step 2 (Configuración del entorno)
+  // Volver a Step 2 (Configuración del entorno)
   router.push({ name: 'Simulation', params: { simulationId: currentSimulationId.value } })
 }
 
 const handleNextStep = () => {
-  // Step3Simulation 组件会直接处理Generación de informes和路由跳转
-  // 这elementos方法仅作为备用
+  // El componente Step3Simulation manejará directamente la generación de informes y la navegación de rutas
+  // Este método está solo como respaldo
   addLog(t('log.enterStep4'))
 }
 
@@ -207,13 +207,13 @@ const handleNextStep = () => {
 const loadSimulationData = async () => {
   try {
     addLog(t('log.loadingSimData', { id: currentSimulationId.value }))
-    
-    // 获取 simulation 信息
+
+    // Obtener información de la simulación
     const simRes = await getSimulation(currentSimulationId.value)
     if (simRes.success && simRes.data) {
       const simData = simRes.data
-      
-      // 获取 simulation config 以获取 minutes_per_round
+
+      // Obtener configuración de la simulación para obtener minutes_per_round
       try {
         const configRes = await getSimulationConfig(currentSimulationId.value)
         if (configRes.success && configRes.data?.time_config?.minutes_per_round) {
@@ -223,15 +223,15 @@ const loadSimulationData = async () => {
       } catch (configErr) {
         addLog(t('log.timeConfigFetchFailed', { minutes: minutesPerRound.value }))
       }
-      
-      // 获取 project 信息
+
+      // Obtener información del proyecto
       if (simData.project_id) {
         const projRes = await getProject(simData.project_id)
         if (projRes.success && projRes.data) {
           projectData.value = projRes.data
           addLog(t('log.projectLoadSuccess', { id: projRes.data.project_id }))
-          
-          // 获取 graph 数据
+
+          // Obtener datos del gráfico
           if (projRes.data.graph_id) {
             await loadGraph(projRes.data.graph_id)
           }
@@ -246,12 +246,12 @@ const loadSimulationData = async () => {
 }
 
 const loadGraph = async (graphId) => {
-  // 当正在模拟时，自动刷新不显示全屏 loading，以免闪烁
-  // 手动刷新或初始加载时显示 loading
+  // Cuando la simulación está en curso, la actualización automática no muestra pantalla completa de carga, para evitar parpadeo
+  // Al actualizar manualmente o en carga inicial, mostrar loading
   if (!isSimulating.value) {
     graphLoading.value = true
   }
-  
+
   try {
     const res = await getGraphData(graphId)
     if (res.success) {
@@ -279,7 +279,7 @@ let graphRefreshTimer = null
 const startGraphRefresh = () => {
   if (graphRefreshTimer) return
   addLog(t('log.graphRealtimeRefreshStart'))
-  // 立即刷新一次，然后每30秒刷新
+  // Actualizar inmediatamente una vez, luego refrescar cada 30 segundos
   graphRefreshTimer = setInterval(refreshGraph, 30000)
 }
 
@@ -301,12 +301,12 @@ watch(isSimulating, (newValue) => {
 
 onMounted(() => {
   addLog(t('log.simRunViewInit'))
-  
-  // 记录 maxRounds 配置（值已在Inicializando时从 query 参数获取）
+
+  // Registrar configuración de maxRounds (el valor ya fue obtenido desde query params durante la inicialización)
   if (maxRounds.value) {
     addLog(t('log.customRounds', { rounds: maxRounds.value }))
   }
-  
+
   loadSimulationData()
 })
 

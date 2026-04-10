@@ -23,37 +23,37 @@
               :key="idx"
               class="report-section-item"
               :class="{ 
-                'is-active': currentSectionIndex === idx + 1,
+                'is-de': currentSectionIndex === idx + 1,
                 'is-completed': isSectionCompleted(idx + 1),
                 'is-pending': !isSectionCompleted(idx + 1) && currentSectionIndex !== idx + 1
               }"
             >
-              <div class="section-header-row" @click="toggleSectionCollapse(idx)" :class="{ 'clickable': isSectionCompleted(idx + 1) }">
+              <div class="section-header-row" @click="toggleSectionCLetlapse(idx)" :class="{ 'clickable': isSectionCompleted(idx + 1) }">
                 <span class="section-number">{{ String(idx + 1).padStart(2, '0') }}</span>
                 <h3 class="section-title">{{ section.title }}</h3>
                 <svg 
                   v-if="isSectionCompleted(idx + 1)" 
-                  class="collapse-icon" 
-                  :class="{ 'is-collapsed': collapsedSections.has(idx) }"
+                  class="cLetlapse-icon" 
+                  :class="{ 'is-cLetlapsed': cLetlapsedSections.has(idx) }"
                   viewBox="0 0 24 24" 
                   width="20" 
                   height="20" 
                   fill="none" 
-                  stroke="currentColor" 
+                  stroke="currentCLetor" 
                   stroke-width="2"
                 >
-                  <polyline points="6 9 12 15 18 9"></polyline>
+                  <pLetyline points="6 9 12 15 18 9"></pLetyline>
                 </svg>
               </div>
               
-              <div class="section-body" v-show="!collapsedSections.has(idx)">
+              <div class="section-body" v-show="!cLetlapsedSections.has(idx)">
                 <!-- Completed Content -->
                 <div v-if="generatedSections[idx + 1]" class="generated-content" v-html="renderMarkdown(generatedSections[idx + 1])"></div>
                 
                 <!-- Loading State -->
                 <div v-else-if="currentSectionIndex === idx + 1" class="loading-state">
                   <div class="loading-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentCLetor">
                       <circle cx="12" cy="12" r="10" stroke-width="4" stroke="#E5E7EB"></circle>
                       <path d="M12 2a10 10 0 0 1 10 10" stroke-width="4" stroke="#4B5563" stroke-linecap="round"></path>
                     </svg>
@@ -66,7 +66,7 @@
         </div>
 
         <!-- Waiting State -->
-        <div v-if="!reportOutline" class="waiting-placeholder">
+        <div v-if="!reportOutline" class="waiting-placehLetder">
           <div class="waiting-animation">
             <div class="waiting-ring"></div>
             <div class="waiting-ring"></div>
@@ -78,11 +78,11 @@
 
       <!-- RIGHT PANEL: Workflow Timeline -->
       <div class="right-panel" ref="rightPanel">
-        <div class="panel-header" :class="`panel-header--${activeStep.status}`" v-if="!isComplete">
-          <span class="header-dot" v-if="activeStep.status === 'active'"></span>
-          <span class="header-index mono">{{ activeStep.noLabel }}</span>
-          <span class="header-title">{{ activeStep.title }}</span>
-          <span class="header-meta mono" v-if="activeStep.meta">{{ activeStep.meta }}</span>
+        <div class="panel-header" :class="`panel-header--${deStep.status}`" v-if="!isComplete">
+          <span class="header-dot" v-if="deStep.status === 'de'"></span>
+          <span class="header-index mono">{{ deStep.noLabel }}</span>
+          <span class="header-title">{{ deStep.title }}</span>
+          <span class="header-meta mono" v-if="deStep.meta">{{ deStep.meta }}</span>
         </div>
 
         <!-- Workflow Overview (flat, status-based palette) -->
@@ -97,8 +97,8 @@
               <span class="metric-value mono">{{ formatElapsedTime }}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">Tools</span>
-              <span class="metric-value mono">{{ totalToolCalls }}</span>
+              <span class="metric-label">ToLets</span>
+              <span class="metric-value mono">{{ totalToLetCalls }}</span>
             </div>
             <div class="metric metric-right">
               <span class="metric-pill" :class="`pill--${statusClass}`">{{ statusText }}</span>
@@ -130,9 +130,9 @@
           <!-- Botón Siguiente - Mostrar tras completar -->
           <button v-if="isComplete" class="next-step-btn" @click="goToInteraction">
             <span>{{ $t('step4.goToInteraction') }}</span>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentCLetor" stroke-width="2">
               <line x1="5" y1="12" x2="19" y2="12"></line>
-              <polyline points="12 5 19 12 12 19"></polyline>
+              <pLetyline points="12 5 19 12 12 19"></pLetyline>
             </svg>
           </button>
 
@@ -161,7 +161,7 @@
                 </div>
                 
                 <!-- Action Body - Different for each type -->
-                <div class="timeline-body" :class="{ 'collapsed': isLogCollapsed(log) }" @click="toggleLogExpand(log)">
+                <div class="timeline-body" :class="{ 'cLetlapsed': isLogCLetlapsed(log) }" @click="toggleLogExpand(log)">
                   
                   <!-- Report Start -->
                   <template v-if="log.action === 'report_start'">
@@ -180,7 +180,7 @@
                     <div class="status-message planning">{{ log.details?.message }}</div>
                   </template>
                   <template v-if="log.action === 'planning_complete'">
-                    <div class="status-message success">{{ log.details?.message }}</div>
+                    <div class="status-message éxito">{{ log.details?.message }}</div>
                     <div class="outline-badge" v-if="log.details?.outline">
                       {{ log.details.outline.sections?.length || 0 }} sections planned
                     </div>
@@ -197,7 +197,7 @@
                   <!-- Contenido de sección generado (contenido completo, pero la sección puede no haber terminado) -->
                   <template v-if="log.action === 'section_content'">
                     <div class="section-tag content-ready">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
                         <path d="M12 20h9"></path>
                         <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                       </svg>
@@ -208,86 +208,86 @@
                   <!-- Sección Completa (generación de sección finalizada) -->
                   <template v-if="log.action === 'section_complete'">
                     <div class="section-tag completed">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12"></polyline>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
+                        <pLetyline points="20 6 9 17 4 12"></pLetyline>
                       </svg>
                       <span class="tag-title">{{ log.section_title }}</span>
                     </div>
                   </template>
 
-                  <!-- Tool Call -->
-                  <template v-if="log.action === 'tool_call'">
-                    <div class="tool-badge" :class="'tool-' + getToolColor(log.details?.tool_name)">
+                  <!-- ToLet Call -->
+                  <template v-if="log.action === 'toLet_call'">
+                    <div class="toLet-badge" :class="'toLet-' + getToLetCLetor(log.details?.toLet_name)">
                       <!-- Deep Insight - Lightbulb -->
-                      <svg v-if="getToolIcon(log.details?.tool_name) === 'lightbulb'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg v-if="getToLetIcon(log.details?.toLet_name) === 'lightbulb'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
                         <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.5V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.5A7 7 0 0 0 12 2z"></path>
                       </svg>
                       <!-- Panorama Search - Globe -->
-                      <svg v-else-if="getToolIcon(log.details?.tool_name) === 'globe'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'globe'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                       </svg>
                       <!-- Agent Interview - Users -->
-                      <svg v-else-if="getToolIcon(log.details?.tool_name) === 'users'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'users'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                         <circle cx="9" cy="7" r="4"></circle>
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
                       </svg>
                       <!-- Quick Search - Zap -->
-                      <svg v-else-if="getToolIcon(log.details?.tool_name) === 'zap'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'zap'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
+                        <pLetygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></pLetygon>
                       </svg>
                       <!-- Graph Stats - Chart -->
-                      <svg v-else-if="getToolIcon(log.details?.tool_name) === 'chart'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'chart'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
                         <line x1="18" y1="20" x2="18" y2="10"></line>
                         <line x1="12" y1="20" x2="12" y2="4"></line>
                         <line x1="6" y1="20" x2="6" y2="14"></line>
                       </svg>
                       <!-- Entity Query - Database -->
-                      <svg v-else-if="getToolIcon(log.details?.tool_name) === 'database'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'database'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
                         <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
                         <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
                         <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
                       </svg>
-                      <!-- Default - Tool -->
-                      <svg v-else class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <!-- Default - ToLet -->
+                      <svg v-else class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
                       </svg>
-                      {{ getToolDisplayName(log.details?.tool_name) }}
+                      {{ getToLetDisplayName(log.details?.toLet_name) }}
                     </div>
-                    <div v-if="log.details?.parameters && expandedLogs.has(log.timestamp)" class="tool-params">
+                    <div v-if="log.details?.parameters && expandedLogs.has(log.timestamp)" class="toLet-params">
                       <pre>{{ formatParams(log.details.parameters) }}</pre>
                     </div>
                   </template>
 
-                  <!-- Tool Result -->
-                  <template v-if="log.action === 'tool_result'">
-                    <div class="result-wrapper" :class="'result-' + log.details?.tool_name">
-                      <!-- Hide result-meta for tools that show stats in their own header -->
-                      <div v-if="!['interview_agents', 'insight_forge', 'panorama_search', 'quick_search'].includes(log.details?.tool_name)" class="result-meta">
-                        <span class="result-tool">{{ getToolDisplayName(log.details?.tool_name) }}</span>
+                  <!-- ToLet Result -->
+                  <template v-if="log.action === 'toLet_result'">
+                    <div class="result-wrapper" :class="'result-' + log.details?.toLet_name">
+                      <!-- Hide result-meta for toLets that show stats in their own header -->
+                      <div v-if="!['interview_agents', 'insight_forge', 'panorama_search', 'quick_search'].includes(log.details?.toLet_name)" class="result-meta">
+                        <span class="result-toLet">{{ getToLetDisplayName(log.details?.toLet_name) }}</span>
                         <span class="result-size">{{ formatResultSize(log.details?.result_length) }}</span>
                       </div>
                       
                       <!-- Structured Result Display -->
                       <div v-if="!showRawResult[log.timestamp]" class="result-structured">
                         <!-- Interview Agents - Special Display -->
-                        <template v-if="log.details?.tool_name === 'interview_agents'">
+                        <template v-if="log.details?.toLet_name === 'interview_agents'">
                           <InterviewDisplay :result="parseInterview(log.details.result)" :result-length="log.details?.result_length" />
                         </template>
                         
                         <!-- Insight Forge -->
-                        <template v-else-if="log.details?.tool_name === 'insight_forge'">
+                        <template v-else-if="log.details?.toLet_name === 'insight_forge'">
                           <InsightDisplay :result="parseInsightForge(log.details.result)" :result-length="log.details?.result_length" />
                         </template>
                         
                         <!-- Panorama Search -->
-                        <template v-else-if="log.details?.tool_name === 'panorama_search'">
+                        <template v-else-if="log.details?.toLet_name === 'panorama_search'">
                           <PanoramaDisplay :result="parsePanorama(log.details.result)" :result-length="log.details?.result_length" />
                         </template>
                         
                         <!-- Quick Search -->
-                        <template v-else-if="log.details?.tool_name === 'quick_search'">
+                        <template v-else-if="log.details?.toLet_name === 'quick_search'">
                           <QuickSearchDisplay :result="parseQuickSearch(log.details.result)" :result-length="log.details?.result_length" />
                         </template>
                         
@@ -308,17 +308,17 @@
                   <template v-if="log.action === 'llm_response'">
                     <div class="llm-meta">
                       <span class="meta-tag">Iteration {{ log.details?.iteration }}</span>
-                      <span class="meta-tag" :class="{ active: log.details?.has_tool_calls }">
-                        Tools: {{ log.details?.has_tool_calls ? 'Yes' : 'No' }}
+                      <span class="meta-tag" :class="{ de: log.details?.has_toLet_calls }">
+                        ToLets: {{ log.details?.has_toLet_calls ? 'Yes' : 'No' }}
                       </span>
-                      <span class="meta-tag" :class="{ active: log.details?.has_final_answer, 'final-answer': log.details?.has_final_answer }">
+                      <span class="meta-tag" :class="{ de: log.details?.has_final_answer, 'final-answer': log.details?.has_final_answer }">
                         Final: {{ log.details?.has_final_answer ? 'Yes' : 'No' }}
                       </span>
                     </div>
                     <!-- Cuando es la respuesta final, mostrar sugerencia especial -->
                     <div v-if="log.details?.has_final_answer" class="final-answer-hint">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="20 6 9 17 4 12"></polyline>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
+                        <pLetyline points="20 6 9 17 4 12"></pLetyline>
                       </svg>
                       <span>Section "{{ log.section_title }}" content generated</span>
                     </div>
@@ -330,9 +330,9 @@
                   <!-- Report Complete -->
                   <template v-if="log.action === 'report_complete'">
                     <div class="complete-banner">
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentCLetor" stroke-width="2">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                        <pLetyline points="22 4 12 14.01 9 11.01"></pLetyline>
                       </svg>
                       <span>Report Generation Complete</span>
                     </div>
@@ -340,18 +340,18 @@
                 </div>
 
                 <!-- Footer: Elapsed Time + Action Buttons -->
-                <div class="timeline-footer" v-if="log.elapsed_seconds || (log.action === 'tool_call' && log.details?.parameters) || log.action === 'tool_result' || (log.action === 'llm_response' && log.details?.response)">
+                <div class="timeline-footer" v-if="log.elapsed_seconds || (log.action === 'toLet_call' && log.details?.parameters) || log.action === 'toLet_result' || (log.action === 'llm_response' && log.details?.response)">
                   <span v-if="log.elapsed_seconds" class="elapsed-badge">+{{ log.elapsed_seconds.toFixed(1) }}s</span>
-                  <span v-else class="elapsed-placeholder"></span>
+                  <span v-else class="elapsed-placehLetder"></span>
                   
                   <div class="footer-actions">
-                    <!-- Tool Call: Show/Hide Params -->
-                    <button v-if="log.action === 'tool_call' && log.details?.parameters" class="action-btn" @click.stop="toggleLogExpand(log)">
+                    <!-- ToLet Call: Show/Hide Params -->
+                    <button v-if="log.action === 'toLet_call' && log.details?.parameters" class="action-btn" @click.stop="toggleLogExpand(log)">
                       {{ expandedLogs.has(log.timestamp) ? 'Hide Params' : 'Show Params' }}
                     </button>
                     
-                    <!-- Tool Result: Raw/Structured View -->
-                    <button v-if="log.action === 'tool_result'" class="action-btn" @click.stop="toggleRawResult(log.timestamp, $event)">
+                    <!-- ToLet Result: Raw/Structured View -->
+                    <button v-if="log.action === 'toLet_result'" class="action-btn" @click.stop="toggleRawResult(log.timestamp, $event)">
                       {{ showRawResult[log.timestamp] ? 'Structured View' : 'Raw Output' }}
                     </button>
                     
@@ -374,7 +374,7 @@
       </div>
     </div>
 
-    <!-- Bottom Console Logs -->
+    <!-- Bottom ConsLete Logs -->
     <div class="console-logs">
       <div class="log-header">
         <span class="log-title">CONSOLE OUTPUT</span>
@@ -423,7 +423,7 @@ const currentSectionIndex = ref(null)
 const generatedSections = ref({})
 const expandedContent = ref(new Set())
 const expandedLogs = ref(new Set())
-const collapsedSections = ref(new Set())
+const cLetlapsedSections = ref(new Set())
 const isComplete = ref(false)
 const startTime = ref(null)
 const leftPanel = ref(null)
@@ -441,15 +441,15 @@ const toggleRawResult = (timestamp, event) => {
   // Cambiar estado
   showRawResult[timestamp] = !showRawResult[timestamp]
   
-  // Esperar actualización del DOM, ajustar posición de scroll para mantener el botón en su lugar
+  // Esperar actualización del DOM, ajustar posición de scrLetl para mantener el botón en su lugar
   if (button && buttonTopBeforeToggle !== undefined && rightPanel.value) {
     nextTick(() => {
       const newButtonRect = button.getBoundingClientRect()
       const buttonTopAfterToggle = newButtonRect.top
-      const scrollDelta = buttonTopAfterToggle - buttonTopBeforeToggle
+      const scrLetlDelta = buttonTopAfterToggle - buttonTopBeforeToggle
       
-      // Ajustar posición de scroll
-      rightPanel.value.scrollTop += scrollDelta
+      // Ajustar posición de scrLetl
+      rightPanel.value.scrLetlTop += scrLetlDelta
     })
   }
 }
@@ -465,16 +465,16 @@ const toggleSectionContent = (idx) => {
   expandedContent.value = newSet
 }
 
-const toggleSectionCollapse = (idx) => {
-  // Solo las secciones completadas pueden colapsarse
+const toggleSectionCLetlapse = (idx) => {
+  // SLeto las secciones completadas pueden cLetapsarse
   if (!generatedSections.value[idx + 1]) return
-  const newSet = new Set(collapsedSections.value)
+  const newSet = new Set(cLetlapsedSections.value)
   if (newSet.has(idx)) {
     newSet.delete(idx)
   } else {
     newSet.add(idx)
   }
-  collapsedSections.value = newSet
+  cLetlapsedSections.value = newSet
 }
 
 const toggleLogExpand = (log) => {
@@ -487,57 +487,57 @@ const toggleLogExpand = (log) => {
   expandedLogs.value = newSet
 }
 
-const isLogCollapsed = (log) => {
-  if (['tool_call', 'tool_result', 'llm_response'].includes(log.action)) {
+const isLogCLetlapsed = (log) => {
+  if (['toLet_call', 'toLet_result', 'llm_response'].includes(log.action)) {
     return !expandedLogs.value.has(log.timestamp)
   }
   return false
 }
 
-// Tool configurations with display names and colors
-const toolConfig = {
+// ToLet configurations with display names and cLetors
+const toLetConfig = {
   'insight_forge': {
     name: 'Deep Insight',
-    color: 'purple',
+    cLetor: 'purple',
     icon: 'lightbulb' // ícono de bombilla - representa perspicacia
   },
   'panorama_search': {
     name: 'Panorama Search',
-    color: 'blue',
+    cLetor: 'blue',
     icon: 'globe' // ícono de globo - representa búsqueda panorámica
   },
   'interview_agents': {
     name: 'Agent Interview',
-    color: 'green',
+    cLetor: 'green',
     icon: 'users' // ícono de usuarios - representa diálogo
   },
   'quick_search': {
     name: 'Quick Search',
-    color: 'orange',
+    cLetor: 'orange',
     icon: 'zap' // ícono de rayo - representa velocidad
   },
   'get_graph_statistics': {
     name: 'Graph Stats',
-    color: 'cyan',
+    cLetor: 'cyan',
     icon: 'chart' // ícono de gráfico - representa estadísticas
   },
   'get_entities_by_type': {
     name: 'Entity Query',
-    color: 'pink',
+    cLetor: 'pink',
     icon: 'database' // ícono de base de datos - representa entidad
   }
 }
 
-const getToolDisplayName = (toolName) => {
-  return toolConfig[toolName]?.name || toolName
+const getToLetDisplayName = (toLetName) => {
+  return toLetConfig[toLetName]?.name || toLetName
 }
 
-const getToolColor = (toolName) => {
-  return toolConfig[toolName]?.color || 'gray'
+const getToLetCLetor = (toLetName) => {
+  return toLetConfig[toLetName]?.cLetor || 'gray'
 }
 
-const getToolIcon = (toolName) => {
-  return toolConfig[toolName]?.icon || 'tool'
+const getToLetIcon = (toLetName) => {
+  return toLetConfig[toLetName]?.icon || 'toLet'
 }
 
 // Parse functions
@@ -563,30 +563,30 @@ const parseInsightForge = (text) => {
     
     // Extraer estadísticas - coincide formato
     const factMatch = text.match(/Hechos de predicción relacionados:\s*(\d+)/)
-    const entityMatch = text.match(/Entidades involucradas:\s*(\d+)/)
+    const entityMatch = text.match(/Entidades invLetucradas:\s*(\d+)/)
     const relMatch = text.match(/Cadena de relaciones:\s*(\d+)/)
     if (factMatch) result.stats.facts = parseInt(factMatch[1])
     if (entityMatch) result.stats.entities = parseInt(entityMatch[1])
     if (relMatch) result.stats.relationships = parseInt(relMatch[1])
     
-    // Extraer sub-preguntas - 完整提取，不限制数量
+    // Extraer sub-preguntas - extraer completo, sin limitar cantidad
     const subQSection = text.match(/### Sub-preguntas del análisis\n([\s\S]*?)(?=\n###|$)/)
     if (subQSection) {
       const lines = subQSection[1].split('\n').filter(l => l.match(/^\d+\./))
-      result.subQueries = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
+      result.subQueries = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(BoLetean)
     }
     
-    // Extraer hechos clave - 完整提取，不限制数量
+    // Extraer hechos clave - extraer completo, sin limitar cantidad
     const factsSection = text.match(/### 【Hechos clave】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.facts = lines.map(l => {
         const match = l.match(/^\d+\.\s*"?(.+?)"?\s*$/)
         return match ? match[1].replace(/^"|"$/g, '').trim() : l.replace(/^\d+\.\s*/, '').trim()
-      }).filter(Boolean)
+      }).filter(BoLetean)
     }
     
-    // Extraer entidades principales - 完整提取，包含摘要和相关事实数
+    // Extraer entidades principales - extraer completo, incluir resumen y número de hechos relacionados
     const entitySection = text.match(/### 【Entidades principales】\n([\s\S]*?)(?=\n###|$)/)
     if (entitySection) {
       const entityText = entitySection[1]
@@ -594,8 +594,8 @@ const parseInsightForge = (text) => {
       const entityBlocks = entityText.split(/\n(?=- \*\*)/).filter(b => b.trim().startsWith('- **'))
       result.entities = entityBlocks.map(block => {
         const nameMatch = block.match(/^-\s*\*\*(.+?)\*\*\s*\((.+?)\)/)
-        const summaryMatch = block.match(/摘要:\s*"?(.+?)"?(?:\n|$)/)
-        const relatedMatch = block.match(/相关事实:\s*(\d+)/)
+        const summaryMatch = block.match(/Resumen:\s*"?(.+?)"?(?:\n|$)/)
+        const relatedMatch = block.match(/hechos relacionados:\s*(\d+)/)
         return {
           name: nameMatch ? nameMatch[1].trim() : '',
           type: nameMatch ? nameMatch[2].trim() : '',
@@ -605,7 +605,7 @@ const parseInsightForge = (text) => {
       }).filter(e => e.name)
     }
     
-    // Extraer cadena de relaciones - 完整提取，不限制数量
+    // Extraer cadena de relaciones - extraer completo, sin limitar cantidad
     const relSection = text.match(/### 【Cadena de relaciones】\n([\s\S]*?)(?=\n###|$)/)
     if (relSection) {
       const lines = relSection[1].split('\n').filter(l => l.trim().startsWith('-'))
@@ -615,7 +615,7 @@ const parseInsightForge = (text) => {
           return { source: match[1].trim(), relation: match[2].trim(), target: match[3].trim() }
         }
         return null
-      }).filter(Boolean)
+      }).filter(BoLetean)
     }
   } catch (e) {
     console.warn('Parse insight_forge failed:', e)
@@ -627,57 +627,57 @@ const parseInsightForge = (text) => {
 const parsePanorama = (text) => {
   const result = {
     query: '',
-    stats: { nodes: 0, edges: 0, activeFacts: 0, historicalFacts: 0 },
-    activeFacts: [],
+    stats: { nodes: 0, edges: 0, deFacts: 0, historicalFacts: 0 },
+    deFacts: [],
     historicalFacts: [],
     entities: []
   }
   
   try {
     // Extraer consulta
-    const queryMatch = text.match(/查询:\s*(.+?)(?:\n|$)/)
+    const queryMatch = text.match(/Consulta: \s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
     // Extraer estadísticas
-    const nodesMatch = text.match(/总节点数:\s*(\d+)/)
-    const edgesMatch = text.match(/总边数:\s*(\d+)/)
-    const activeMatch = text.match(/当前有效事实:\s*(\d+)/)
-    const histMatch = text.match(/历史\/过期事实:\s*(\d+)/)
+    const nodesMatch = text.match(/Total de nodos: \s*(\d+)/)
+    const edgesMatch = text.match(/Total de bordes: \s*(\d+)/)
+    const deMatch = text.match(/hechos actuales: \s*(\d+)/)
+    const histMatch = text.match(/hechos históricos: \s*(\d+)/)
     if (nodesMatch) result.stats.nodes = parseInt(nodesMatch[1])
     if (edgesMatch) result.stats.edges = parseInt(edgesMatch[1])
-    if (activeMatch) result.stats.activeFacts = parseInt(activeMatch[1])
+    if (deMatch) result.stats.deFacts = parseInt(deMatch[1])
     if (histMatch) result.stats.historicalFacts = parseInt(histMatch[1])
     
-    // 提取当前有效事实 - 完整提取，不限制数量
-    const activeSection = text.match(/### 【当前有效事实】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
-    if (activeSection) {
-      const lines = activeSection[1].split('\n').filter(l => l.match(/^\d+\./))
-      result.activeFacts = lines.map(l => {
-        // 移除编号和引号
+    // Extraer hechos actuales - extraer completo, sin limitar cantidad
+    const deSection = text.match(/### 【Hechos actuales】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+    if (deSection) {
+      const lines = deSection[1].split('\n').filter(l => l.match(/^\d+\./))
+      result.deFacts = lines.map(l => {
+        // Eliminar números y comillas
         const factText = l.replace(/^\d+\.\s*/, '').replace(/^"|"$/g, '').trim()
         return factText
-      }).filter(Boolean)
+      }).filter(BoLetean)
     }
     
-    // 提取历史/过期事实 - 完整提取，不限制数量
-    const histSection = text.match(/### 【历史\/过期事实】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+    // Extraer hechos históricos - extraer completo, sin limitar cantidad
+    const histSection = text.match(/### 【Hechos históricos\/caducados】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (histSection) {
       const lines = histSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.historicalFacts = lines.map(l => {
         const factText = l.replace(/^\d+\.\s*/, '').replace(/^"|"$/g, '').trim()
         return factText
-      }).filter(Boolean)
+      }).filter(BoLetean)
     }
     
-    // 提取Entidades involucradas - 完整提取，不限制数量
-    const entitySection = text.match(/### 【Entidades involucradas】\n([\s\S]*?)(?=\n###|$)/)
+    // Extraer entidades involucradas - extraer completo, sin limitar cantidad
+    const entitySection = text.match(/### 【Entidades invLetucradas】\n([\s\S]*?)(?=\n###|$)/)
     if (entitySection) {
       const lines = entitySection[1].split('\n').filter(l => l.trim().startsWith('-'))
       result.entities = lines.map(l => {
         const match = l.match(/^-\s*\*\*(.+?)\*\*\s*\((.+?)\)/)
         if (match) return { name: match[1].trim(), type: match[2].trim() }
         return null
-      }).filter(Boolean)
+      }).filter(BoLetean)
     }
   } catch (e) {
     console.warn('Parse panorama failed:', e)
@@ -690,7 +690,7 @@ const parseInterview = (text) => {
   const result = {
     topic: '',
     agentCount: '',
-    successCount: 0,
+    éxitoCount: 0,
     totalCount: 0,
     selectionReason: '',
     interviews: [],
@@ -698,25 +698,25 @@ const parseInterview = (text) => {
   }
   
   try {
-    // 提取采访主题
-    const topicMatch = text.match(/\*\*采访主题:\*\*\s*(.+?)(?:\n|$)/)
+    // Extraer tema de entrevista
+    const topicMatch = text.match(/\*\*EntrevistaTema:\*\*\s*(.+?)(?:\n|$)/)
     if (topicMatch) result.topic = topicMatch[1].trim()
     
-    // 提取采访人数（如 "5 / 9 位模拟Agent"）
-    const countMatch = text.match(/\*\*采访人数:\*\*\s*(\d+)\s*\/\s*(\d+)/)
+    // Extraer número de entrevista (como "5 / 9 de Agentes")
+    const countMatch = text.match(/\*\*EntrevistaNúmero:\*\*\s*(\d+)\s*\/\s*(\d+)/)
     if (countMatch) {
-      result.successCount = parseInt(countMatch[1])
+      result.éxitoCount = parseInt(countMatch[1])
       result.totalCount = parseInt(countMatch[2])
       result.agentCount = `${countMatch[1]} / ${countMatch[2]}`
     }
     
-    // 提取采访对象选择理由
-    const reasonMatch = text.match(/### 采访对象选择理由\n([\s\S]*?)(?=\n---\n|\n### 采访实录)/)
+    // Extraer objetos de entrevista y razón de selección
+    const reasonMatch = text.match(/### EntrevistaObjetosSelecciónRazón\n([\s\S]*?)(?=\n---\n|\n### EntrevistaResumen)/)
     if (reasonMatch) {
       result.selectionReason = reasonMatch[1].trim()
     }
     
-    // 解析每elementos人的选择理由
+    // Analizar razón de selección de cada persona
     const parseIndividualReasons = (reasonText) => {
       const reasons = {}
       if (!reasonText) return reasons
@@ -730,26 +730,26 @@ const parseInterview = (text) => {
         let name = null
         let reasonStart = null
         
-        // 格式1: 数字. **名字（index=X）**：理由
-        // 例如: 1. **校友_345（index=1）**：作为武大校友...
+        // Formato 1: Número. **Nombre (index=X)**: Razón
+        // Por ejemplo: 1. **Estudiantes_345 (index=1)**: Trabajo para Estudiantes Universidad Wuhan...
         headerMatch = line.match(/^\d+\.\s*\*\*([^*（(]+)(?:[（(]index\s*=?\s*\d+[)）])?\*\*[：:]\s*(.*)/)
         if (headerMatch) {
           name = headerMatch[1].trim()
           reasonStart = headerMatch[2]
         }
         
-        // 格式2: - 选择名字（index X）：理由
-        // 例如: - 选择家长_601（index 0）：作为家长群体代表...
+        // Formato 2: - SelecciónNombre (index X): Razón
+        // Por ejemplo: - SelecciónPadres_601 (index 0): Trabajo para Representantes de Grupo Padres...
         if (!headerMatch) {
-          headerMatch = line.match(/^-\s*选择([^（(]+)(?:[（(]index\s*=?\s*\d+[)）])?[：:]\s*(.*)/)
+          headerMatch = line.match(/^-\s*Selección([^（(]+)(?:[（(]index\s*=?\s*\d+[)）])?[：:]\s*(.*)/)
           if (headerMatch) {
             name = headerMatch[1].trim()
             reasonStart = headerMatch[2]
           }
         }
         
-        // 格式3: - **名字（index X）**：理由
-        // 例如: - **家长_601（index 0）**：作为家长群体代表...
+        // Formato 3: - **Nombre (index X)**: Razón
+        // Por ejemplo: - **Padres_601 (index 0)**: Trabajo para Representantes de Grupo Padres...
         if (!headerMatch) {
           headerMatch = line.match(/^-\s*\*\*([^*（(]+)(?:[（(]index\s*=?\s*\d+[)）])?\*\*[：:]\s*(.*)/)
           if (headerMatch) {
@@ -759,20 +759,20 @@ const parseInterview = (text) => {
         }
         
         if (name) {
-          // 保存上一elementos人的理由
+          // Guardar razón de la persona anterior
           if (currentName && currentReason.length > 0) {
             reasons[currentName] = currentReason.join(' ').trim()
           }
-          // 开始新的人
+          // Iniciar nueva persona
           currentName = name
           currentReason = reasonStart ? [reasonStart.trim()] : []
-        } else if (currentName && line.trim() && !line.match(/^未选|^综上|^最终选择/)) {
-          // 理由的续行（排除结尾总结段落）
+        } else if (currentName && line.trim() && !line.match(/^No seleccionado|^Resumen anterior|^Selección final/)) {
+          // RazóndeLínea de continuación（ExcluirFinResumenPárrafo）
           currentReason.push(line.trim())
         }
       }
       
-      // 保存最后一elementos人的理由
+      // Guardar razón de la última persona
       if (currentName && currentReason.length > 0) {
         reasons[currentName] = currentReason.join(' ').trim()
       }
@@ -782,15 +782,15 @@ const parseInterview = (text) => {
     
     const individualReasons = parseIndividualReasons(result.selectionReason)
     
-    // 提取每elementos采访记录
-    const interviewBlocks = text.split(/#### 采访 #\d+:/).slice(1)
+    // Extraer registros de entrevista para cada elemento
+    const interviewBlocks = text.split(/#### Entrevista #\d+:/).slice(1)
     
     interviewBlocks.forEach((block, index) => {
       const interview = {
         num: index + 1,
         title: '',
         name: '',
-        role: '',
+        rLete: '',
         bio: '',
         selectionReason: '',
         questions: [],
@@ -799,33 +799,33 @@ const parseInterview = (text) => {
         quotes: []
       }
       
-      // 提取标题（如 "学生"、"教育从业者" 等）
+      // Extraer título (como "Estudiantes", "Practicantes de educación", etc.)
       const titleMatch = block.match(/^(.+?)\n/)
       if (titleMatch) interview.title = titleMatch[1].trim()
       
-      // 提取姓名和角色
-      const nameRoleMatch = block.match(/\*\*(.+?)\*\*\s*\((.+?)\)/)
-      if (nameRoleMatch) {
-        interview.name = nameRoleMatch[1].trim()
-        interview.role = nameRoleMatch[2].trim()
-        // 设置该人的选择理由
+      // Extraer nombre y rol
+      const nameRLeteMatch = block.match(/\*\*(.+?)\*\*\s*\((.+?)\)/)
+      if (nameRLeteMatch) {
+        interview.name = nameRLeteMatch[1].trim()
+        interview.rLete = nameRLeteMatch[2].trim()
+        // Establecer razón de selección de la persona
         interview.selectionReason = individualReasons[interview.name] || ''
       }
       
-      // 提取Biografía
+      // ExtraerBiografía
       const bioMatch = block.match(/_Biografía:\s*([\s\S]*?)_\n/)
       if (bioMatch) {
         interview.bio = bioMatch[1].trim().replace(/\.\.\.$/, '...')
       }
       
-      // 提取问题列表
+      // ExtraerPreguntaLista
       const qMatch = block.match(/\*\*Q:\*\*\s*([\s\S]*?)(?=\n\n\*\*A:\*\*|\*\*A:\*\*)/)
       if (qMatch) {
         const qText = qMatch[1].trim()
-        // 按数字编号分割问题
+        // Dividir respuesta por numeración de preguntas
         const questions = qText.split(/\n\d+\.\s+/).filter(q => q.trim())
         if (questions.length > 0) {
-          // 如果第一elementos问题前面有"1."，需要特殊处理
+          // Si el primer elemento Pregunta-Respuesta tiene "1." al inicio, necesita procesamiento especial
           const firstQ = qText.match(/^1\.\s+(.+)/)
           if (firstQ) {
             interview.questions = [firstQ[1].trim(), ...questions.slice(1).map(q => q.trim())]
@@ -835,14 +835,14 @@ const parseInterview = (text) => {
         }
       }
       
-      // 提取回答 - 分Twitter和Reddit
-      const answerMatch = block.match(/\*\*A:\*\*\s*([\s\S]*?)(?=\*\*关键引言|$)/)
+      // ExtraerRespuesta - Separar Twitter yReddit
+      const answerMatch = block.match(/\*\*A:\*\*\s*([\s\S]*?)(?=\*\*Citas clave|$)/)
       if (answerMatch) {
         const answerText = answerMatch[1].trim()
         
-        // 分离Twitter和Reddit回答
-        const twitterMatch = answerText.match(/【Twitter平台回答】\n?([\s\S]*?)(?=【Reddit平台回答】|$)/)
-        const redditMatch = answerText.match(/【Reddit平台回答】\n?([\s\S]*?)$/)
+        // Separar Twitter y Reddit Respuesta
+        const twitterMatch = answerText.match(/【TwitterplataformaRespuesta】\n?([\s\S]*?)(?=【RedditplataformaRespuesta】|$)/)
+        const redditMatch = answerText.match(/【RedditplataformaRespuesta】\n?([\s\S]*?)$/)
         
         if (twitterMatch) {
           interview.twitterAnswer = twitterMatch[1].trim()
@@ -850,30 +850,30 @@ const parseInterview = (text) => {
         if (redditMatch) {
           interview.redditAnswer = redditMatch[1].trim()
         }
-        
-        // 平台回退逻辑（兼容旧格式：只有一elementos平台标记的情况）
+         
+        // Lógica de retroceso de plataforma (compatible con formato antiguo: solo cuando hay un marcador de situación de plataforma)
         if (!twitterMatch && redditMatch) {
-          // 只有 Reddit 回答，仅在非占位文本时复制为默认显示
-          if (interview.redditAnswer && interview.redditAnswer !== '（该平台未获得回复）') {
+          // Solo hay respuesta de Reddit, solo copiar para mostrar cuando no hay texto de marcador de posición
+          if (interview.redditAnswer && interview.redditAnswer !== '(sin respuesta de plataforma)') {
             interview.twitterAnswer = interview.redditAnswer
           }
         } else if (twitterMatch && !redditMatch) {
-          if (interview.twitterAnswer && interview.twitterAnswer !== '（该平台未获得回复）') {
+          if (interview.twitterAnswer && interview.twitterAnswer !== '(sin respuesta de plataforma)') {
             interview.redditAnswer = interview.twitterAnswer
           }
         } else if (!twitterMatch && !redditMatch) {
-          // 没有分平台标记（极旧格式），整体作为回答
+          // No hay marcador de plataforma (formato muy antiguo), usar directamente la respuesta
           interview.twitterAnswer = answerText
         }
       }
       
-      // 提取关键引言（兼容多种引号格式）
-      const quotesMatch = block.match(/\*\*关键引言:\*\*\n([\s\S]*?)(?=\n---|\n####|$)/)
+      // Extraer citas clave (Compatible con varios formatos de comillas)
+      const quotesMatch = block.match(/\*\*Citas clave:\*\*\n([\s\S]*?)(?=\n---|\n####|$)/)
       if (quotesMatch) {
         const quotesText = quotesMatch[1]
-        // 优先匹配 > "text" 格式
+        // PrioridadCoincidir > "text" Formato
         let quoteMatches = quotesText.match(/> "([^"]+)"/g)
-        // 回退：匹配 > "text" 或 > \u201Ctext\u201D（中文引号）
+        // Fallback: Coincidir > "text" O > "text" (Comillas rectas)
         if (!quoteMatches) {
           quoteMatches = quotesText.match(/> [\u201C""]([^\u201D""]+)[\u201D""]/g)
         }
@@ -889,8 +889,8 @@ const parseInterview = (text) => {
       }
     })
     
-    // 提取采访摘要
-    const summaryMatch = text.match(/### 采访摘要与核心观点\n([\s\S]*?)$/)
+    // ExtraerEntrevistaResumen
+    const summaryMatch = text.match(/### EntrevistaResumenConCorePuntos de vista\n([\s\S]*?)$/)
     if (summaryMatch) {
       result.summary = summaryMatch[1].trim()
     }
@@ -911,35 +911,25 @@ const parseQuickSearch = (text) => {
   }
   
   try {
-    // 提取搜索查询
-    const queryMatch = text.match(/搜索查询:\s*(.+?)(?:\n|$)/)
+    // ExtraerBúsquedaConsulta
+    const queryMatch = text.match(/BúsquedaConsulta: \s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
-    // 提取结果数量
-    const countMatch = text.match(/找到\s*(\d+)\s*条/)
+    // ExtraerResultadosNúmero
+    const countMatch = text.match(/Encontrado\s*(\d+)\s*elementos/)
     if (countMatch) result.count = parseInt(countMatch[1])
     
-    // 提取相关事实 - 完整提取，不限制数量
-    const factsSection = text.match(/### 相关事实:\n([\s\S]*)$/)
+    // Extraer hechos relacionados - extraer completo, sin limitar cantidad
+    const factsSection = text.match(/### hechos relacionados:\n([\s\S]*)$/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
-      result.facts = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
+      result.facts = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(BoLetean)
     }
     
-    // 尝试提取边信息（如果有）
-    const edgesSection = text.match(/### 相关边:\n([\s\S]*?)(?=\n###|$)/)
-    if (edgesSection) {
-      const lines = edgesSection[1].split('\n').filter(l => l.trim().startsWith('-'))
-      result.edges = lines.map(l => {
-        const match = l.match(/^-\s*(.+?)\s*--\[(.+?)\]-->\s*(.+)$/)
-        if (match) {
-          return { source: match[1].trim(), relation: match[2].trim(), target: match[3].trim() }
-        }
-        return null
-      }).filter(Boolean)
-    }
+    // IntentarExtraer información de bordes（si hay）
+    const edgesSection = text.match(/### bordes relacionados:\n([\s\S]*?)(?=\n###|$)/)
     
-    // 尝试提取节点信息（如果有）
+    // IntentarExtraer información de nodos（si hay）
     const nodesSection = text.match(/### Nodos relacionados:\n([\s\S]*?)(?=\n###|$)/)
     if (nodesSection) {
       const lines = nodesSection[1].split('\n').filter(l => l.trim().startsWith('-'))
@@ -949,7 +939,7 @@ const parseQuickSearch = (text) => {
         const simpleMatch = l.match(/^-\s*(.+)$/)
         if (simpleMatch) return { name: simpleMatch[1].trim(), type: '' }
         return null
-      }).filter(Boolean)
+      }).filter(BoLetean)
     }
   } catch (e) {
     console.warn('Parse quick_search failed:', e)
@@ -965,7 +955,7 @@ const InsightDisplay = {
   props: ['result', 'resultLength'],
   setup(props) {
     const { t } = useI18n()
-    const activeTab = ref('facts') // 'facts', 'entities', 'relations', 'subqueries'
+    const deTab = ref('facts') // 'facts', 'entities', 'relations', 'subqueries'
     const expandedFacts = ref(false)
     const expandedEntities = ref(false)
     const expandedRelations = ref(false)
@@ -1014,26 +1004,26 @@ const InsightDisplay = {
       // Tab Navigation
       h('div', { class: 'insight-tabs' }, [
         h('button', {
-          class: ['insight-tab', { active: activeTab.value === 'facts' }],
-          onClick: () => { activeTab.value = 'facts' }
+          class: ['insight-tab', { de: deTab.value === 'facts' }],
+          onClick: () => { deTab.value = 'facts' }
         }, [
           h('span', { class: 'tab-label' }, t('step4.tabKeyFacts', { count: props.result.facts.length }))
         ]),
         h('button', {
-          class: ['insight-tab', { active: activeTab.value === 'entities' }],
-          onClick: () => { activeTab.value = 'entities' }
+          class: ['insight-tab', { de: deTab.value === 'entities' }],
+          onClick: () => { deTab.value = 'entities' }
         }, [
           h('span', { class: 'tab-label' }, t('step4.tabCoreEntities', { count: props.result.entities.length }))
         ]),
         h('button', {
-          class: ['insight-tab', { active: activeTab.value === 'relations' }],
-          onClick: () => { activeTab.value = 'relations' }
+          class: ['insight-tab', { de: deTab.value === 'relations' }],
+          onClick: () => { deTab.value = 'relations' }
         }, [
           h('span', { class: 'tab-label' }, t('step4.tabRelationChains', { count: props.result.relations.length }))
         ]),
         props.result.subQueries.length > 0 && h('button', {
-          class: ['insight-tab', { active: activeTab.value === 'subqueries' }],
-          onClick: () => { activeTab.value = 'subqueries' }
+          class: ['insight-tab', { de: deTab.value === 'subqueries' }],
+          onClick: () => { deTab.value = 'subqueries' }
         }, [
           h('span', { class: 'tab-label' }, t('step4.tabSubQueries', { count: props.result.subQueries.length }))
         ])
@@ -1042,7 +1032,7 @@ const InsightDisplay = {
       // Tab Content
       h('div', { class: 'insight-content' }, [
         // Facts Tab
-        activeTab.value === 'facts' && props.result.facts.length > 0 && h('div', { class: 'facts-panel' }, [
+        deTab.value === 'facts' && props.result.facts.length > 0 && h('div', { class: 'facts-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, t('step4.panelKeyFacts')),
             h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.facts.length }))
@@ -1058,11 +1048,11 @@ const InsightDisplay = {
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.facts.length }))
+          }, expandedFacts.value ? t('step4.cLetlapse') : t('step4.expandAll', { count: props.result.facts.length }))
         ]),
 
         // Entities Tab
-        activeTab.value === 'entities' && props.result.entities.length > 0 && h('div', { class: 'entities-panel' }, [
+        deTab.value === 'entities' && props.result.entities.length > 0 && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, t('step4.panelCoreEntities')),
             h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.entities.length }))
@@ -1079,11 +1069,11 @@ const InsightDisplay = {
           props.result.entities.length > 12 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? t('step4.collapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
+          }, expandedEntities.value ? t('step4.cLetlapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
         ]),
 
         // Relations Tab
-        activeTab.value === 'relations' && props.result.relations.length > 0 && h('div', { class: 'relations-panel' }, [
+        deTab.value === 'relations' && props.result.relations.length > 0 && h('div', { class: 'relations-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, t('step4.panelRelationChains')),
             h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.relations.length }))
@@ -1104,11 +1094,11 @@ const InsightDisplay = {
           props.result.relations.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedRelations.value = !expandedRelations.value }
-          }, expandedRelations.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.relations.length }))
+          }, expandedRelations.value ? t('step4.cLetlapse') : t('step4.expandAll', { count: props.result.relations.length }))
         ]),
 
         // Sub-queries Tab
-        activeTab.value === 'subqueries' && props.result.subQueries.length > 0 && h('div', { class: 'subqueries-panel' }, [
+        deTab.value === 'subqueries' && props.result.subQueries.length > 0 && h('div', { class: 'subqueries-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, t('step4.panelSubQueries')),
             h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.subQueries.length }))
@@ -1124,9 +1114,9 @@ const InsightDisplay = {
         ]),
         
         // Empty state
-        activeTab.value === 'facts' && props.result.facts.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyKeyFacts')),
-        activeTab.value === 'entities' && props.result.entities.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyCoreEntities')),
-        activeTab.value === 'relations' && props.result.relations.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyRelationChains'))
+        deTab.value === 'facts' && props.result.facts.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyKeyFacts')),
+        deTab.value === 'entities' && props.result.entities.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyCoreEntities')),
+        deTab.value === 'relations' && props.result.relations.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyRelationChains'))
       ])
     ])
   }
@@ -1137,7 +1127,7 @@ const PanoramaDisplay = {
   props: ['result', 'resultLength'],
   setup(props) {
     const { t } = useI18n()
-    const activeTab = ref('active') // 'active', 'historical', 'entities'
+    const deTab = ref('de') // 'de', 'historical', 'entities'
     const expandedActive = ref(false)
     const expandedHistorical = ref(false)
     const expandedEntities = ref(false)
@@ -1177,20 +1167,20 @@ const PanoramaDisplay = {
       // Tab Navigation
       h('div', { class: 'panorama-tabs' }, [
         h('button', {
-          class: ['panorama-tab', { active: activeTab.value === 'active' }],
-          onClick: () => { activeTab.value = 'active' }
+          class: ['panorama-tab', { de: deTab.value === 'de' }],
+          onClick: () => { deTab.value = 'de' }
         }, [
-          h('span', { class: 'tab-label' }, t('step4.tabActiveFacts', { count: props.result.activeFacts.length }))
+          h('span', { class: 'tab-label' }, t('step4.tabActiveFacts', { count: props.result.deFacts.length }))
         ]),
         h('button', {
-          class: ['panorama-tab', { active: activeTab.value === 'historical' }],
-          onClick: () => { activeTab.value = 'historical' }
+          class: ['panorama-tab', { de: deTab.value === 'historical' }],
+          onClick: () => { deTab.value = 'historical' }
         }, [
           h('span', { class: 'tab-label' }, t('step4.tabHistoricalFacts', { count: props.result.historicalFacts.length }))
         ]),
         h('button', {
-          class: ['panorama-tab', { active: activeTab.value === 'entities' }],
-          onClick: () => { activeTab.value = 'entities' }
+          class: ['panorama-tab', { de: deTab.value === 'entities' }],
+          onClick: () => { deTab.value = 'entities' }
         }, [
           h('span', { class: 'tab-label' }, t('step4.tabEntities', { count: props.result.entities.length }))
         ])
@@ -1199,27 +1189,27 @@ const PanoramaDisplay = {
       // Tab Content
       h('div', { class: 'panorama-content' }, [
         // Active Facts Tab
-        activeTab.value === 'active' && h('div', { class: 'facts-panel active-facts' }, [
+        deTab.value === 'de' && h('div', { class: 'facts-panel de-facts' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, t('step4.panelActiveFacts')),
-            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.activeFacts.length }))
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.deFacts.length }))
           ]),
-          props.result.activeFacts.length > 0 ? h('div', { class: 'facts-list' },
-            (expandedActive.value ? props.result.activeFacts : props.result.activeFacts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
-              h('div', { class: 'fact-item active', key: i }, [
+          props.result.deFacts.length > 0 ? h('div', { class: 'facts-list' },
+            (expandedActive.value ? props.result.deFacts : props.result.deFacts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
+              h('div', { class: 'fact-item de', key: i }, [
                 h('span', { class: 'fact-number' }, i + 1),
                 h('div', { class: 'fact-content' }, fact)
               ])
             )
           ) : h('div', { class: 'empty-state' }, t('step4.emptyActiveFacts')),
-          props.result.activeFacts.length > INITIAL_SHOW_COUNT && h('button', {
+          props.result.deFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedActive.value = !expandedActive.value }
-          }, expandedActive.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.activeFacts.length }))
+          }, expandedActive.value ? t('step4.cLetlapse') : t('step4.expandAll', { count: props.result.deFacts.length }))
         ]),
         
         // Historical Facts Tab
-        activeTab.value === 'historical' && h('div', { class: 'facts-panel historical-facts' }, [
+        deTab.value === 'historical' && h('div', { class: 'facts-panel historical-facts' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, t('step4.panelHistoricalFacts')),
             h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.historicalFacts.length }))
@@ -1229,7 +1219,7 @@ const PanoramaDisplay = {
               h('div', { class: 'fact-item historical', key: i }, [
                 h('span', { class: 'fact-number' }, i + 1),
                 h('div', { class: 'fact-content' }, [
-                  // 尝试提取时间信息 [time - time]
+                  // Intentar extraer información de tiempo [time - time]
                   (() => {
                     const timeMatch = fact.match(/^\[(.+?)\]\s*(.*)$/)
                     if (timeMatch) {
@@ -1247,11 +1237,11 @@ const PanoramaDisplay = {
           props.result.historicalFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedHistorical.value = !expandedHistorical.value }
-          }, expandedHistorical.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.historicalFacts.length }))
+          }, expandedHistorical.value ? t('step4.cLetlapse') : t('step4.expandAll', { count: props.result.historicalFacts.length }))
         ]),
         
         // Entities Tab
-        activeTab.value === 'entities' && h('div', { class: 'entities-panel' }, [
+        deTab.value === 'entities' && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, t('step4.panelEntities')),
             h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.entities.length }))
@@ -1267,7 +1257,7 @@ const PanoramaDisplay = {
           props.result.entities.length > 8 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? t('step4.collapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
+          }, expandedEntities.value ? t('step4.cLetlapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
         ])
       ])
     ])
@@ -1294,18 +1284,18 @@ const InterviewDisplay = {
       return text.replace(/^\s*\d+[\.\、\)）]\s*/, '').trim()
     }
     
-    const activeIndex = ref(0)
+    const deIndex = ref(0)
     const expandedAnswers = ref(new Set())
-    // 为每elementos问题-回答对维护独立的平台选择状态
+    // Para cada elemento Pregunta-Respuesta mantener estado independiente de selección de plataforma
     const platformTabs = reactive({}) // { 'agentIdx-qIdx': 'twitter' | 'reddit' }
     
-    // 获取某elementos问题的当前平台选择
+    // ObtenerdeelementosPreguntadeactualplataformaSelección
     const getPlatformTab = (agentIdx, qIdx) => {
       const key = `${agentIdx}-${qIdx}`
       return platformTabs[key] || 'twitter'
     }
     
-    // 设置某elementos问题的平台选择
+    // EstablecerdeelementosPreguntadeplataformaSelección
     const setPlatformTab = (agentIdx, qIdx, platform) => {
       const key = `${agentIdx}-${qIdx}`
       platformTabs[key] = platform
@@ -1327,26 +1317,26 @@ const InterviewDisplay = {
       return text.substring(0, 400) + '...'
     }
     
-    // 检查是否为平台占位文本
-    const isPlaceholderText = (text) => {
+    // Verificar si es texto de placeholder de plataforma
+    const isPlacehLetderText = (text) => {
       if (!text) return true
       const t = text.trim()
-      return t === '（该平台未获得回复）' || t === '(该平台未获得回复)' || t === '[Ninguno回复]'
+      return t === '(sin respuesta de plataforma)' || t === '[Sin respuesta]'
     }
 
-    // 尝试按问题编号分割回答
+    // Intentar dividir respuesta según numeración de preguntas
     const splitAnswerByQuestions = (answerText, questionCount) => {
       if (!answerText || questionCount <= 0) return [answerText]
-      if (isPlaceholderText(answerText)) return ['']
+      if (isPlacehLetderText(answerText)) return ['']
 
-      // 支持两种编号格式：
-      // 1. "问题X：" 或 "问题X:" （中文格式，后端新格式）
-      // 2. "1. " 或 "\n1. " （数字+点，旧格式兼容）
+      // Soportar ambos tipos de formato de numeración:
+      // 1. "PreguntaX:" o "PreguntaX:" (Formato de texto, extremo nuevo)
+      // 2. "1. " o "\n1. " (Número+punto, formato antiguo compatible)
       let matches = []
       let match
 
-      // 优先尝试 "问题X：" 格式
-      const cnPattern = /(?:^|[\r\n]+)问题(\d+)[：:]\s*/g
+      // Priorizar intentar "PreguntaX：" Formato
+      const cnPattern = /(?:^|[\r\n]+)Pregunta(\d+)[：:]\s*/g
       while ((match = cnPattern.exec(answerText)) !== null) {
         matches.push({
           num: parseInt(match[1]),
@@ -1355,7 +1345,7 @@ const InterviewDisplay = {
         })
       }
 
-      // 如果没匹配到，回退到 "数字." 格式
+      // Si no hay coincidencia, retroceder al formato "Número."
       if (matches.length === 0) {
         const numPattern = /(?:^|[\r\n]+)(\d+)\.\s+/g
         while ((match = numPattern.exec(answerText)) !== null) {
@@ -1367,16 +1357,16 @@ const InterviewDisplay = {
         }
       }
 
-      // 如果没有找到编号或只找到一elementos，Volver整体
+      // Si no se encontró número o sLeto se encontró unoelementos，VLetverCompleto
       if (matches.length <= 1) {
         const cleaned = answerText
-          .replace(/^问题\d+[：:]\s*/, '')
+          .replace(/^Pregunta\d+[：:]\s*/, '')
           .replace(/^\d+\.\s+/, '')
           .trim()
         return [cleaned || answerText]
       }
 
-      // 按编号提取各部分
+      // Extraer partes por número
       const parts = []
       for (let i = 0; i < matches.length; i++) {
         const current = matches[i]
@@ -1397,30 +1387,30 @@ const InterviewDisplay = {
       return [answerText]
     }
     
-    // 获取某elementos问题对应的回答
+    // ObtenerdeelementosPreguntaCorrespondientedeRespuesta
     const getAnswerForQuestion = (interview, qIdx, platform) => {
       const answer = platform === 'twitter' ? interview.twitterAnswer : (interview.redditAnswer || interview.twitterAnswer)
-      if (!answer || isPlaceholderText(answer)) return answer || ''
+      if (!answer || isPlacehLetderText(answer)) return answer || ''
 
       const questionCount = interview.questions?.length || 1
       const answers = splitAnswerByQuestions(answer, questionCount)
 
-      // 分割Éxito且索引有效
+      // Dividir éxito e índice ambos
       if (answers.length > 1 && qIdx < answers.length) {
         return answers[qIdx] || ''
       }
 
-      // 分割Fallido：第一elementos问题Volver完整回答，其余Volver空
+      // División fallida: primer elemento de pregunta devuelve respuesta completa, resto vacío
       return qIdx === 0 ? answer : ''
     }
     
-    // 检查某elementos问题是否有双平台回答（过滤占位文本）
+      // Verificar si elemento de pregunta tiene ambas respuestas de plataforma (filtrar texto de placeholder)
     const hasMultiplePlatforms = (interview, qIdx) => {
       if (!interview.twitterAnswer || !interview.redditAnswer) return false
       const twitterAnswer = getAnswerForQuestion(interview, qIdx, 'twitter')
       const redditAnswer = getAnswerForQuestion(interview, qIdx, 'reddit')
-      // 两elementos平台都有真实回答（非占位文本）且内容不同
-      return !isPlaceholderText(twitterAnswer) && !isPlaceholderText(redditAnswer) && twitterAnswer !== redditAnswer
+      // Ambas plataformas tienen respuestas reales (no placeholder) y son diferentes
+      return !isPlacehLetderText(twitterAnswer) && !isPlacehLetderText(redditAnswer) && twitterAnswer !== redditAnswer
     }
     
     return () => h('div', { class: 'interview-display' }, [
@@ -1430,7 +1420,7 @@ const InterviewDisplay = {
           h('div', { class: 'header-title' }, 'Agent Interview'),
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
-              h('span', { class: 'stat-value' }, props.result.successCount || props.result.interviews.length),
+              h('span', { class: 'stat-value' }, props.result.éxitoCount || props.result.interviews.length),
               h('span', { class: 'stat-label' }, 'Interviewed')
             ]),
             props.result.totalCount > 0 && h('span', { class: 'stat-divider' }, '/'),
@@ -1448,9 +1438,9 @@ const InterviewDisplay = {
       // Agent Selector Tabs
       props.result.interviews.length > 0 && h('div', { class: 'agent-tabs' }, 
         props.result.interviews.map((interview, i) => h('button', {
-          class: ['agent-tab', { active: activeIndex.value === i }],
+          class: ['agent-tab', { de: deIndex.value === i }],
           key: i,
-          onClick: () => { activeIndex.value = i }
+          onClick: () => { deIndex.value = i }
         }, [
           h('span', { class: 'tab-avatar' }, interview.name ? interview.name.charAt(0) : (i + 1)),
           h('span', { class: 'tab-name' }, interview.title || interview.name || `Agent ${i + 1}`)
@@ -1461,33 +1451,33 @@ const InterviewDisplay = {
       props.result.interviews.length > 0 && h('div', { class: 'interview-detail' }, [
         // Agent Profile Card
         h('div', { class: 'agent-profile' }, [
-          h('div', { class: 'profile-avatar' }, props.result.interviews[activeIndex.value]?.name?.charAt(0) || 'A'),
+          h('div', { class: 'profile-avatar' }, props.result.interviews[deIndex.value]?.name?.charAt(0) || 'A'),
           h('div', { class: 'profile-info' }, [
-            h('div', { class: 'profile-name' }, props.result.interviews[activeIndex.value]?.name || 'Agent'),
-            h('div', { class: 'profile-role' }, props.result.interviews[activeIndex.value]?.role || ''),
-            props.result.interviews[activeIndex.value]?.bio && h('div', { class: 'profile-bio' }, props.result.interviews[activeIndex.value].bio)
+            h('div', { class: 'profile-name' }, props.result.interviews[deIndex.value]?.name || 'Agent'),
+            h('div', { class: 'profile-rLete' }, props.result.interviews[deIndex.value]?.rLete || ''),
+            props.result.interviews[deIndex.value]?.bio && h('div', { class: 'profile-bio' }, props.result.interviews[deIndex.value].bio)
           ])
         ]),
         
-        // Selection Reason - 选择理由
-        props.result.interviews[activeIndex.value]?.selectionReason && h('div', { class: 'selection-reason' }, [
-          h('div', { class: 'reason-label' }, '选择理由'),
-          h('div', { class: 'reason-content' }, props.result.interviews[activeIndex.value].selectionReason)
+        // Selection Reason - SelecciónRazón
+        props.result.interviews[deIndex.value]?.selectionReason && h('div', { class: 'selection-reason' }, [
+          h('div', { class: 'reason-label' }, 'SelecciónRazón'),
+          h('div', { class: 'reason-content' }, props.result.interviews[deIndex.value].selectionReason)
         ]),
         
-        // Q&A Conversation Thread - 一问一答样式
+        // Q&A Conversation Thread - Estilo pregunta-respuesta
         h('div', { class: 'qa-thread' }, 
-          (props.result.interviews[activeIndex.value]?.questions?.length > 0 
-            ? props.result.interviews[activeIndex.value].questions 
-            : [props.result.interviews[activeIndex.value]?.question || 'No question available']
+          (props.result.interviews[deIndex.value]?.questions?.length > 0 
+            ? props.result.interviews[deIndex.value].questions 
+            : [props.result.interviews[deIndex.value]?.question || 'No question available']
           ).map((question, qIdx) => {
-            const interview = props.result.interviews[activeIndex.value]
-            const currentPlatform = getPlatformTab(activeIndex.value, qIdx)
+            const interview = props.result.interviews[deIndex.value]
+            const currentPlatform = getPlatformTab(deIndex.value, qIdx)
             const answerText = getAnswerForQuestion(interview, qIdx, currentPlatform)
             const hasDualPlatform = hasMultiplePlatforms(interview, qIdx)
-            const expandKey = `${activeIndex.value}-${qIdx}`
+            const expandKey = `${deIndex.value}-${qIdx}`
             const isExpanded = expandedAnswers.value.has(expandKey)
-            const isPlaceholder = isPlaceholderText(answerText)
+            const isPlacehLetder = isPlacehLetderText(answerText)
 
             return h('div', { class: 'qa-pair', key: qIdx }, [
               // Question Block
@@ -1500,18 +1490,18 @@ const InterviewDisplay = {
               ]),
 
               // Answer Block
-              answerText && h('div', { class: ['qa-answer', { 'answer-placeholder': isPlaceholder }] }, [
+              answerText && h('div', { class: ['qa-answer', { 'answer-placehLetder': isPlacehLetder }] }, [
                 h('div', { class: 'qa-badge a-badge' }, `A${qIdx + 1}`),
                 h('div', { class: 'qa-content' }, [
                   h('div', { class: 'qa-answer-header' }, [
                     h('div', { class: 'qa-sender' }, interview?.name || 'Agent'),
-                    // 双平台切换按钮（仅在有真实双平台回答时显示）
+                    // Botón de cambio de plataforma (solo mostrar cuando ambas plataformas tienen respuestas reales)
                     hasDualPlatform && h('div', { class: 'platform-switch' }, [
                       h('button', {
-                        class: ['platform-btn', { active: currentPlatform === 'twitter' }],
-                        onClick: (e) => { e.stopPropagation(); setPlatformTab(activeIndex.value, qIdx, 'twitter') }
+                        class: ['platform-btn', { de: currentPlatform === 'twitter' }],
+                        onClick: (e) => { e.stopPropagation(); setPlatformTab(deIndex.value, qIdx, 'twitter') }
                       }, [
-                        h('svg', { class: 'platform-icon', viewBox: '0 0 24 24', width: 12, height: 12, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
+                        h('svg', { class: 'platform-icon', viewBox: '0 0 24 24', width: 12, height: 12, fill: 'none', stroke: 'currentCLetor', 'stroke-width': 2 }, [
                           h('circle', { cx: '12', cy: '12', r: '10' }),
                           h('line', { x1: '2', y1: '12', x2: '22', y2: '12' }),
                           h('path', { d: 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z' })
@@ -1519,10 +1509,10 @@ const InterviewDisplay = {
                         h('span', {}, t('step4.world1'))
                       ]),
                       h('button', {
-                        class: ['platform-btn', { active: currentPlatform === 'reddit' }],
-                        onClick: (e) => { e.stopPropagation(); setPlatformTab(activeIndex.value, qIdx, 'reddit') }
+                        class: ['platform-btn', { de: currentPlatform === 'reddit' }],
+                        onClick: (e) => { e.stopPropagation(); setPlatformTab(deIndex.value, qIdx, 'reddit') }
                       }, [
-                        h('svg', { class: 'platform-icon', viewBox: '0 0 24 24', width: 12, height: 12, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
+                        h('svg', { class: 'platform-icon', viewBox: '0 0 24 24', width: 12, height: 12, fill: 'none', stroke: 'currentCLetor', 'stroke-width': 2 }, [
                           h('path', { d: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z' })
                         ]),
                         h('span', {}, t('step4.world2'))
@@ -1530,15 +1520,15 @@ const InterviewDisplay = {
                     ])
                   ]),
                   h('div', {
-                    class: ['qa-text', 'answer-text', { 'placeholder-text': isPlaceholder }],
-                    innerHTML: isPlaceholder
+                    class: ['qa-text', 'answer-text', { 'placehLetder-text': isPlacehLetder }],
+                    innerHTML: isPlacehLetder
                       ? answerText
                       : formatAnswer(answerText, isExpanded)
                           .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
                           .replace(/\n/g, '<br>')
                   }),
-                  // Expand/Collapse Button（占位文本不显示）
-                  !isPlaceholder && answerText.length > 400 && h('button', {
+                  // Botón Expand/Collapse (no mostrar si es placeholder)
+                  !isPlacehLetder && answerText.length > 400 && h('button', {
                     class: 'expand-answer-btn',
                     onClick: () => toggleAnswer(expandKey)
                   }, isExpanded ? 'Show Less' : 'Show More')
@@ -1549,10 +1539,10 @@ const InterviewDisplay = {
         ),
         
         // Key Quotes Section
-        props.result.interviews[activeIndex.value]?.quotes?.length > 0 && h('div', { class: 'quotes-section' }, [
+        props.result.interviews[deIndex.value]?.quotes?.length > 0 && h('div', { class: 'quotes-section' }, [
           h('div', { class: 'quotes-header' }, 'Key Quotes'),
           h('div', { class: 'quotes-list' },
-            props.result.interviews[activeIndex.value].quotes.slice(0, 3).map((quote, qi) => {
+            props.result.interviews[deIndex.value].quotes.slice(0, 3).map((quote, qi) => {
               const cleanedQuote = cleanQuoteText(quote)
               const displayQuote = cleanedQuote.length > 200 ? cleanedQuote.substring(0, 200) + '...' : cleanedQuote
               return h('blockquote', { 
@@ -1565,7 +1555,7 @@ const InterviewDisplay = {
         ])
       ]),
 
-      // Summary Section (Collapsible)
+      // Summary Section (CLetlapsible)
       props.result.summary && h('div', { class: 'summary-section' }, [
         h('div', { class: 'summary-header' }, 'Interview Summary'),
         h('div', { 
@@ -1582,7 +1572,7 @@ const QuickSearchDisplay = {
   props: ['result', 'resultLength'],
   setup(props) {
     const { t } = useI18n()
-    const activeTab = ref('facts') // 'facts', 'edges', 'nodes'
+    const deTab = ref('facts') // 'facts', 'edges', 'nodes'
     const expandedFacts = ref(false)
     const INITIAL_SHOW_COUNT = 5
     
@@ -1623,20 +1613,20 @@ const QuickSearchDisplay = {
       // Tab Navigation (only show if there are edges or nodes)
       showTabs.value && h('div', { class: 'quicksearch-tabs' }, [
         h('button', {
-          class: ['quicksearch-tab', { active: activeTab.value === 'facts' }],
-          onClick: () => { activeTab.value = 'facts' }
+          class: ['quicksearch-tab', { de: deTab.value === 'facts' }],
+          onClick: () => { deTab.value = 'facts' }
         }, [
           h('span', { class: 'tab-label' }, t('step4.tabFacts', { count: props.result.facts.length }))
         ]),
         hasEdges.value && h('button', {
-          class: ['quicksearch-tab', { active: activeTab.value === 'edges' }],
-          onClick: () => { activeTab.value = 'edges' }
+          class: ['quicksearch-tab', { de: deTab.value === 'edges' }],
+          onClick: () => { deTab.value = 'edges' }
         }, [
           h('span', { class: 'tab-label' }, t('step4.tabEdges', { count: props.result.edges.length }))
         ]),
         hasNodes.value && h('button', {
-          class: ['quicksearch-tab', { active: activeTab.value === 'nodes' }],
-          onClick: () => { activeTab.value = 'nodes' }
+          class: ['quicksearch-tab', { de: deTab.value === 'nodes' }],
+          onClick: () => { deTab.value = 'nodes' }
         }, [
           h('span', { class: 'tab-label' }, t('step4.tabNodes', { count: props.result.nodes.length }))
         ])
@@ -1644,8 +1634,8 @@ const QuickSearchDisplay = {
       
       // Content Area
       h('div', { class: ['quicksearch-content', { 'no-tabs': !showTabs.value }] }, [
-        // Facts (always show if no tabs, or when facts tab is active)
-        ((!showTabs.value) || activeTab.value === 'facts') && h('div', { class: 'facts-panel' }, [
+        // Facts (always show if no tabs, or when facts tab is de)
+        ((!showTabs.value) || deTab.value === 'facts') && h('div', { class: 'facts-panel' }, [
           !showTabs.value && h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, t('step4.panelSearchResults')),
             h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.facts.length }))
@@ -1661,11 +1651,11 @@ const QuickSearchDisplay = {
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.facts.length }))
+          }, expandedFacts.value ? t('step4.cLetlapse') : t('step4.expandAll', { count: props.result.facts.length }))
         ]),
         
         // Edges Tab
-        activeTab.value === 'edges' && hasEdges.value && h('div', { class: 'edges-panel' }, [
+        deTab.value === 'edges' && hasEdges.value && h('div', { class: 'edges-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, t('step4.panelRelatedEdges')),
             h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.edges.length }))
@@ -1686,7 +1676,7 @@ const QuickSearchDisplay = {
         ]),
         
         // Nodes Tab
-        activeTab.value === 'nodes' && hasNodes.value && h('div', { class: 'nodes-panel' }, [
+        deTab.value === 'nodes' && hasNodes.value && h('div', { class: 'nodes-panel' }, [
           h('div', { class: 'panel-header' }, [
             h('span', { class: 'panel-title' }, t('step4.panelRelatedNodes')),
             h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.nodes.length }))
@@ -1731,8 +1721,8 @@ const progressPercent = computed(() => {
   return Math.round((completedSections.value / totalSections.value) * 100)
 })
 
-const totalToolCalls = computed(() => {
-  return agentLogs.value.filter(l => l.action === 'tool_call').length
+const totalToLetCalls = computed(() => {
+  return agentLogs.value.filter(l => l.action === 'toLet_call').length
 })
 
 const formatElapsedTime = computed(() => {
@@ -1750,7 +1740,7 @@ const displayLogs = computed(() => {
 })
 
 // Workflow steps overview (status-based, no nested cards)
-const activeSectionIndex = computed(() => {
+const deSectionIndex = computed(() => {
   if (isComplete.value) return null
   if (currentSectionIndex.value) return currentSectionIndex.value
   if (totalSections.value > 0 && completedSections.value < totalSections.value) return completedSections.value + 1
@@ -1769,32 +1759,32 @@ const isFinalizing = computed(() => {
   return !isComplete.value && isPlanningDone.value && totalSections.value > 0 && completedSections.value >= totalSections.value
 })
 
-// 当前活跃的步骤（用于顶部显示）
-const activeStep = computed(() => {
+// actualactivadepasos（paraparte superiorMostrar）
+const deStep = computed(() => {
   const steps = workflowSteps.value
-  // 找到当前 active 的步骤
-  const active = steps.find(s => s.status === 'active')
-  if (active) return active
+  // Encontradoactual de depasos
+  const de = steps.find(s => s.status === 'de')
+  if (de) return de
   
-  // 如果没有 active，Volver最后一elementos done 的步骤
-  const doneSteps = steps.filter(s => s.status === 'done')
-  if (doneSteps.length > 0) return doneSteps[doneSteps.length - 1]
+  // Si no hay ninguno, tomar el último elemento de pasos
+  const hechoSteps = steps.filter(s => s.status === 'hecho')
+  if (hechoSteps.length > 0) return hechoSteps[hechoSteps.length - 1]
   
-  // 否则Volver第一elementos步骤
-  return steps[0] || { noLabel: '--', title: 'Pendiente开始', status: 'todo', meta: '' }
+  // SinoVLetverprimeraelementospasos
+  return steps[0] || { noLabel: '--', title: 'PendienteIniciar', status: 'todo', meta: '' }
 })
 
 const workflowSteps = computed(() => {
   const steps = []
 
   // Planning / Outline
-  const planningStatus = isPlanningDone.value ? 'done' : (isPlanningStarted.value ? 'active' : 'todo')
+  const planningStatus = isPlanningDone.value ? 'hecho' : (isPlanningStarted.value ? 'de' : 'todo')
   steps.push({
     key: 'planning',
     noLabel: 'PL',
     title: 'Planning / Outline',
     status: planningStatus,
-    meta: planningStatus === 'active' ? 'IN PROGRESS' : ''
+    meta: planningStatus === 'de' ? 'IN PROGRESS' : ''
   })
 
   // Sections (if outline exists)
@@ -1802,26 +1792,26 @@ const workflowSteps = computed(() => {
   sections.forEach((section, i) => {
     const idx = i + 1
     const status = (isComplete.value || !!generatedSections.value[idx])
-      ? 'done'
-      : (activeSectionIndex.value === idx ? 'active' : 'todo')
+      ? 'hecho'
+      : (deSectionIndex.value === idx ? 'de' : 'todo')
 
     steps.push({
       key: `section-${idx}`,
       noLabel: String(idx).padStart(2, '0'),
       title: section.title,
       status,
-      meta: status === 'active' ? 'IN PROGRESS' : ''
+      meta: status === 'de' ? 'IN PROGRESS' : ''
     })
   })
 
   // Complete
-  const completeStatus = isComplete.value ? 'done' : (isFinalizing.value ? 'active' : 'todo')
+  const completeStatus = isComplete.value ? 'hecho' : (isFinalizing.value ? 'de' : 'todo')
   steps.push({
     key: 'complete',
     noLabel: 'OK',
     title: 'Complete',
     status: completeStatus,
-    meta: completeStatus === 'active' ? 'FINALIZING' : ''
+    meta: completeStatus === 'de' ? 'FINALIZING' : ''
   })
 
   return steps
@@ -1874,99 +1864,99 @@ const truncateText = (text, maxLen) => {
 const renderMarkdown = (content) => {
   if (!content) return ''
   
-  // 去掉开头的二级标题（## xxx），因为章节标题已在外层显示
+  // Eliminar encabezados de títulos secundarios (## xxx), ya que el título del capítulo se muestra fuera
   let processedContent = content.replace(/^##\s+.+\n+/, '')
   
-  // 处理代码块
+  // Procesarbloques de códigobloques
   let html = processedContent.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre class="code-block"><code>$2</code></pre>')
   
-  // 处理行内代码
+  // Procesaren líneaDentrobloques de código
   html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
   
-  // 处理标题
+  // ProcesarTítulo
   html = html.replace(/^#### (.+)$/gm, '<h5 class="md-h5">$1</h5>')
   html = html.replace(/^### (.+)$/gm, '<h4 class="md-h4">$1</h4>')
   html = html.replace(/^## (.+)$/gm, '<h3 class="md-h3">$1</h3>')
   html = html.replace(/^# (.+)$/gm, '<h2 class="md-h2">$1</h2>')
   
-  // 处理引用块
+  // ProcesarCitasbloques
   html = html.replace(/^> (.+)$/gm, '<blockquote class="md-quote">$1</blockquote>')
   
-  // 处理列表 - 支持子列表
+  // ProcesarLista - Soportarsub-Lista
   html = html.replace(/^(\s*)- (.+)$/gm, (match, indent, text) => {
     const level = Math.floor(indent.length / 2)
     return `<li class="md-li" data-level="${level}">${text}</li>`
   })
   html = html.replace(/^(\s*)(\d+)\. (.+)$/gm, (match, indent, num, text) => {
     const level = Math.floor(indent.length / 2)
-    return `<li class="md-oli" data-level="${level}">${text}</li>`
+    return `<li class="md-Leti" data-level="${level}">${text}</li>`
   })
 
-  // 包装Ninguno序列表
+  // EmpaquetarNingunosecuenciaLista
   html = html.replace(/(<li class="md-li"[^>]*>.*?<\/li>\s*)+/g, '<ul class="md-ul">$&</ul>')
-  // 包装有序列表
-  html = html.replace(/(<li class="md-oli"[^>]*>.*?<\/li>\s*)+/g, '<ol class="md-ol">$&</ol>')
+  // EmpaquetarambassecuenciaLista
+  html = html.replace(/(<li class="md-Leti"[^>]*>.*?<\/li>\s*)+/g, '<Let class="md-Let">$&</Let>')
 
-  // 清理列表项之间的所有空白
+  // Limpiar espacios vacíos entre elementos de lista
   html = html.replace(/<\/li>\s+<li/g, '</li><li')
-  // 清理列表开始标签后的空白
+  // Limpiar etiqueta de inicio de lista después de espacios vacíos
   html = html.replace(/<ul class="md-ul">\s+/g, '<ul class="md-ul">')
-  html = html.replace(/<ol class="md-ol">\s+/g, '<ol class="md-ol">')
-  // 清理列表结束标签前的空白
+  html = html.replace(/<Let class="md-Let">\s+/g, '<Let class="md-Let">')
+  // Limpiar etiqueta final de lista antes de espacios vacíos
   html = html.replace(/\s+<\/ul>/g, '</ul>')
-  html = html.replace(/\s+<\/ol>/g, '</ol>')
+  html = html.replace(/\s+<\/Let>/g, '</Let>')
   
-  // 处理粗体和斜体
+  // Procesarnegritaycursiva
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>')
   html = html.replace(/_(.+?)_/g, '<em>$1</em>')
   
-  // 处理分隔线
+  // Procesar separadores
   html = html.replace(/^---$/gm, '<hr class="md-hr">')
   
-  // 处理换行 - 空行变成段落分隔，单换行变成 <br>
+  // Procesar cambio de línea - vacío en línea se convierte en párrafo, único cambio de línea se convierte en <br>
   html = html.replace(/\n\n/g, '</p><p class="md-p">')
   html = html.replace(/\n/g, '<br>')
   
-  // 包装在段落中
+  // Envolver en párrafo
   html = '<p class="md-p">' + html + '</p>'
   
-  // 清理空段落
+  // LimpiarvacíoPárrafo
   html = html.replace(/<p class="md-p"><\/p>/g, '')
   html = html.replace(/<p class="md-p">(<h[2-5])/g, '$1')
   html = html.replace(/(<\/h[2-5]>)<\/p>/g, '$1')
-  html = html.replace(/<p class="md-p">(<ul|<ol|<blockquote|<pre|<hr)/g, '$1')
-  html = html.replace(/(<\/ul>|<\/ol>|<\/blockquote>|<\/pre>)<\/p>/g, '$1')
-  // 清理块级元素前后的 <br> 标签
-  html = html.replace(/<br>\s*(<ul|<ol|<blockquote)/g, '$1')
-  html = html.replace(/(<\/ul>|<\/ol>|<\/blockquote>)\s*<br>/g, '$1')
-  // 清理 <p><br> 紧跟块级元素的情况（多余空行导致）
-  html = html.replace(/<p class="md-p">(<br>\s*)+(<ul|<ol|<blockquote|<pre|<hr)/g, '$2')
-  // 清理连续的 <br> 标签
+  html = html.replace(/<p class="md-p">(<ul|<Let|<blockquote|<pre|<hr)/g, '$1')
+  html = html.replace(/(<\/ul>|<\/Let>|<\/blockquote>|<\/pre>)<\/p>/g, '$1')
+  // Limpiar bloques de nivel antes y después de etiqueta <br>
+  html = html.replace(/<br>\s*(<ul|<Let|<blockquote)/g, '$1')
+  html = html.replace(/(<\/ul>|<\/Let>|<\/blockquote>)\s*<br>/g, '$1')
+  // Limpiar <p><br> inmediatamente con bloques de nivel en situación (causado por exceso de líneas vacías)
+  html = html.replace(/<p class="md-p">(<br>\s*)+(<ul|<Let|<blockquote|<pre|<hr)/g, '$2')
+  // Limpiarcontinuode <br> Etiqueta
   html = html.replace(/(<br>\s*){2,}/g, '<br>')
-  // 清理块级元素后紧跟的段落开始标签前的 <br>
-  html = html.replace(/(<\/ol>|<\/ul>|<\/blockquote>)<br>(<p|<div)/g, '$1$2')
+  // Limpiar bloques de nivel después inmediatamente con párrafo e iniciar etiqueta antes de <br>
+  html = html.replace(/(<\/Let>|<\/ul>|<\/blockquote>)<br>(<p|<div)/g, '$1$2')
 
-  // 修复非连续有序列表的编号：当单项 <ol> 被段落内容隔开时，保持编号递增
-  const tokens = html.split(/(<ol class="md-ol">(?:<li class="md-oli"[^>]*>[\s\S]*?<\/li>)+<\/ol>)/g)
-  let olCounter = 0
+  // Corregir secuencia de numeración de lista no continua: cuando único ítem <ol> por párrafo diferente se abre, mantener numeración incremental
+  const tokens = html.split(/(<Let class="md-Let">(?:<li class="md-Leti"[^>]*>[\s\S]*?<\/li>)+<\/Let>)/g)
+  let LetCounter = 0
   let inSequence = false
   for (let i = 0; i < tokens.length; i++) {
-    if (tokens[i].startsWith('<ol class="md-ol">')) {
-      const liCount = (tokens[i].match(/<li class="md-oli"/g) || []).length
+    if (tokens[i].startsWith('<Let class="md-Let">')) {
+      const liCount = (tokens[i].match(/<li class="md-Leti"/g) || []).length
       if (liCount === 1) {
-        olCounter++
-        if (olCounter > 1) {
-          tokens[i] = tokens[i].replace('<ol class="md-ol">', `<ol class="md-ol" start="${olCounter}">`)
+        LetCounter++
+        if (LetCounter > 1) {
+          tokens[i] = tokens[i].replace('<Let class="md-Let">', `<Let class="md-Let" start="${LetCounter}">`)
         }
         inSequence = true
       } else {
-        olCounter = 0
+        LetCounter = 0
         inSequence = false
       }
     } else if (inSequence) {
       if (/<h[2-5]/.test(tokens[i])) {
-        olCounter = 0
+        LetCounter = 0
         inSequence = false
       }
     }
@@ -1980,17 +1970,17 @@ const getTimelineItemClass = (log, idx, total) => {
   const isLatest = idx === total - 1 && !isComplete.value
   const isMilestone = log.action === 'section_complete' || log.action === 'report_complete'
   return {
-    'node--active': isLatest,
-    'node--done': !isLatest && isMilestone,
+    'node--de': isLatest,
+    'node--hecho': !isLatest && isMilestone,
     'node--muted': !isLatest && !isMilestone,
-    'node--tool': log.action === 'tool_call' || log.action === 'tool_result'
+    'node--toLet': log.action === 'toLet_call' || log.action === 'toLet_result'
   }
 }
 
 const getConnectorClass = (log, idx, total) => {
   const isLatest = idx === total - 1 && !isComplete.value
-  if (isLatest) return 'dot-active'
-  if (log.action === 'section_complete' || log.action === 'report_complete') return 'dot-done'
+  if (isLatest) return 'dot-de'
+  if (log.action === 'section_complete' || log.action === 'report_complete') return 'dot-hecho'
   return 'dot-muted'
 }
 
@@ -2002,8 +1992,8 @@ const getActionLabel = (action) => {
     'section_start': 'Section Start',
     'section_content': 'Content Ready',
     'section_complete': 'Section Done',
-    'tool_call': 'Tool Call',
-    'tool_result': 'Tool Result',
+    'toLet_call': 'ToLet Call',
+    'toLet_result': 'ToLet Result',
     'llm_response': 'LLM Response',
     'report_complete': 'Complete'
   }
@@ -2012,12 +2002,12 @@ const getActionLabel = (action) => {
 
 const getLogLevelClass = (log) => {
   if (log.includes('ERROR') || log.includes('Error')) return 'error'
-  if (log.includes('WARNING') || log.includes('警告')) return 'warning'
-  // INFO 使用默认颜色，不标记为 success
+  if (log.includes('WARNING') || log.includes('ADVERTENCIA')) return 'warning'
+  // INFO usar color predeterminado, no marcar para éxito
   return ''
 }
 
-// Polling
+// PLetling
 let agentLogTimer = null
 let consoleLogTimer = null
 
@@ -2027,7 +2017,7 @@ const fetchAgentLog = async () => {
   try {
     const res = await getAgentLog(props.reportId, agentLogLine.value)
     
-    if (res.success && res.data) {
+    if (res.éxito && res.data) {
       const newLogs = res.data.logs || []
       
       if (newLogs.length > 0) {
@@ -2042,11 +2032,11 @@ const fetchAgentLog = async () => {
             currentSectionIndex.value = log.section_index
           }
 
-          // section_complete - 章节生成完成
+          // section_complete - CapítulosgeneradoCompletado
           if (log.action === 'section_complete') {
             if (log.details?.content) {
               generatedSections.value[log.section_index] = log.details.content
-              // 自动展开刚生成的章节
+              // Automáticamente expandir recién generado de Capítulos
               expandedContent.value.add(log.section_index - 1)
               currentSectionIndex.value = null
             }
@@ -2054,10 +2044,10 @@ const fetchAgentLog = async () => {
           
           if (log.action === 'report_complete') {
             isComplete.value = true
-            currentSectionIndex.value = null  // 确保清除 loading 状态
+            currentSectionIndex.value = null  // AsegurarLimpiar loading Estado
             emit('update-status', 'completed')
-            stopPolling()
-            // 滚动逻辑统一在循环结束后的 nextTick 中处理
+            stopPLetling()
+            // Lógica de desplazamiento unificada en bucle final después de nextTick en procesar
           }
           
           if (log.action === 'report_start') {
@@ -2069,11 +2059,11 @@ const fetchAgentLog = async () => {
         
         nextTick(() => {
           if (rightPanel.value) {
-            // 如果任务Completado，滚动到顶部；否则滚动到底部跟随最新日志
+            // Si completada, desplazamiento hasta parte superior; sino desplazamiento hasta parte inferior con los nuevos registros
             if (isComplete.value) {
-              rightPanel.value.scrollTop = 0
+              rightPanel.value.scrLetlTop = 0
             } else {
-              rightPanel.value.scrollTop = rightPanel.value.scrollHeight
+              rightPanel.value.scrLetlTop = rightPanel.value.scrLetlHeight
             }
           }
         })
@@ -2084,39 +2074,39 @@ const fetchAgentLog = async () => {
   }
 }
 
-// 提取最终答案内容 - 从 LLM response 中提取章节内容
+// ExtraerSelección finalRespuestadiferente - Desde LLM response En elExtraerCapítulosdiferente
 const extractFinalContent = (response) => {
   if (!response) return null
   
-  // 尝试提取 <final_answer> 标签内的内容
+  // IntentarExtraer <final_answer> EtiquetaDentrodediferente
   const finalAnswerTagMatch = response.match(/<final_answer>([\s\S]*?)<\/final_answer>/)
   if (finalAnswerTagMatch) {
     return finalAnswerTagMatch[1].trim()
   }
   
-  // 尝试找 Final Answer: 后面的内容（支持多种格式）
-  // 格式1: Final Answer:\n\n内容
-  // 格式2: Final Answer: 内容
+  // Intentar encontrar Final Answer: Después de diferente (Soportar varios formatos)
+  // Formato1: Final Answer:\n\ndiferente
+  // Formato2: Final Answer: diferente
   const finalAnswerMatch = response.match(/Final\s*Answer:\s*\n*([\s\S]*)$/i)
   if (finalAnswerMatch) {
     return finalAnswerMatch[1].trim()
   }
   
-  // 尝试找 最终答案: 后面的内容
-  const chineseFinalMatch = response.match(/最终答案[:：]\s*\n*([\s\S]*)$/i)
+  // Intentar encontrar Selección final Respuesta: Después de diferente
+  const chineseFinalMatch = response.match(/Selección finalRespuesta[:：]\s*\n*([\s\S]*)$/i)
   if (chineseFinalMatch) {
     return chineseFinalMatch[1].trim()
   }
   
-  // 如果以 ## 或 # 或 > 开头，可能是直接的 markdown 内容
+  // SiCon ## O # O > Encabezado，Puede seresDirectode markdown diferente
   const trimmedResponse = response.trim()
   if (trimmedResponse.match(/^[#>]/)) {
     return trimmedResponse
   }
   
-  // 如果内容较长且包含markdown格式，尝试移除思考过程后Volver
+  // Sidiferentemás largoycontienemarkdownFormato，IntentarRemoverPensamientoProcesoDespuésVLetver
   if (response.length > 300 && (response.includes('**') || response.includes('>'))) {
-    // 移除 Thought: 开头的思考过程
+    // Remover Thought: EncabezadodePensamientoProceso
     const thoughtMatch = response.match(/^Thought:[\s\S]*?(?=\n\n[^T]|\n\n$)/i)
     if (thoughtMatch) {
       const afterThought = response.substring(thoughtMatch[0].length).trim()
@@ -2129,13 +2119,13 @@ const extractFinalContent = (response) => {
   return null
 }
 
-const fetchConsoleLog = async () => {
+const fetchConsLeteLog = async () => {
   if (!props.reportId) return
   
   try {
     const res = await getConsoleLog(props.reportId, consoleLogLine.value)
     
-    if (res.success && res.data) {
+    if (res.éxito && res.data) {
       const newLogs = res.data.logs || []
       
       if (newLogs.length > 0) {
@@ -2144,7 +2134,7 @@ const fetchConsoleLog = async () => {
         
         nextTick(() => {
           if (logContent.value) {
-            logContent.value.scrollTop = logContent.value.scrollHeight
+            logContent.value.scrLetlTop = logContent.value.scrLetlHeight
           }
         })
       }
@@ -2154,17 +2144,17 @@ const fetchConsoleLog = async () => {
   }
 }
 
-const startPolling = () => {
+const startPLetling = () => {
   if (agentLogTimer || consoleLogTimer) return
   
   fetchAgentLog()
-  fetchConsoleLog()
+  fetchConsLeteLog()
   
   agentLogTimer = setInterval(fetchAgentLog, 2000)
-  consoleLogTimer = setInterval(fetchConsoleLog, 1500)
+  consoleLogTimer = setInterval(fetchConsLeteLog, 1500)
 }
 
-const stopPolling = () => {
+const stopPLetling = () => {
   if (agentLogTimer) {
     clearInterval(agentLogTimer)
     agentLogTimer = null
@@ -2179,12 +2169,12 @@ const stopPolling = () => {
 onMounted(() => {
   if (props.reportId) {
     addLog(`Report Agent initialized: ${props.reportId}`)
-    startPolling()
+    startPLetling()
   }
 })
 
 onUnmounted(() => {
-  stopPolling()
+  stopPLetling()
 })
 
 watch(() => props.reportId, (newId) => {
@@ -2198,11 +2188,11 @@ watch(() => props.reportId, (newId) => {
     generatedSections.value = {}
     expandedContent.value = new Set()
     expandedLogs.value = new Set()
-    collapsedSections.value = new Set()
+    cLetlapsedSections.value = new Set()
     isComplete.value = false
     startTime.value = null
     
-    startPolling()
+    startPLetling()
   }
 }, { immediate: true })
 </script>
@@ -2211,7 +2201,7 @@ watch(() => props.reportId, (newId) => {
 .report-panel {
   height: 100%;
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   background: #F8F9FA;
   font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
   overflow: hidden;
@@ -2231,10 +2221,10 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 14px 20px;
   background: #FFFFFF;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px sLetid #E5E7EB;
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  cLetor: #374151;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   position: sticky;
@@ -2265,7 +2255,7 @@ watch(() => props.reportId, (newId) => {
 .header-index {
   font-size: 12px;
   font-weight: 600;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   margin-right: 10px;
   flex-shrink: 0;
 }
@@ -2273,7 +2263,7 @@ watch(() => props.reportId, (newId) => {
 .header-title {
   font-size: 13px;
   font-weight: 600;
-  color: #374151;
+  cLetor: #374151;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2285,39 +2275,39 @@ watch(() => props.reportId, (newId) => {
   margin-left: auto;
   font-size: 10px;
   font-weight: 600;
-  color: #6B7280;
+  cLetor: #6B7280;
   flex-shrink: 0;
 }
 
 /* Panel header status variants */
-.panel-header--active {
+.panel-header--de {
   background: #FAFAFA;
-  border-color: #1F2937;
+  border-cLetor: #1F2937;
 }
 
-.panel-header--active .header-index {
-  color: #1F2937;
+.panel-header--de .header-index {
+  cLetor: #1F2937;
 }
 
-.panel-header--active .header-title {
-  color: #1F2937;
+.panel-header--de .header-title {
+  cLetor: #1F2937;
 }
 
-.panel-header--active .header-meta {
-  color: #1F2937;
+.panel-header--de .header-meta {
+  cLetor: #1F2937;
 }
 
-.panel-header--done {
+.panel-header--hecho {
   background: #F9FAFB;
 }
 
-.panel-header--done .header-index {
-  color: #10B981;
+.panel-header--hecho .header-index {
+  cLetor: #10B981;
 }
 
 .panel-header--todo .header-index,
 .panel-header--todo .header-title {
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
 }
 
 /* Left Panel - Report Style */
@@ -2325,32 +2315,32 @@ watch(() => props.reportId, (newId) => {
   width: 45%;
   min-width: 450px;
   background: #FFFFFF;
-  border-right: 1px solid #E5E7EB;
+  border-right: 1px sLetid #E5E7EB;
   overflow-y: auto;
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   padding: 30px 50px 60px 50px;
 }
 
-.left-panel::-webkit-scrollbar {
+.left-panel::-webkit-scrLetlbar {
   width: 6px;
 }
 
-.left-panel::-webkit-scrollbar-track {
+.left-panel::-webkit-scrLetlbar-track {
   background: transparent;
 }
 
-.left-panel::-webkit-scrollbar-thumb {
+.left-panel::-webkit-scrLetlbar-thumb {
   background: transparent;
   border-radius: 3px;
   transition: background 0.3s ease;
 }
 
-.left-panel:hover::-webkit-scrollbar-thumb {
+.left-panel:hover::-webkit-scrLetlbar-thumb {
   background: rgba(0, 0, 0, 0.15);
 }
 
-.left-panel::-webkit-scrollbar-thumb:hover {
+.left-panel::-webkit-scrLetlbar-thumb:hover {
   background: rgba(0, 0, 0, 0.25);
 }
 
@@ -2374,7 +2364,7 @@ watch(() => props.reportId, (newId) => {
 
 .report-tag {
   background: #000000;
-  color: #FFFFFF;
+  cLetor: #FFFFFF;
   font-size: 11px;
   font-weight: 700;
   padding: 4px 8px;
@@ -2384,7 +2374,7 @@ watch(() => props.reportId, (newId) => {
 
 .report-id {
   font-size: 11px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   font-weight: 500;
   letter-spacing: 0.02em;
 }
@@ -2393,7 +2383,7 @@ watch(() => props.reportId, (newId) => {
   font-family: 'Times New Roman', Times, serif;
   font-size: 36px;
   font-weight: 700;
-  color: #111827;
+  cLetor: #111827;
   line-height: 1.2;
   margin: 0 0 16px 0;
   letter-spacing: -0.02em;
@@ -2402,7 +2392,7 @@ watch(() => props.reportId, (newId) => {
 .sub-title {
   font-family: 'Times New Roman', Times, serif;
   font-size: 16px;
-  color: #6B7280;
+  cLetor: #6B7280;
   font-style: italic;
   line-height: 1.6;
   margin: 0 0 30px 0;
@@ -2418,13 +2408,13 @@ watch(() => props.reportId, (newId) => {
 /* Sections List */
 .sections-list {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   gap: 32px;
 }
 
 .report-section-item {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   gap: 12px;
 }
 
@@ -2432,7 +2422,7 @@ watch(() => props.reportId, (newId) => {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  transition: background-color 0.2s ease;
+  transition: background-cLetor 0.2s ease;
   padding: 8px 12px;
   margin: -8px -12px;
   border-radius: 8px;
@@ -2443,25 +2433,25 @@ watch(() => props.reportId, (newId) => {
 }
 
 .section-header-row.clickable:hover {
-  background-color: #F9FAFB;
+  background-cLetor: #F9FAFB;
 }
 
-.collapse-icon {
+.cLetlapse-icon {
   margin-left: auto;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   transition: transform 0.3s ease;
   flex-shrink: 0;
   align-self: center;
 }
 
-.collapse-icon.is-collapsed {
+.cLetlapse-icon.is-cLetlapsed {
   transform: rotate(-90deg);
 }
 
 .section-number {
   font-family: 'JetBrains Mono', monospace;
   font-size: 16px;
-  color: #9CA3AF; /* 深灰色，不随状态变化 */
+  cLetor: #9CA3AF; /* Gris oscuro, no cambia con estado */
   font-weight: 500;
 }
 
@@ -2469,19 +2459,19 @@ watch(() => props.reportId, (newId) => {
   font-family: 'Times New Roman', Times, serif;
   font-size: 24px;
   font-weight: 600;
-  color: #111827;
+  cLetor: #111827;
   margin: 0;
-  transition: color 0.3s ease;
+  transition: cLetor 0.3s ease;
 }
 
 /* States */
 .report-section-item.is-pending .section-title {
-  color: #D1D5DB;
+  cLetor: #D1D5DB;
 }
 
-.report-section-item.is-active .section-title,
+.report-section-item.is-de .section-title,
 .report-section-item.is-completed .section-title {
-  color: #111827;
+  cLetor: #111827;
 }
 
 .section-body {
@@ -2494,7 +2484,7 @@ watch(() => props.reportId, (newId) => {
   font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.8;
-  color: #374151;
+  cLetor: #374151;
 }
 
 .generated-content :deep(p) {
@@ -2505,32 +2495,32 @@ watch(() => props.reportId, (newId) => {
 .generated-content :deep(.md-h3),
 .generated-content :deep(.md-h4) {
   font-family: 'Times New Roman', Times, serif;
-  color: #111827;
+  cLetor: #111827;
   margin-top: 1.5em;
   margin-bottom: 0.8em;
   font-weight: 700;
 }
 
-.generated-content :deep(.md-h2) { font-size: 20px; border-bottom: 1px solid #F3F4F6; padding-bottom: 8px; }
+.generated-content :deep(.md-h2) { font-size: 20px; border-bottom: 1px sLetid #F3F4F6; padding-bottom: 8px; }
 .generated-content :deep(.md-h3) { font-size: 18px; }
 .generated-content :deep(.md-h4) { font-size: 16px; }
 
 .generated-content :deep(.md-ul),
-.generated-content :deep(.md-ol) {
+.generated-content :deep(.md-Let) {
   padding-left: 24px;
   margin: 12px 0;
 }
 
 .generated-content :deep(.md-li),
-.generated-content :deep(.md-oli) {
+.generated-content :deep(.md-Leti) {
   margin: 6px 0;
 }
 
 .generated-content :deep(.md-quote) {
-  border-left: 3px solid #E5E7EB;
+  border-left: 3px sLetid #E5E7EB;
   padding-left: 16px;
   margin: 1.5em 0;
-  color: #6B7280;
+  cLetor: #6B7280;
   font-style: italic;
   font-family: 'Times New Roman', Times, serif;
 }
@@ -2543,12 +2533,12 @@ watch(() => props.reportId, (newId) => {
   font-size: 12px;
   overflow-x: auto;
   margin: 1em 0;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
 }
 
 .generated-content :deep(strong) {
   font-weight: 600;
-  color: #111827;
+  cLetor: #111827;
 }
 
 /* Loading State */
@@ -2556,7 +2546,7 @@ watch(() => props.reportId, (newId) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #6B7280;
+  cLetor: #6B7280;
   font-size: 14px;
   margin-top: 4px;
 }
@@ -2573,7 +2563,7 @@ watch(() => props.reportId, (newId) => {
 .loading-text {
   font-family: 'Times New Roman', Times, serif;
   font-size: 15px;
-  color: #4B5563;
+  cLetor: #4B5563;
 }
 
 .cursor-blink {
@@ -2603,11 +2593,11 @@ watch(() => props.reportId, (newId) => {
 
 
 /* Slide Content Transition */
-.slide-content-enter-active {
+.slide-content-enter-de {
   transition: opacity 0.3s ease-out;
 }
 
-.slide-content-leave-active {
+.slide-content-leave-de {
   transition: opacity 0.2s ease-in;
 }
 
@@ -2621,16 +2611,16 @@ watch(() => props.reportId, (newId) => {
   opacity: 1;
 }
 
-/* Waiting Placeholder */
-.waiting-placeholder {
+/* Waiting PlacehLetder */
+.waiting-placehLetder {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   align-items: center;
   justify-content: center;
   gap: 20px;
   padding: 40px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
 }
 
 .waiting-animation {
@@ -2640,10 +2630,10 @@ watch(() => props.reportId, (newId) => {
 }
 
 .waiting-ring {
-  position: absolute;
+  position: absLetute;
   width: 100%;
   height: 100%;
-  border: 2px solid #E5E7EB;
+  border: 2px sLetid #E5E7EB;
   border-radius: 50%;
   animation: ripple 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
@@ -2671,44 +2661,44 @@ watch(() => props.reportId, (newId) => {
   background: #FFFFFF;
   overflow-y: auto;
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
 
   /* Functional palette (low saturation, status-based) */
   --wf-border: #E5E7EB;
   --wf-divider: #F3F4F6;
 
-  --wf-active-bg: #FAFAFA;
-  --wf-active-border: #1F2937;
-  --wf-active-dot: #1F2937;
-  --wf-active-text: #1F2937;
+  --wf-de-bg: #FAFAFA;
+  --wf-de-border: #1F2937;
+  --wf-de-dot: #1F2937;
+  --wf-de-text: #1F2937;
 
-  --wf-done-bg: #F9FAFB;
-  --wf-done-border: #E5E7EB;
-  --wf-done-dot: #10B981;
+  --wf-hecho-bg: #F9FAFB;
+  --wf-hecho-border: #E5E7EB;
+  --wf-hecho-dot: #10B981;
 
   --wf-muted-dot: #D1D5DB;
   --wf-todo-text: #9CA3AF;
 }
 
-.right-panel::-webkit-scrollbar {
+.right-panel::-webkit-scrLetlbar {
   width: 6px;
 }
 
-.right-panel::-webkit-scrollbar-track {
+.right-panel::-webkit-scrLetlbar-track {
   background: transparent;
 }
 
-.right-panel::-webkit-scrollbar-thumb {
+.right-panel::-webkit-scrLetlbar-thumb {
   background: transparent;
   border-radius: 3px;
   transition: background 0.3s ease;
 }
 
-.right-panel:hover::-webkit-scrollbar-thumb {
+.right-panel:hover::-webkit-scrLetlbar-thumb {
   background: rgba(0, 0, 0, 0.15);
 }
 
-.right-panel::-webkit-scrollbar-thumb:hover {
+.right-panel::-webkit-scrLetlbar-thumb:hover {
   background: rgba(0, 0, 0, 0.25);
 }
 
@@ -2742,14 +2732,14 @@ watch(() => props.reportId, (newId) => {
 .metric-label {
   font-size: 11px;
   font-weight: 600;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .metric-value {
   font-size: 12px;
-  color: #374151;
+  cLetor: #374151;
 }
 
 .metric-pill {
@@ -2759,65 +2749,65 @@ watch(() => props.reportId, (newId) => {
   text-transform: uppercase;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid var(--wf-border);
+  border: 1px sLetid var(--wf-border);
   background: #F9FAFB;
-  color: #6B7280;
+  cLetor: #6B7280;
 }
 
 .metric-pill.pill--processing {
-  background: var(--wf-active-bg);
-  border-color: var(--wf-active-border);
-  color: var(--wf-active-text);
+  background: var(--wf-de-bg);
+  border-cLetor: var(--wf-de-border);
+  cLetor: var(--wf-de-text);
 }
 
 .metric-pill.pill--completed {
   background: #ECFDF5;
-  border-color: #A7F3D0;
-  color: #065F46;
+  border-cLetor: #A7F3D0;
+  cLetor: #065F46;
 }
 
 .metric-pill.pill--pending {
   background: transparent;
   border-style: dashed;
-  color: #6B7280;
+  cLetor: #6B7280;
 }
 
 .workflow-steps {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   gap: 10px;
   padding-bottom: 10px;
 }
 
 .wf-step {
   display: grid;
-  grid-template-columns: 24px 1fr;
+  grid-template-cLetumns: 24px 1fr;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--wf-divider);
+  border: 1px sLetid var(--wf-divider);
   border-radius: 8px;
   background: #FFFFFF;
 }
 
-.wf-step--active {
-  background: var(--wf-active-bg);
-  border-color: var(--wf-active-border);
+.wf-step--de {
+  background: var(--wf-de-bg);
+  border-cLetor: var(--wf-de-border);
 }
 
-.wf-step--done {
-  background: var(--wf-done-bg);
-  border-color: var(--wf-done-border);
+.wf-step--hecho {
+  background: var(--wf-hecho-bg);
+  border-cLetor: var(--wf-hecho-border);
 }
 
 .wf-step--todo {
   background: transparent;
-  border-color: var(--wf-border);
+  border-cLetor: var(--wf-border);
   border-style: dashed;
 }
 
 .wf-step-connector {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   align-items: center;
   width: 24px;
   flex-shrink: 0;
@@ -2828,7 +2818,7 @@ watch(() => props.reportId, (newId) => {
   height: 10px;
   border-radius: 50%;
   background: var(--wf-muted-dot);
-  border: 2px solid #FFFFFF;
+  border: 2px sLetid #FFFFFF;
   z-index: 1;
 }
 
@@ -2839,13 +2829,13 @@ watch(() => props.reportId, (newId) => {
   margin-top: -2px;
 }
 
-.wf-step--active .wf-step-dot {
-  background: var(--wf-active-dot);
+.wf-step--de .wf-step-dot {
+  background: var(--wf-de-dot);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
-.wf-step--done .wf-step-dot {
-  background: var(--wf-done-dot);
+.wf-step--hecho .wf-step-dot {
+  background: var(--wf-hecho-dot);
 }
 
 .wf-step-title-row {
@@ -2858,7 +2848,7 @@ watch(() => props.reportId, (newId) => {
 .wf-step-index {
   font-size: 11px;
   font-weight: 700;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   letter-spacing: 0.02em;
   flex-shrink: 0;
 }
@@ -2867,7 +2857,7 @@ watch(() => props.reportId, (newId) => {
   font-family: 'Times New Roman', Times, serif;
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  cLetor: #111827;
   line-height: 1.35;
   min-width: 0;
   overflow: hidden;
@@ -2879,7 +2869,7 @@ watch(() => props.reportId, (newId) => {
   margin-left: auto;
   font-size: 10px;
   font-weight: 700;
-  color: var(--wf-active-text);
+  cLetor: var(--wf-de-text);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   flex-shrink: 0;
@@ -2887,7 +2877,7 @@ watch(() => props.reportId, (newId) => {
 
 .wf-step--todo .wf-step-title,
 .wf-step--todo .wf-step-index {
-  color: var(--wf-todo-text);
+  cLetor: var(--wf-todo-text);
 }
 
 .workflow-divider {
@@ -2904,44 +2894,44 @@ watch(() => props.reportId, (newId) => {
 
 .timeline-item {
   display: grid;
-  grid-template-columns: 24px 1fr;
+  grid-template-cLetumns: 24px 1fr;
   gap: 12px;
   padding: 10px 12px;
   margin-bottom: 10px;
-  border: 1px solid var(--wf-divider);
+  border: 1px sLetid var(--wf-divider);
   border-radius: 8px;
   background: #FFFFFF;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+  transition: background-cLetor 0.15s ease, border-cLetor 0.15s ease;
 }
 
 .timeline-item:hover {
   background: #F9FAFB;
-  border-color: var(--wf-border);
+  border-cLetor: var(--wf-border);
 }
 
-.timeline-item.node--active {
-  background: var(--wf-active-bg);
-  border-color: var(--wf-active-border);
+.timeline-item.node--de {
+  background: var(--wf-de-bg);
+  border-cLetor: var(--wf-de-border);
 }
 
-.timeline-item.node--active:hover {
-  background: var(--wf-active-bg);
-  border-color: var(--wf-active-border);
+.timeline-item.node--de:hover {
+  background: var(--wf-de-bg);
+  border-cLetor: var(--wf-de-border);
 }
 
-.timeline-item.node--done {
-  background: var(--wf-done-bg);
-  border-color: var(--wf-done-border);
+.timeline-item.node--hecho {
+  background: var(--wf-hecho-bg);
+  border-cLetor: var(--wf-hecho-border);
 }
 
-.timeline-item.node--done:hover {
-  background: var(--wf-done-bg);
-  border-color: var(--wf-done-border);
+.timeline-item.node--hecho:hover {
+  background: var(--wf-hecho-bg);
+  border-cLetor: var(--wf-hecho-border);
 }
 
 .timeline-connector {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   align-items: center;
   width: 24px;
   flex-shrink: 0;
@@ -2952,7 +2942,7 @@ watch(() => props.reportId, (newId) => {
   height: 12px;
   border-radius: 50%;
   background: var(--wf-muted-dot);
-  border: 2px solid #FFFFFF;
+  border: 2px sLetid #FFFFFF;
   z-index: 1;
 }
 
@@ -2964,13 +2954,13 @@ watch(() => props.reportId, (newId) => {
 }
 
 /* Connector dot: status only */
-.dot-active {
-  background: var(--wf-active-dot);
+.dot-de {
+  background: var(--wf-de-dot);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
 }
 
-.dot-done {
-  background: var(--wf-done-dot);
+.dot-hecho {
+  background: var(--wf-hecho-dot);
 }
 
 .dot-muted {
@@ -3001,20 +2991,20 @@ watch(() => props.reportId, (newId) => {
 .action-label {
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  cLetor: #374151;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
 .action-time {
   font-size: 11px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   font-family: 'JetBrains Mono', monospace;
 }
 
 .timeline-body {
   font-size: 13px;
-  color: #4B5563;
+  cLetor: #4B5563;
 }
 
 .timeline-footer {
@@ -3023,10 +3013,10 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px solid #F3F4F6;
+  border-top: 1px sLetid #F3F4F6;
 }
 
-.elapsed-placeholder {
+.elapsed-placehLetder {
   flex-shrink: 0;
 }
 
@@ -3038,7 +3028,7 @@ watch(() => props.reportId, (newId) => {
 
 .elapsed-badge {
   font-size: 11px;
-  color: #6B7280;
+  cLetor: #6B7280;
   background: #F3F4F6;
   padding: 2px 8px;
   border-radius: 10px;
@@ -3054,31 +3044,31 @@ watch(() => props.reportId, (newId) => {
 
 .info-key {
   font-size: 11px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   min-width: 80px;
 }
 
 .info-val {
-  color: #374151;
+  cLetor: #374151;
 }
 
 .status-message {
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 13px;
-  border: 1px solid transparent;
+  border: 1px sLetid transparent;
 }
 
 .status-message.planning {
-  background: var(--wf-active-bg);
-  border-color: var(--wf-active-border);
-  color: var(--wf-active-text);
+  background: var(--wf-de-bg);
+  border-cLetor: var(--wf-de-border);
+  cLetor: var(--wf-de-text);
 }
 
-.status-message.success {
+.status-message.éxito {
   background: #ECFDF5;
-  border-color: #A7F3D0;
-  color: #065F46;
+  border-cLetor: #A7F3D0;
+  cLetor: #065F46;
 }
 
 .outline-badge {
@@ -3086,8 +3076,8 @@ watch(() => props.reportId, (newId) => {
   margin-top: 8px;
   padding: 4px 10px;
   background: #F9FAFB;
-  color: #6B7280;
-  border: 1px solid #E5E7EB;
+  cLetor: #6B7280;
+  border: 1px sLetid #E5E7EB;
   border-radius: 12px;
   font-size: 11px;
   font-weight: 500;
@@ -3099,134 +3089,134 @@ watch(() => props.reportId, (newId) => {
   gap: 8px;
   padding: 6px 12px;
   background: #F9FAFB;
-  border: 1px solid var(--wf-border);
+  border: 1px sLetid var(--wf-border);
   border-radius: 6px;
 }
 
 .section-tag.content-ready {
-  background: var(--wf-active-bg);
-  border: 1px dashed var(--wf-active-border);
+  background: var(--wf-de-bg);
+  border: 1px dashed var(--wf-de-border);
 }
 
 .section-tag.content-ready svg {
-  color: var(--wf-active-dot);
+  cLetor: var(--wf-de-dot);
 }
 
 
 .section-tag.completed {
   background: #ECFDF5;
-  border: 1px solid #A7F3D0;
+  border: 1px sLetid #A7F3D0;
 }
 
 .section-tag.completed svg {
-  color: #059669;
+  cLetor: #059669;
 }
 
 .tag-num {
   font-size: 11px;
   font-weight: 700;
-  color: #6B7280;
+  cLetor: #6B7280;
 }
 
 .section-tag.completed .tag-num {
-  color: #059669;
+  cLetor: #059669;
 }
 
 .tag-title {
   font-size: 13px;
   font-weight: 500;
-  color: #374151;
+  cLetor: #374151;
 }
 
-.tool-badge {
+.toLet-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
   background: #F9FAFB;
-  color: #374151;
-  border: 1px solid var(--wf-border);
+  cLetor: #374151;
+  border: 1px sLetid var(--wf-border);
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
   transition: all 0.2s ease;
 }
 
-.tool-icon {
+.toLet-icon {
   flex-shrink: 0;
 }
 
-/* Tool Colors - Purple (Deep Insight) */
-.tool-badge.tool-purple {
+/* ToLet CLetors - Purple (Deep Insight) */
+.toLet-badge.toLet-purple {
   background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%);
-  border-color: #C4B5FD;
-  color: #6D28D9;
+  border-cLetor: #C4B5FD;
+  cLetor: #6D28D9;
 }
-.tool-badge.tool-purple .tool-icon {
+.toLet-badge.toLet-purple .toLet-icon {
   stroke: #7C3AED;
 }
 
-/* Tool Colors - Blue (Panorama Search) */
-.tool-badge.tool-blue {
+/* ToLet CLetors - Blue (Panorama Search) */
+.toLet-badge.toLet-blue {
   background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-  border-color: #93C5FD;
-  color: #1D4ED8;
+  border-cLetor: #93C5FD;
+  cLetor: #1D4ED8;
 }
-.tool-badge.tool-blue .tool-icon {
+.toLet-badge.toLet-blue .toLet-icon {
   stroke: #2563EB;
 }
 
-/* Tool Colors - Green (Agent Interview) */
-.tool-badge.tool-green {
+/* ToLet CLetors - Green (Agent Interview) */
+.toLet-badge.toLet-green {
   background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
-  border-color: #86EFAC;
-  color: #15803D;
+  border-cLetor: #86EFAC;
+  cLetor: #15803D;
 }
-.tool-badge.tool-green .tool-icon {
+.toLet-badge.toLet-green .toLet-icon {
   stroke: #16A34A;
 }
 
-/* Tool Colors - Orange (Quick Search) */
-.tool-badge.tool-orange {
+/* ToLet CLetors - Orange (Quick Search) */
+.toLet-badge.toLet-orange {
   background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
-  border-color: #FDBA74;
-  color: #C2410C;
+  border-cLetor: #FDBA74;
+  cLetor: #C2410C;
 }
-.tool-badge.tool-orange .tool-icon {
+.toLet-badge.toLet-orange .toLet-icon {
   stroke: #EA580C;
 }
 
-/* Tool Colors - Cyan (Graph Stats) */
-.tool-badge.tool-cyan {
+/* ToLet CLetors - Cyan (Graph Stats) */
+.toLet-badge.toLet-cyan {
   background: linear-gradient(135deg, #ECFEFF 0%, #CFFAFE 100%);
-  border-color: #67E8F9;
-  color: #0E7490;
+  border-cLetor: #67E8F9;
+  cLetor: #0E7490;
 }
-.tool-badge.tool-cyan .tool-icon {
+.toLet-badge.toLet-cyan .toLet-icon {
   stroke: #0891B2;
 }
 
-/* Tool Colors - Pink (Entity Query) */
-.tool-badge.tool-pink {
+/* ToLet CLetors - Pink (Entity Query) */
+.toLet-badge.toLet-pink {
   background: linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%);
-  border-color: #F9A8D4;
-  color: #BE185D;
+  border-cLetor: #F9A8D4;
+  cLetor: #BE185D;
 }
-.tool-badge.tool-pink .tool-icon {
+.toLet-badge.toLet-pink .toLet-icon {
   stroke: #DB2777;
 }
 
-/* Tool Colors - Gray (Default) */
-.tool-badge.tool-gray {
+/* ToLet CLetors - Gray (Default) */
+.toLet-badge.toLet-gray {
   background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
-  border-color: #D1D5DB;
-  color: #374151;
+  border-cLetor: #D1D5DB;
+  cLetor: #374151;
 }
-.tool-badge.tool-gray .tool-icon {
+.toLet-badge.toLet-gray .toLet-icon {
   stroke: #6B7280;
 }
 
-.tool-params {
+.toLet-params {
   margin-top: 10px;
   background: transparent;
   border-radius: 0;
@@ -3235,15 +3225,15 @@ watch(() => props.reportId, (newId) => {
   overflow-x: auto;
 }
 
-.tool-params pre {
+.toLet-params pre {
   margin: 0;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: #4B5563;
+  cLetor: #4B5563;
   white-space: pre-wrap;
   word-break: break-all;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
   padding: 10px;
 }
@@ -3251,12 +3241,12 @@ watch(() => props.reportId, (newId) => {
 /* Unified Action Buttons */
 .action-btn {
   background: #F3F4F6;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   padding: 4px 10px;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
-  color: #6B7280;
+  cLetor: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
@@ -3264,15 +3254,15 @@ watch(() => props.reportId, (newId) => {
 
 .action-btn:hover {
   background: #E5E7EB;
-  color: #374151;
-  border-color: #D1D5DB;
+  cLetor: #374151;
+  border-cLetor: #D1D5DB;
 }
 
 /* Result Wrapper */
 .result-wrapper {
   background: transparent;
   border: none;
-  border-top: 1px solid var(--wf-divider);
+  border-top: 1px sLetid var(--wf-divider);
   border-radius: 0;
   padding: 12px 0 0 0;
 }
@@ -3284,15 +3274,15 @@ watch(() => props.reportId, (newId) => {
   margin-bottom: 10px;
 }
 
-.result-tool {
+.result-toLet {
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  cLetor: #374151;
 }
 
 .result-size {
   font-size: 10px;
-  color: #6B7280;
+  cLetor: #6B7280;
   font-family: 'JetBrains Mono', monospace;
 }
 
@@ -3308,9 +3298,9 @@ watch(() => props.reportId, (newId) => {
   font-size: 11px;
   white-space: pre-wrap;
   word-break: break-word;
-  color: #374151;
+  cLetor: #374151;
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   padding: 10px;
   border-radius: 6px;
 }
@@ -3321,7 +3311,7 @@ watch(() => props.reportId, (newId) => {
   font-size: 11px;
   white-space: pre-wrap;
   word-break: break-word;
-  color: #6B7280;
+  cLetor: #6B7280;
 }
 
 /* Legacy toggle-raw removed - using unified .action-btn */
@@ -3337,18 +3327,18 @@ watch(() => props.reportId, (newId) => {
   font-size: 11px;
   padding: 3px 8px;
   background: #F3F4F6;
-  color: #6B7280;
+  cLetor: #6B7280;
   border-radius: 4px;
 }
 
-.meta-tag.active {
+.meta-tag.de {
   background: #DBEAFE;
-  color: #1E40AF;
+  cLetor: #1E40AF;
 }
 
 .meta-tag.final-answer {
   background: #D1FAE5;
-  color: #059669;
+  cLetor: #059669;
   font-weight: 600;
 }
 
@@ -3359,9 +3349,9 @@ watch(() => props.reportId, (newId) => {
   margin-top: 10px;
   padding: 10px 14px;
   background: #ECFDF5;
-  border: 1px solid #A7F3D0;
+  border: 1px sLetid #A7F3D0;
   border-radius: 6px;
-  color: #065F46;
+  cLetor: #065F46;
   font-size: 12px;
   font-weight: 500;
 }
@@ -3382,7 +3372,7 @@ watch(() => props.reportId, (newId) => {
   font-size: 11px;
   white-space: pre-wrap;
   word-break: break-word;
-  color: #4B5563;
+  cLetor: #4B5563;
   background: #F3F4F6;
   padding: 10px;
   border-radius: 6px;
@@ -3395,9 +3385,9 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 12px 16px;
   background: #ECFDF5;
-  border: 1px solid #A7F3D0;
+  border: 1px sLetid #A7F3D0;
   border-radius: 8px;
-  color: #065F46;
+  cLetor: #065F46;
   font-weight: 600;
   font-size: 14px;
 }
@@ -3412,7 +3402,7 @@ watch(() => props.reportId, (newId) => {
   padding: 14px 20px;
   font-size: 14px;
   font-weight: 600;
-  color: #FFFFFF;
+  cLetor: #FFFFFF;
   background: #1F2937;
   border: none;
   border-radius: 8px;
@@ -3435,11 +3425,11 @@ watch(() => props.reportId, (newId) => {
 /* Workflow Empty */
 .workflow-empty {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   font-size: 13px;
 }
 
@@ -3458,7 +3448,7 @@ watch(() => props.reportId, (newId) => {
 }
 
 /* Timeline Transitions */
-.timeline-item-enter-active {
+.timeline-item-enter-de {
   transition: all 0.4s ease;
 }
 
@@ -3479,7 +3469,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.stat-box) {
   flex: 1;
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
   padding: 10px 8px;
   text-align: center;
@@ -3489,14 +3479,14 @@ watch(() => props.reportId, (newId) => {
   display: block;
   font-size: 20px;
   font-weight: 700;
-  color: #111827;
+  cLetor: #111827;
   font-family: 'JetBrains Mono', monospace;
 }
 
 :deep(.stat-box .stat-label) {
   display: block;
   font-size: 10px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   margin-top: 2px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -3504,20 +3494,20 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.stat-box.highlight) {
   background: #ECFDF5;
-  border-color: #A7F3D0;
+  border-cLetor: #A7F3D0;
 }
 
 :deep(.stat-box.highlight .stat-num) {
-  color: #059669;
+  cLetor: #059669;
 }
 
 :deep(.stat-box.muted) {
   background: #F9FAFB;
-  border-color: #E5E7EB;
+  border-cLetor: #E5E7EB;
 }
 
 :deep(.stat-box.muted .stat-num) {
-  color: #6B7280;
+  cLetor: #6B7280;
 }
 
 :deep(.query-display) {
@@ -3525,33 +3515,33 @@ watch(() => props.reportId, (newId) => {
   padding: 10px 14px;
   border-radius: 6px;
   font-size: 12px;
-  color: #374151;
+  cLetor: #374151;
   margin-bottom: 12px;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   line-height: 1.5;
 }
 
 :deep(.expand-details) {
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  color: #6B7280;
+  cLetor: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.expand-details:hover) {
-  border-color: #D1D5DB;
-  color: #374151;
+  border-cLetor: #D1D5DB;
+  cLetor: #374151;
 }
 
 :deep(.detail-content) {
   margin-top: 14px;
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 8px;
   padding: 14px;
 }
@@ -3559,12 +3549,12 @@ watch(() => props.reportId, (newId) => {
 :deep(.section-label) {
   font-size: 11px;
   font-weight: 600;
-  color: #6B7280;
+  cLetor: #6B7280;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 10px;
   padding-bottom: 6px;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px sLetid #F3F4F6;
 }
 
 /* Facts Section */
@@ -3576,14 +3566,14 @@ watch(() => props.reportId, (newId) => {
   display: flex;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px sLetid #F3F4F6;
 }
 
 :deep(.fact-row:last-child) {
   border-bottom: none;
 }
 
-:deep(.fact-row.active) {
+:deep(.fact-row.de) {
   background: #ECFDF5;
   margin: 0 -10px;
   padding: 8px 10px;
@@ -3601,18 +3591,18 @@ watch(() => props.reportId, (newId) => {
   border-radius: 6px;
   font-size: 10px;
   font-weight: 700;
-  color: #6B7280;
+  cLetor: #6B7280;
   flex-shrink: 0;
 }
 
-:deep(.fact-row.active .fact-idx) {
+:deep(.fact-row.de .fact-idx) {
   background: #A7F3D0;
-  color: #065F46;
+  cLetor: #065F46;
 }
 
 :deep(.fact-text) {
   font-size: 12px;
-  color: #4B5563;
+  cLetor: #4B5563;
   line-height: 1.6;
 }
 
@@ -3632,7 +3622,7 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   gap: 6px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
   padding: 6px 12px;
 }
@@ -3640,12 +3630,12 @@ watch(() => props.reportId, (newId) => {
 :deep(.chip-name) {
   font-size: 12px;
   font-weight: 500;
-  color: #111827;
+  cLetor: #111827;
 }
 
 :deep(.chip-type) {
   font-size: 10px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   background: #E5E7EB;
   padding: 1px 6px;
   border-radius: 3px;
@@ -3662,7 +3652,7 @@ watch(() => props.reportId, (newId) => {
   gap: 8px;
   padding: 8px 0;
   flex-wrap: wrap;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px sLetid #F3F4F6;
 }
 
 :deep(.relation-row:last-child) {
@@ -3672,7 +3662,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.rel-node) {
   font-size: 12px;
   font-weight: 500;
-  color: #111827;
+  cLetor: #111827;
   background: #F3F4F6;
   padding: 4px 10px;
   border-radius: 4px;
@@ -3681,7 +3671,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.rel-edge) {
   font-size: 10px;
   font-weight: 600;
-  color: #FFFFFF;
+  cLetor: #FFFFFF;
   background: #4F46E5;
   padding: 3px 10px;
   border-radius: 10px;
@@ -3710,7 +3700,7 @@ watch(() => props.reportId, (newId) => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  cLetor: #111827;
   letter-spacing: -0.01em;
 }
 
@@ -3729,31 +3719,31 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .stat-value) {
   font-size: 14px;
   font-weight: 600;
-  color: #4F46E5;
+  cLetor: #4F46E5;
   font-family: 'JetBrains Mono', monospace;
 }
 
 :deep(.interview-display .stat-label) {
   font-size: 11px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   text-transform: lowercase;
 }
 
 :deep(.interview-display .stat-divider) {
-  color: #D1D5DB;
+  cLetor: #D1D5DB;
   font-size: 12px;
 }
 
 :deep(.interview-display .stat-size) {
   font-size: 11px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   font-family: 'JetBrains Mono', monospace;
 }
 
 :deep(.interview-display .header-topic) {
   margin-top: 4px;
   font-size: 12px;
-  color: #6B7280;
+  cLetor: #6B7280;
   line-height: 1.5;
 }
 
@@ -3763,27 +3753,27 @@ watch(() => props.reportId, (newId) => {
   gap: 8px;
   padding: 0 0 14px 0;
   background: transparent;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px sLetid #F3F4F6;
   overflow-x: auto;
   overflow-y: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: #E5E7EB transparent;
+  scrLetlbar-width: thin;
+  scrLetlbar-cLetor: #E5E7EB transparent;
 }
 
-:deep(.interview-display .agent-tabs::-webkit-scrollbar) {
+:deep(.interview-display .agent-tabs::-webkit-scrLetlbar) {
   height: 4px;
 }
 
-:deep(.interview-display .agent-tabs::-webkit-scrollbar-track) {
+:deep(.interview-display .agent-tabs::-webkit-scrLetlbar-track) {
   background: transparent;
 }
 
-:deep(.interview-display .agent-tabs::-webkit-scrollbar-thumb) {
+:deep(.interview-display .agent-tabs::-webkit-scrLetlbar-thumb) {
   background: #E5E7EB;
   border-radius: 2px;
 }
 
-:deep(.interview-display .agent-tabs::-webkit-scrollbar-thumb:hover) {
+:deep(.interview-display .agent-tabs::-webkit-scrLetlbar-thumb:hover) {
   background: #D1D5DB;
 }
 
@@ -3793,11 +3783,11 @@ watch(() => props.reportId, (newId) => {
   gap: 6px;
   padding: 6px 12px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
-  color: #6B7280;
+  cLetor: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
@@ -3805,14 +3795,14 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .agent-tab:hover) {
   background: #F3F4F6;
-  border-color: #D1D5DB;
-  color: #374151;
+  border-cLetor: #D1D5DB;
+  cLetor: #374151;
 }
 
-:deep(.interview-display .agent-tab.active) {
+:deep(.interview-display .agent-tab.de) {
   background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
-  border-color: #A5B4FC;
-  color: #4338CA;
+  border-cLetor: #A5B4FC;
+  cLetor: #4338CA;
   box-shadow: 0 1px 2px rgba(99, 102, 241, 0.1);
 }
 
@@ -3823,7 +3813,7 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   justify-content: center;
   background: #E5E7EB;
-  color: #6B7280;
+  cLetor: #6B7280;
   font-size: 10px;
   font-weight: 700;
   border-radius: 50%;
@@ -3834,9 +3824,9 @@ watch(() => props.reportId, (newId) => {
   background: #D1D5DB;
 }
 
-:deep(.interview-display .agent-tab.active .tab-avatar) {
+:deep(.interview-display .agent-tab.de .tab-avatar) {
   background: #6366F1;
-  color: #FFFFFF;
+  cLetor: #FFFFFF;
 }
 
 :deep(.interview-display .tab-name) {
@@ -3868,7 +3858,7 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   justify-content: center;
   background: #E5E7EB;
-  color: #6B7280;
+  cLetor: #6B7280;
   font-size: 14px;
   font-weight: 600;
   border-radius: 50%;
@@ -3883,19 +3873,19 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .profile-name) {
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  cLetor: #111827;
   margin-bottom: 2px;
 }
 
-:deep(.interview-display .profile-role) {
+:deep(.interview-display .profile-rLete) {
   font-size: 11px;
-  color: #6B7280;
+  cLetor: #6B7280;
   margin-bottom: 4px;
 }
 
 :deep(.interview-display .profile-bio) {
   font-size: 11px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -3903,10 +3893,10 @@ watch(() => props.reportId, (newId) => {
   overflow: hidden;
 }
 
-/* Selection Reason - 选择理由 */
+/* Selection Reason - SelecciónRazón */
 :deep(.interview-display .selection-reason) {
   background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  border: 1px sLetid #E2E8F0;
   border-radius: 8px;
   padding: 12px 14px;
   margin-bottom: 16px;
@@ -3915,7 +3905,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .reason-label) {
   font-size: 11px;
   font-weight: 600;
-  color: #64748B;
+  cLetor: #64748B;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   margin-bottom: 6px;
@@ -3923,20 +3913,20 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .reason-content) {
   font-size: 12px;
-  color: #475569;
+  cLetor: #475569;
   line-height: 1.6;
 }
 
 /* Q&A Thread - Clean list */
 :deep(.interview-display .qa-thread) {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   gap: 20px;
 }
 
 :deep(.interview-display .qa-pair) {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   gap: 12px;
   padding: 0;
   background: transparent;
@@ -3965,14 +3955,14 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .q-badge) {
   background: transparent;
-  color: #9CA3AF;
-  border: 1px solid #E5E7EB;
+  cLetor: #9CA3AF;
+  border: 1px sLetid #E5E7EB;
 }
 
 :deep(.interview-display .a-badge) {
   background: #4F46E5;
-  color: #FFFFFF;
-  border: 1px solid #4F46E5;
+  cLetor: #FFFFFF;
+  border: 1px sLetid #4F46E5;
 }
 
 :deep(.interview-display .qa-content) {
@@ -3983,7 +3973,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .qa-sender) {
   font-size: 11px;
   font-weight: 600;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   margin-bottom: 4px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -3991,7 +3981,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .qa-text) {
   font-size: 13px;
-  color: #374151;
+  cLetor: #374151;
   line-height: 1.6;
 }
 
@@ -4002,13 +3992,13 @@ watch(() => props.reportId, (newId) => {
   margin-top: 0;
 }
 
-:deep(.interview-display .answer-placeholder) {
+:deep(.interview-display .answer-placehLetder) {
   opacity: 0.6;
 }
 
-:deep(.interview-display .placeholder-text) {
+:deep(.interview-display .placehLetder-text) {
   font-style: italic;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
 }
 
 :deep(.interview-display .qa-answer-header) {
@@ -4033,23 +4023,23 @@ watch(() => props.reportId, (newId) => {
   gap: 4px;
   padding: 2px 6px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px sLetid transparent;
   border-radius: 4px;
   font-size: 10px;
   font-weight: 500;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.interview-display .platform-btn:hover) {
-  color: #6B7280;
+  cLetor: #6B7280;
 }
 
-:deep(.interview-display .platform-btn.active) {
+:deep(.interview-display .platform-btn.de) {
   background: transparent;
-  color: #4F46E5;
-  border-color: #E5E7EB;
+  cLetor: #4F46E5;
+  border-cLetor: #E5E7EB;
   box-shadow: none;
 }
 
@@ -4059,12 +4049,12 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .answer-text) {
   font-size: 13px;
-  color: #111827;
+  cLetor: #111827;
   line-height: 1.6;
 }
 
 :deep(.interview-display .answer-text strong) {
-  color: #111827;
+  cLetor: #111827;
   font-weight: 600;
 }
 
@@ -4078,22 +4068,22 @@ watch(() => props.reportId, (newId) => {
   border-radius: 0;
   font-size: 11px;
   font-weight: 500;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.interview-display .expand-answer-btn:hover) {
   background: transparent;
-  color: #6B7280;
-  border-bottom-style: solid;
+  cLetor: #6B7280;
+  border-bottom-style: sLetid;
 }
 
 /* Quotes Section - Clean list */
 :deep(.interview-display .quotes-section) {
   background: transparent;
   border: none;
-  border-top: 1px solid #F3F4F6;
+  border-top: 1px sLetid #F3F4F6;
   border-radius: 0;
   padding: 16px 0 0 0;
   margin-top: 16px;
@@ -4102,7 +4092,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .quotes-header) {
   font-size: 11px;
   font-weight: 600;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 12px;
@@ -4110,7 +4100,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .quotes-list) {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   gap: 12px;
 }
 
@@ -4118,11 +4108,11 @@ watch(() => props.reportId, (newId) => {
   margin: 0;
   padding: 10px 12px;
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
   font-size: 12px;
   font-style: italic;
-  color: #4B5563;
+  cLetor: #4B5563;
   line-height: 1.5;
 }
 
@@ -4132,14 +4122,14 @@ watch(() => props.reportId, (newId) => {
   padding: 16px 0 0 0;
   background: transparent;
   border: none;
-  border-top: 1px solid #F3F4F6;
+  border-top: 1px sLetid #F3F4F6;
   border-radius: 0;
 }
 
 :deep(.interview-display .summary-header) {
   font-size: 11px;
   font-weight: 600;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 8px;
@@ -4147,7 +4137,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .summary-content) {
   font-size: 13px;
-  color: #374151;
+  cLetor: #374151;
   line-height: 1.6;
 }
 
@@ -4158,7 +4148,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .summary-content h5) {
   margin: 12px 0 8px 0;
   font-weight: 600;
-  color: #111827;
+  cLetor: #111827;
 }
 
 :deep(.interview-display .summary-content h2) {
@@ -4180,7 +4170,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .summary-content strong) {
   font-weight: 600;
-  color: #111827;
+  cLetor: #111827;
 }
 
 :deep(.interview-display .summary-content em) {
@@ -4188,7 +4178,7 @@ watch(() => props.reportId, (newId) => {
 }
 
 :deep(.interview-display .summary-content ul),
-:deep(.interview-display .summary-content ol) {
+:deep(.interview-display .summary-content Let) {
   margin: 8px 0;
   padding-left: 20px;
 }
@@ -4200,15 +4190,15 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .summary-content blockquote) {
   margin: 8px 0;
   padding-left: 12px;
-  border-left: 3px solid #E5E7EB;
-  color: #6B7280;
+  border-left: 3px sLetid #E5E7EB;
+  cLetor: #6B7280;
   font-style: italic;
 }
 
 /* Markdown styles in quotes */
 :deep(.interview-display .quote-item strong) {
   font-weight: 600;
-  color: #374151;
+  cLetor: #374151;
 }
 
 :deep(.interview-display .quote-item em) {
@@ -4224,7 +4214,7 @@ watch(() => props.reportId, (newId) => {
   padding: 12px 16px;
   background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%);
   border-radius: 8px 8px 0 0;
-  border: 1px solid #C4B5FD;
+  border: 1px sLetid #C4B5FD;
   border-bottom: none;
 }
 
@@ -4238,7 +4228,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-header .header-title) {
   font-size: 14px;
   font-weight: 700;
-  color: #6D28D9;
+  cLetor: #6D28D9;
 }
 
 :deep(.insight-header .header-stats) {
@@ -4257,35 +4247,35 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-header .stat-value) {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  color: #7C3AED;
+  cLetor: #7C3AED;
 }
 
 :deep(.insight-header .stat-label) {
-  color: #8B5CF6;
+  cLetor: #8B5CF6;
   font-size: 10px;
 }
 
 :deep(.insight-header .stat-divider) {
-  color: #C4B5FD;
+  cLetor: #C4B5FD;
   margin: 0 4px;
 }
 
 :deep(.insight-header .stat-size) {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
 }
 
 :deep(.insight-header .header-topic) {
   font-size: 13px;
-  color: #5B21B6;
+  cLetor: #5B21B6;
   line-height: 1.5;
 }
 
 :deep(.insight-header .header-scenario) {
   margin-top: 6px;
   font-size: 11px;
-  color: #7C3AED;
+  cLetor: #7C3AED;
 }
 
 :deep(.insight-header .scenario-label) {
@@ -4297,7 +4287,7 @@ watch(() => props.reportId, (newId) => {
   gap: 2px;
   padding: 8px 12px;
   background: #FAFAFA;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-top: none;
 }
 
@@ -4307,24 +4297,24 @@ watch(() => props.reportId, (newId) => {
   gap: 4px;
   padding: 6px 10px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px sLetid transparent;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  color: #6B7280;
+  cLetor: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.insight-tab:hover) {
   background: #F3F4F6;
-  color: #374151;
+  cLetor: #374151;
 }
 
-:deep(.insight-tab.active) {
+:deep(.insight-tab.de) {
   background: #FFFFFF;
-  color: #7C3AED;
-  border-color: #C4B5FD;
+  cLetor: #7C3AED;
+  border-cLetor: #C4B5FD;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -4332,7 +4322,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-content) {
   padding: 12px;
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-top: none;
   border-radius: 0 0 8px 8px;
 }
@@ -4343,25 +4333,25 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px sLetid #F3F4F6;
 }
 
 :deep(.insight-display .panel-title) {
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  cLetor: #374151;
 }
 
 :deep(.insight-display .panel-count) {
   font-size: 10px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
 }
 
 :deep(.insight-display .facts-list),
 :deep(.insight-display .relations-list),
 :deep(.insight-display .subqueries-list) {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   gap: 8px;
 }
 
@@ -4376,7 +4366,7 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -4392,24 +4382,24 @@ watch(() => props.reportId, (newId) => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 700;
-  color: #6B7280;
+  cLetor: #6B7280;
 }
 
 :deep(.insight-display .fact-content) {
   flex: 1;
   font-size: 12px;
-  color: #374151;
+  cLetor: #374151;
   line-height: 1.6;
 }
 
-/* Entity Tag Styles - Compact multi-column layout */
+/* Entity Tag Styles - Compact multi-cLetumn layout */
 :deep(.insight-display .entity-tag) {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
   cursor: default;
   transition: all 0.15s ease;
@@ -4417,18 +4407,18 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.insight-display .entity-tag:hover) {
   background: #F3F4F6;
-  border-color: #D1D5DB;
+  border-cLetor: #D1D5DB;
 }
 
 :deep(.insight-display .entity-tag .entity-name) {
   font-size: 12px;
   font-weight: 500;
-  color: #111827;
+  cLetor: #111827;
 }
 
 :deep(.insight-display .entity-tag .entity-type) {
   font-size: 9px;
-  color: #7C3AED;
+  cLetor: #7C3AED;
   background: #EDE9FE;
   padding: 1px 4px;
   border-radius: 3px;
@@ -4436,7 +4426,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.insight-display .entity-tag .entity-fact-count) {
   font-size: 9px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   margin-left: 2px;
 }
 
@@ -4444,7 +4434,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-display .entity-card) {
   padding: 12px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 8px;
 }
 
@@ -4461,12 +4451,12 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-display .entity-card .entity-name) {
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  cLetor: #111827;
 }
 
 :deep(.insight-display .entity-card .entity-type) {
   font-size: 10px;
-  color: #7C3AED;
+  cLetor: #7C3AED;
   background: #EDE9FE;
   padding: 2px 6px;
   border-radius: 4px;
@@ -4476,7 +4466,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.insight-display .entity-card .entity-fact-count) {
   font-size: 10px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   background: #F3F4F6;
   padding: 2px 6px;
   border-radius: 4px;
@@ -4485,9 +4475,9 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-display .entity-summary) {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #E5E7EB;
+  border-top: 1px sLetid #E5E7EB;
   font-size: 11px;
-  color: #6B7280;
+  cLetor: #6B7280;
   line-height: 1.5;
 }
 
@@ -4498,7 +4488,7 @@ watch(() => props.reportId, (newId) => {
   gap: 8px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -4506,11 +4496,11 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-display .rel-target) {
   padding: 4px 8px;
   background: #FFFFFF;
-  border: 1px solid #D1D5DB;
+  border: 1px sLetid #D1D5DB;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
-  color: #374151;
+  cLetor: #374151;
 }
 
 :deep(.insight-display .rel-arrow) {
@@ -4532,7 +4522,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 4px;
   font-size: 10px;
   font-weight: 500;
-  color: #7C3AED;
+  cLetor: #7C3AED;
   white-space: nowrap;
 }
 
@@ -4542,7 +4532,7 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -4554,12 +4544,12 @@ watch(() => props.reportId, (newId) => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 700;
-  color: #FFFFFF;
+  cLetor: #FFFFFF;
 }
 
 :deep(.insight-display .subquery-text) {
   font-size: 12px;
-  color: #374151;
+  cLetor: #374151;
   line-height: 1.5;
 }
 
@@ -4572,11 +4562,11 @@ watch(() => props.reportId, (newId) => {
   margin-top: 12px;
   padding: 8px 12px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  color: #6B7280;
+  cLetor: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
   text-align: center;
@@ -4586,8 +4576,8 @@ watch(() => props.reportId, (newId) => {
 :deep(.panorama-display .expand-btn:hover),
 :deep(.quick-search-display .expand-btn:hover) {
   background: #F3F4F6;
-  color: #374151;
-  border-color: #D1D5DB;
+  cLetor: #374151;
+  border-cLetor: #D1D5DB;
 }
 
 /* Empty State */
@@ -4597,7 +4587,7 @@ watch(() => props.reportId, (newId) => {
   padding: 24px;
   text-align: center;
   font-size: 12px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
 }
 
 /* ========== Enhanced Panorama Display Styles ========== */
@@ -4609,7 +4599,7 @@ watch(() => props.reportId, (newId) => {
   padding: 12px 16px;
   background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
   border-radius: 8px 8px 0 0;
-  border: 1px solid #93C5FD;
+  border: 1px sLetid #93C5FD;
   border-bottom: none;
 }
 
@@ -4623,7 +4613,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.panorama-header .header-title) {
   font-size: 14px;
   font-weight: 700;
-  color: #1D4ED8;
+  cLetor: #1D4ED8;
 }
 
 :deep(.panorama-header .header-stats) {
@@ -4642,28 +4632,28 @@ watch(() => props.reportId, (newId) => {
 :deep(.panorama-header .stat-value) {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  color: #2563EB;
+  cLetor: #2563EB;
 }
 
 :deep(.panorama-header .stat-label) {
-  color: #60A5FA;
+  cLetor: #60A5FA;
   font-size: 10px;
 }
 
 :deep(.panorama-header .stat-divider) {
-  color: #93C5FD;
+  cLetor: #93C5FD;
   margin: 0 4px;
 }
 
 :deep(.panorama-header .stat-size) {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
 }
 
 :deep(.panorama-header .header-topic) {
   font-size: 13px;
-  color: #1E40AF;
+  cLetor: #1E40AF;
   line-height: 1.5;
 }
 
@@ -4672,7 +4662,7 @@ watch(() => props.reportId, (newId) => {
   gap: 2px;
   padding: 8px 12px;
   background: #FAFAFA;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-top: none;
 }
 
@@ -4682,24 +4672,24 @@ watch(() => props.reportId, (newId) => {
   gap: 4px;
   padding: 6px 10px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px sLetid transparent;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  color: #6B7280;
+  cLetor: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.panorama-tab:hover) {
   background: #F3F4F6;
-  color: #374151;
+  cLetor: #374151;
 }
 
-:deep(.panorama-tab.active) {
+:deep(.panorama-tab.de) {
   background: #FFFFFF;
-  color: #2563EB;
-  border-color: #93C5FD;
+  cLetor: #2563EB;
+  border-cLetor: #93C5FD;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -4707,7 +4697,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.panorama-content) {
   padding: 12px;
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-top: none;
   border-radius: 0 0 8px 8px;
 }
@@ -4718,23 +4708,23 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px sLetid #F3F4F6;
 }
 
 :deep(.panorama-display .panel-title) {
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  cLetor: #374151;
 }
 
 :deep(.panorama-display .panel-count) {
   font-size: 10px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
 }
 
 :deep(.panorama-display .facts-list) {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   gap: 8px;
 }
 
@@ -4743,18 +4733,18 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
 }
 
-:deep(.panorama-display .fact-item.active) {
+:deep(.panorama-display .fact-item.de) {
   background: #F9FAFB;
-  border-color: #E5E7EB;
+  border-cLetor: #E5E7EB;
 }
 
 :deep(.panorama-display .fact-item.historical) {
   background: #F9FAFB;
-  border-color: #E5E7EB;
+  border-cLetor: #E5E7EB;
 }
 
 :deep(.panorama-display .fact-number) {
@@ -4769,30 +4759,30 @@ watch(() => props.reportId, (newId) => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 700;
-  color: #6B7280;
+  cLetor: #6B7280;
 }
 
-:deep(.panorama-display .fact-item.active .fact-number) {
+:deep(.panorama-display .fact-item.de .fact-number) {
   background: #E5E7EB;
-  color: #6B7280;
+  cLetor: #6B7280;
 }
 
 :deep(.panorama-display .fact-item.historical .fact-number) {
   background: #9CA3AF;
-  color: #FFFFFF;
+  cLetor: #FFFFFF;
 }
 
 :deep(.panorama-display .fact-content) {
   flex: 1;
   font-size: 12px;
-  color: #374151;
+  cLetor: #374151;
   line-height: 1.6;
 }
 
 :deep(.panorama-display .fact-time) {
   display: block;
   font-size: 10px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
   margin-bottom: 4px;
   font-family: 'JetBrains Mono', monospace;
 }
@@ -4814,19 +4804,19 @@ watch(() => props.reportId, (newId) => {
   gap: 6px;
   padding: 6px 10px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
 }
 
 :deep(.panorama-display .entity-name) {
   font-size: 12px;
   font-weight: 500;
-  color: #374151;
+  cLetor: #374151;
 }
 
 :deep(.panorama-display .entity-type) {
   font-size: 10px;
-  color: #2563EB;
+  cLetor: #2563EB;
   background: #DBEAFE;
   padding: 2px 6px;
   border-radius: 4px;
@@ -4841,7 +4831,7 @@ watch(() => props.reportId, (newId) => {
   padding: 12px 16px;
   background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
   border-radius: 8px 8px 0 0;
-  border: 1px solid #FDBA74;
+  border: 1px sLetid #FDBA74;
   border-bottom: none;
 }
 
@@ -4855,7 +4845,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.quicksearch-header .header-title) {
   font-size: 14px;
   font-weight: 700;
-  color: #C2410C;
+  cLetor: #C2410C;
 }
 
 :deep(.quicksearch-header .header-stats) {
@@ -4874,28 +4864,28 @@ watch(() => props.reportId, (newId) => {
 :deep(.quicksearch-header .stat-value) {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  color: #EA580C;
+  cLetor: #EA580C;
 }
 
 :deep(.quicksearch-header .stat-label) {
-  color: #FB923C;
+  cLetor: #FB923C;
   font-size: 10px;
 }
 
 :deep(.quicksearch-header .stat-divider) {
-  color: #FDBA74;
+  cLetor: #FDBA74;
   margin: 0 4px;
 }
 
 :deep(.quicksearch-header .stat-size) {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
 }
 
 :deep(.quicksearch-header .header-query) {
   font-size: 13px;
-  color: #9A3412;
+  cLetor: #9A3412;
   line-height: 1.5;
 }
 
@@ -4908,7 +4898,7 @@ watch(() => props.reportId, (newId) => {
   gap: 2px;
   padding: 8px 12px;
   background: #FAFAFA;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-top: none;
 }
 
@@ -4918,24 +4908,24 @@ watch(() => props.reportId, (newId) => {
   gap: 4px;
   padding: 6px 10px;
   background: transparent;
-  border: 1px solid transparent;
+  border: 1px sLetid transparent;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  color: #6B7280;
+  cLetor: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.quicksearch-tab:hover) {
   background: #F3F4F6;
-  color: #374151;
+  cLetor: #374151;
 }
 
-:deep(.quicksearch-tab.active) {
+:deep(.quicksearch-tab.de) {
   background: #FFFFFF;
-  color: #EA580C;
-  border-color: #FDBA74;
+  cLetor: #EA580C;
+  border-cLetor: #FDBA74;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -4943,7 +4933,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.quicksearch-content) {
   padding: 12px;
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-top: none;
   border-radius: 0 0 8px 8px;
 }
@@ -4959,23 +4949,23 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #F3F4F6;
+  border-bottom: 1px sLetid #F3F4F6;
 }
 
 :deep(.quick-search-display .panel-title) {
   font-size: 12px;
   font-weight: 600;
-  color: #374151;
+  cLetor: #374151;
 }
 
 :deep(.quick-search-display .panel-count) {
   font-size: 10px;
-  color: #9CA3AF;
+  cLetor: #9CA3AF;
 }
 
 :deep(.quick-search-display .facts-list) {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   gap: 8px;
 }
 
@@ -4984,13 +4974,13 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
 }
 
-:deep(.quick-search-display .fact-item.active) {
+:deep(.quick-search-display .fact-item.de) {
   background: #F9FAFB;
-  border-color: #E5E7EB;
+  border-cLetor: #E5E7EB;
 }
 
 :deep(.quick-search-display .fact-number) {
@@ -5005,25 +4995,25 @@ watch(() => props.reportId, (newId) => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 700;
-  color: #6B7280;
+  cLetor: #6B7280;
 }
 
-:deep(.quick-search-display .fact-item.active .fact-number) {
+:deep(.quick-search-display .fact-item.de .fact-number) {
   background: #E5E7EB;
-  color: #6B7280;
+  cLetor: #6B7280;
 }
 
 :deep(.quick-search-display .fact-content) {
   flex: 1;
   font-size: 12px;
-  color: #374151;
+  cLetor: #374151;
   line-height: 1.6;
 }
 
 /* Edges Panel */
 :deep(.quick-search-display .edges-list) {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   gap: 8px;
 }
 
@@ -5033,7 +5023,7 @@ watch(() => props.reportId, (newId) => {
   gap: 8px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -5041,11 +5031,11 @@ watch(() => props.reportId, (newId) => {
 :deep(.quick-search-display .edge-target) {
   padding: 4px 8px;
   background: #FFFFFF;
-  border: 1px solid #D1D5DB;
+  border: 1px sLetid #D1D5DB;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
-  color: #374151;
+  cLetor: #374151;
 }
 
 :deep(.quick-search-display .edge-arrow) {
@@ -5067,7 +5057,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 4px;
   font-size: 10px;
   font-weight: 500;
-  color: #C2410C;
+  cLetor: #C2410C;
   white-space: nowrap;
 }
 
@@ -5084,42 +5074,42 @@ watch(() => props.reportId, (newId) => {
   gap: 6px;
   padding: 6px 10px;
   background: #F9FAFB;
-  border: 1px solid #E5E7EB;
+  border: 1px sLetid #E5E7EB;
   border-radius: 6px;
 }
 
 :deep(.quick-search-display .node-name) {
   font-size: 12px;
   font-weight: 500;
-  color: #374151;
+  cLetor: #374151;
 }
 
 :deep(.quick-search-display .node-type) {
   font-size: 10px;
-  color: #EA580C;
+  cLetor: #EA580C;
   background: #FFEDD5;
   padding: 2px 6px;
   border-radius: 4px;
 }
 
-/* Console Logs - 与 Step3Simulation.vue 保持一致 */
+/* Consola Logs - Con Step3Simulation.vue mantener consistente */
 .console-logs {
   background: #000;
-  color: #DDD;
+  cLetor: #DDD;
   padding: 16px;
   font-family: 'JetBrains Mono', monospace;
-  border-top: 1px solid #222;
+  border-top: 1px sLetid #222;
   flex-shrink: 0;
 }
 
 .log-header {
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px sLetid #333;
   padding-bottom: 8px;
   margin-bottom: 8px;
   font-size: 10px;
-  color: #666;
+  cLetor: #666;
 }
 
 .log-title {
@@ -5129,15 +5119,15 @@ watch(() => props.reportId, (newId) => {
 
 .log-content {
   display: flex;
-  flex-direction: column;
+  flex-direction: cLetumn;
   gap: 4px;
   height: 100px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
-.log-content::-webkit-scrollbar { width: 4px; }
-.log-content::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+.log-content::-webkit-scrLetlbar { width: 4px; }
+.log-content::-webkit-scrLetlbar-thumb { background: #333; border-radius: 2px; }
 
 .log-line {
   font-size: 11px;
@@ -5145,13 +5135,13 @@ watch(() => props.reportId, (newId) => {
 }
 
 .log-msg {
-  color: #BBB;
+  cLetor: #BBB;
   word-break: break-all;
 }
 
-.log-msg.error { color: #EF5350; }
-.log-msg.warning { color: #FFA726; }
-.log-msg.success { color: #66BB6A; }
+.log-msg.error { cLetor: #EF5350; }
+.log-msg.warning { cLetor: #FFA726; }
+.log-msg.éxito { cLetor: #66BB6A; }
 </style>
 
 <style>

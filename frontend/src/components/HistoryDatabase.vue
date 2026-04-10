@@ -200,66 +200,66 @@ const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 
-// 状态
+// Estado
 const projects = ref([])
 const loading = ref(true)
 const isExpanded = ref(false)
 const hoveringCard = ref(null)
 const historyContainer = ref(null)
-const selectedProject = ref(null)  // 当前选中的项目（用于弹窗）
+const selectedProject = ref(null)  // Proyecto seleccionado actualmente (usado para ventana emergente)
 let observer = null
-let isAnimating = false  // 动画锁，防止闪烁
-let expandDebounceTimer = null  // 防抖定时器
-let pendingState = null  // 记录待执行的目标状态
+let isAnimating = false  // Bloqueo de animación, evita parpadeo
+let expandDebounceTimer = null  // Temporizador de debounce
+let pendingState = null  // Registrar estado de destino pendiente
 
-// 卡片布局配置 - 调整为更宽的比例
+// Configuración de diseño de tarjetas - ajustada a proporción más ancha
 const CARDS_PER_ROW = 4
-const CARD_WIDTH = 280  
-const CARD_HEIGHT = 280 
+const CARD_WIDTH = 280
+const CARD_HEIGHT = 280
 const CARD_GAP = 24
 
-// 动态计算容器高度样式
+// Calcular dinámicamente estilo de altura del contenedor
 const containerStyle = computed(() => {
   if (!isExpanded.value) {
-    // 折叠态：固定高度
+    // Estado plegado: altura fija
     return { minHeight: '420px' }
   }
-  
-  // 展开态：根据卡片数量动态计算高度
+
+  // Estado expandido: calcular altura dinámicamente según cantidad de tarjetas
   const total = projects.value.length
   if (total === 0) {
     return { minHeight: '280px' }
   }
-  
+
   const rows = Math.ceil(total / CARDS_PER_ROW)
-  // 计算实际需要的高度：行数 * 卡片高度 + (行数-1) * 间距 + 少量底部间距
+  // Calcular altura real necesaria: filas * altura tarjeta + (filas-1) * espaciado + pequeño espaciado inferior
   const expandedHeight = rows * CARD_HEIGHT + (rows - 1) * CARD_GAP + 10
-  
+
   return { minHeight: `${expandedHeight}px` }
 })
 
-// 获取卡片样式
+// Obtener estilo de tarjeta
 const getCardStyle = (index) => {
   const total = projects.value.length
-  
+
   if (isExpanded.value) {
-    // 展开态：网格布局
+    // Estado expandido: diseño en cuadrícula
     const transition = 'transform 700ms cubic-bezier(0.23, 1, 0.32, 1), opacity 700ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s ease, border-color 0.3s ease'
 
     const col = index % CARDS_PER_ROW
     const row = Math.floor(index / CARDS_PER_ROW)
-    
-    // 计算当前行的卡片数量，确保每行居中
+
+    // Calcular cantidad de tarjetas en la fila actual, asegurando centrado por fila
     const currentRowStart = row * CARDS_PER_ROW
     const currentRowCards = Math.min(CARDS_PER_ROW, total - currentRowStart)
-    
+
     const rowWidth = currentRowCards * CARD_WIDTH + (currentRowCards - 1) * CARD_GAP
-    
+
     const startX = -(rowWidth / 2) + (CARD_WIDTH / 2)
     const colInRow = index % CARDS_PER_ROW
     const x = startX + colInRow * (CARD_WIDTH + CARD_GAP)
-    
-    // 向下展开，增加与标题的间距
+
+    // Expandir hacia abajo, aumentar espaciado con el título
     const y = 20 + row * (CARD_HEIGHT + CARD_GAP)
 
     return {
@@ -269,18 +269,18 @@ const getCardStyle = (index) => {
       transition: transition
     }
   } else {
-    // 折叠态：扇形堆叠
+    // Estado plegado: apilamiento en abanico
     const transition = 'transform 700ms cubic-bezier(0.23, 1, 0.32, 1), opacity 700ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.3s ease, border-color 0.3s ease'
 
     const centerIndex = (total - 1) / 2
     const offset = index - centerIndex
-    
+
     const x = offset * 35
-    // 调整起始位置，靠近标题但保持适当间距
+    // Ajustar posición inicial, cerca del título pero manteniendo espaciado apropiado
     const y = 25 + Math.abs(offset) * 8
     const r = offset * 3
     const s = 0.95 - Math.abs(offset) * 0.05
-    
+
     return {
       transform: `translate(${x}px, ${y}px) rotate(${r}deg) scale(${s})`,
       zIndex: 10 + index,
@@ -290,11 +290,11 @@ const getCardStyle = (index) => {
   }
 }
 
-// 根据rondas数进度获取样式类
+// Obtener clase de estilo según progreso de rondas
 const getProgressClass = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
-  
+
   if (total === 0 || current === 0) {
     // Sin iniciar
     return 'not-started'
@@ -307,7 +307,7 @@ const getProgressClass = (simulation) => {
   }
 }
 
-// 格式化日期（只显示日期部分）
+// Formatear fecha (solo mostrar parte de fecha)
 const formatDate = (dateStr) => {
   if (!dateStr) return ''
   try {
@@ -318,7 +318,7 @@ const formatDate = (dateStr) => {
   }
 }
 
-// 格式化时间（显示时:分）
+// Formatear hora (mostrar horas:minutos)
 const formatTime = (dateStr) => {
   if (!dateStr) return ''
   try {
@@ -331,27 +331,27 @@ const formatTime = (dateStr) => {
   }
 }
 
-// 截断文本
+// Truncar texto
 const truncateText = (text, maxLength) => {
   if (!text) return ''
   return text.length > maxLength ? text.slice(0, maxLength) + '...' : text
 }
 
-// 从Requisito de simulación生成标题（取前20字）
+// Generar título desde Requisito de simulación (tomar primeros 20 caracteres)
 const getSimulationTitle = (requirement) => {
   if (!requirement) return t('history.untitledSimulation')
   const title = requirement.slice(0, 20)
   return requirement.length > 20 ? title + '...' : title
 }
 
-// 格式化 simulation_id 显示（截取前6位）
+// Formatear visualización de simulation_id (tomar primeros 6 caracteres)
 const formatSimulationId = (simulationId) => {
   if (!simulationId) return 'SIM_UNKNOWN'
   const prefix = simulationId.replace('sim_', '').slice(0, 6)
   return `SIM_${prefix.toUpperCase()}`
 }
 
-// 格式化rondas数显示（当前rondas/总rondas数）
+// Formatear visualización de rondas (rondas actuales/total de rondas)
 const formatRounds = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
@@ -359,7 +359,7 @@ const formatRounds = (simulation) => {
   return t('history.roundsProgress', { current, total })
 }
 
-// 获取文件类型（用于样式）
+// Obtener tipo de archivo (para estilo)
 const getFileType = (filename) => {
   if (!filename) return 'other'
   const ext = filename.split('.').pop()?.toLowerCase()
@@ -375,35 +375,35 @@ const getFileType = (filename) => {
   return typeMap[ext] || 'other'
 }
 
-// 获取文件类型标签文本
+// Obtener texto de etiqueta de tipo de archivo
 const getFileTypeLabel = (filename) => {
   if (!filename) return 'FILE'
   const ext = filename.split('.').pop()?.toUpperCase()
   return ext || 'FILE'
 }
 
-// 截断文件名（保留扩展名）
+// Truncar nombre de archivo (conservar extensión)
 const truncateFilename = (filename, maxLength) => {
   if (!filename) return t('history.unknownFile')
   if (filename.length <= maxLength) return filename
-  
+
   const ext = filename.includes('.') ? '.' + filename.split('.').pop() : ''
   const nameWithoutExt = filename.slice(0, filename.length - ext.length)
   const truncatedName = nameWithoutExt.slice(0, maxLength - ext.length - 3) + '...'
   return truncatedName + ext
 }
 
-// 打开项目详情弹窗
+// Abrir ventana emergente de detalles del proyecto
 const navigateToProject = (simulation) => {
   selectedProject.value = simulation
 }
 
-// Cerrar弹窗
+// Cerrar ventana emergente
 const closeModal = () => {
   selectedProject.value = null
 }
 
-// 导航到Construcción de grafo页面（Project）
+// Navegar a página Construcción de grafo (Project)
 const goToProject = () => {
   if (selectedProject.value?.project_id) {
     router.push({
@@ -414,7 +414,7 @@ const goToProject = () => {
   }
 }
 
-// 导航到环境配置页面（Simulation）
+// Navegar a página de configuración de entorno (Simulation)
 const goToSimulation = () => {
   if (selectedProject.value?.simulation_id) {
     router.push({
@@ -425,7 +425,7 @@ const goToSimulation = () => {
   }
 }
 
-// 导航到Informe de análisis页面（Report）
+// Navegar a página Informe de análisis (Report)
 const goToReport = () => {
   if (selectedProject.value?.report_id) {
     router.push({
@@ -436,7 +436,7 @@ const goToReport = () => {
   }
 }
 
-// 加载历史项目
+// Cargar proyectos históricos
 const loadHistory = async () => {
   try {
     loading.value = true
@@ -445,65 +445,65 @@ const loadHistory = async () => {
       projects.value = response.data || []
     }
   } catch (error) {
-    console.error('加载历史项目Fallido:', error)
+    console.error('Falló carga de proyectos históricos:', error)
     projects.value = []
   } finally {
     loading.value = false
   }
 }
 
-// Inicializando IntersectionObserver
+// Inicializar IntersectionObserver
 const initObserver = () => {
   if (observer) {
     observer.disconnect()
   }
-  
+
   observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
         const shouldExpand = entry.isIntersecting
-        
-        // 更新待执行的目标状态（Ninguno论是否在动画中都要记录最新的目标状态）
+
+        // Actualizar estado de destino pendiente (registrar último estado objetivo sin importar si está en animación)
         pendingState = shouldExpand
-        
-        // 清除之前的防抖定时器（新的滚动意图会覆盖旧的）
+
+        // Limpiar temporizador de debounce anterior (nueva intención de desplazamiento sobrescribe la antigua)
         if (expandDebounceTimer) {
           clearTimeout(expandDebounceTimer)
           expandDebounceTimer = null
         }
-        
-        // 如果正在动画中，只记录状态，等动画结束后处理
+
+        // Si está en animación, solo registrar estado, procesar al finalizar animación
         if (isAnimating) return
-        
-        // 如果目标状态与当前状态相同，不需要处理
+
+        // Si el estado objetivo coincide con el estado actual, no necesita procesamiento
         if (shouldExpand === isExpanded.value) {
           pendingState = null
           return
         }
-        
-        // 使用防抖延迟状态切换，防止快速闪烁
-        // 展开时延迟较短(50ms)，收起时延迟较长(200ms)以增加稳定性
+
+        // Usar debounce para retrasar cambio de estado, evitando parpadeo rápido
+        // Retraso corto al expandir (50ms), retraso largo al recoger (200ms) para mayor estabilidad
         const delay = shouldExpand ? 50 : 200
-        
+
         expandDebounceTimer = setTimeout(() => {
-          // 检查是否正在动画
+          // Verificar si está en animación
           if (isAnimating) return
-          
-          // 检查待执行状态是否仍需要执行（可能已被后续滚动覆盖）
+
+          // Verificar si el estado pendiente aún necesita ejecución (puede haber sido sobrescrito por desplazamiento posterior)
           if (pendingState === null || pendingState === isExpanded.value) return
-          
-          // 设置动画锁
+
+          // Establecer bloqueo de animación
           isAnimating = true
           isExpanded.value = pendingState
           pendingState = null
-          
-          // 动画完成后解除锁定，并检查是否有待处理的状态变化
+
+          // Al completar animación, liberar bloqueo y verificar si hay cambios de estado pendientes
           setTimeout(() => {
             isAnimating = false
-            
-            // 动画结束后，检查是否有新的待执行状态
+
+            // Al finalizar animación, verificar si hay nuevo estado pendiente
             if (pendingState !== null && pendingState !== isExpanded.value) {
-              // 延迟一小段时间再执行，避免太快切换
+              // Retrasar breve antes de ejecutar, evitando cambio demasiado rápido
               expandDebounceTimer = setTimeout(() => {
                 if (pendingState !== null && pendingState !== isExpanded.value) {
                   isAnimating = true
@@ -520,20 +520,20 @@ const initObserver = () => {
       })
     },
     {
-      // 使用多elementos阈值，使检测更平滑
+      // Usar múltiples umbrales de elementos, haciendo la detección más suave
       threshold: [0.4, 0.6, 0.8],
-      // 调整 rootMargin，视口底部向上收缩，需要滚动更多才触发展开
+      // Ajustar rootMargin, contraer desde el inferior del viewport, requiere más desplazamiento para activar expansión
       rootMargin: '0px 0px -150px 0px'
     }
   )
-  
-  // 开始观察
+
+  // Iniciar observación
   if (historyContainer.value) {
     observer.observe(historyContainer.value)
   }
 }
 
-// 监听路由变化，当Volver首页时重新加载数据
+// Escuchar cambios de ruta, recargar datos al Volver a página principal
 watch(() => route.path, (newPath) => {
   if (newPath === '/') {
     loadHistory()
@@ -541,28 +541,28 @@ watch(() => route.path, (newPath) => {
 })
 
 onMounted(async () => {
-  // 确保 DOM 渲染完成后再加载数据
+  // Asegurar que el renderizado del DOM esté completo antes de cargar datos
   await nextTick()
   await loadHistory()
-  
-  // Pendiente DOM 渲染后Inicializando观察器
+
+  // Pendiente: Inicializar observador después de renderizado del DOM
   setTimeout(() => {
     initObserver()
   }, 100)
 })
 
-// 如果使用 keep-alive，在组件激活时重新加载数据
+// Si se usa keep-alive, recargar datos al activar componente
 onActivated(() => {
   loadHistory()
 })
 
 onUnmounted(() => {
-  // 清理 Intersection Observer
+  // Limpiar Intersection Observer
   if (observer) {
     observer.disconnect()
     observer = null
   }
-  // 清理防抖定时器
+  // Limpiar temporizador de debounce
   if (expandDebounceTimer) {
     clearTimeout(expandDebounceTimer)
     expandDebounceTimer = null
@@ -571,7 +571,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 容器 */
+/* Contenedor */
 .history-database {
   position: relative;
   width: 100%;
@@ -581,13 +581,13 @@ onUnmounted(() => {
   overflow: visible;
 }
 
-/* Ninguno项目时简化显示 */
+/* Simplificar visualización cuando Ninguno proyectos */
 .history-database.no-projects {
   min-height: auto;
   padding: 40px 0 20px;
 }
 
-/* 技术网格背景 */
+/* Fondo de cuadrícula técnica */
 .tech-grid-bg {
   position: absolute;
   top: 0;
@@ -598,18 +598,18 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-/* 使用CSS背景图案创建固定间距的正方形网格 */
+/* Usar patrón de fondo CSS para crear cuadrícula de cuadrados con espaciado fijo */
 .grid-pattern {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
   background-size: 50px 50px;
-  /* 从左上角开始定位，高度变化时只在底部扩展，不影响已有网格位置 */
+  /* Posicionar desde esquina superior izquierda, al cambiar altura solo expande desde abajo, sin afectar posición de cuadrícula existente */
   background-position: top left;
 }
 
@@ -653,7 +653,7 @@ onUnmounted(() => {
   text-transform: uppercase;
 }
 
-/* 卡片容器 */
+/* Contenedor de tarjetas */
 .cards-container {
   position: relative;
   display: flex;
@@ -661,15 +661,15 @@ onUnmounted(() => {
   align-items: flex-start;
   padding: 0 40px;
   transition: min-height 700ms cubic-bezier(0.23, 1, 0.32, 1);
-  /* min-height 由 JS 动态计算，根据卡片数量自适应 */
+  /* min-height calculado dinámicamente por JS, adaptado según cantidad de tarjetas */
 }
 
-/* 项目卡片 */
+/* Tarjeta de proyecto */
 .project-card {
   position: absolute;
   width: 280px;
   background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  border:1px solid #E5E7EB;
   border-radius: 0;
   padding: 14px;
   cursor: pointer;
@@ -705,7 +705,81 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-/* 功能状态图标组 */
+/* Grupo de iconos de estado de función */
+.card-status-icons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #E5E7EB, transparent);
+  max-width: 300px;
+}
+
+.section-title {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #9CA3AF;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+/* Contenedor de tarjetas */
+.cards-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0 40px;
+  transition: min-height 700ms cubic-bezier(0.23, 1, 0.32, 1);
+  /* min-height calculado dinámicamente por JS, adaptado según cantidad de tarjetas */
+}
+
+/* Tarjeta de proyecto */
+.project-card {
+  position: absolute;
+  width: 280px;
+  background: #FFFFFF;
+  border:1px solid #E5E7EB;
+  border-radius: 0;
+  padding: 14px;
+  cursor: pointer;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 700ms cubic-bezier(0.23, 1, 0.32, 1), opacity 700ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.project-card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.4);
+  z-index: 1000 !important;
+}
+
+.project-card.hovering {
+  z-index: 1000 !important;
+}
+
+/* encabezado de tarjeta */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F3F4F6;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 0.7rem;
+}
+
+.card-id {
+  color: #6B7280;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+/* Grupo de iconos de estado de función */
 .card-status-icons {
   display: flex;
   align-items: center;
@@ -722,17 +796,17 @@ onUnmounted(() => {
   opacity: 1;
 }
 
-/* 不同功能的颜色 */
-.status-icon:nth-child(1).available { color: #3B82F6; } /* Construcción de grafo - 蓝色 */
-.status-icon:nth-child(2).available { color: #F59E0B; } /* Configuración del entorno - 橙色 */
-.status-icon:nth-child(3).available { color: #10B981; } /* Informe de análisis - 绿色 */
+/* Colores de diferentes funciones */
+.status-icon:nth-child(1).available { color: #3B82F6; } /* Construcción de grafo - azul */
+.status-icon:nth-child(2).available { color: #F59E0B; } /* Configuración del entorno - naranja */
+.status-icon:nth-child(3).available { color: #10B981; } /* Informe de análisis - verde */
 
 .status-icon.unavailable {
   color: #D1D5DB;
   opacity: 0.5;
 }
 
-/* rondas数进度显示 */
+/* Visualización de progreso de rondas */
 .card-progress {
   display: flex;
   align-items: center;
@@ -746,10 +820,10 @@ onUnmounted(() => {
   font-size: 0.5rem;
 }
 
-/* 进度状态颜色 */
-.card-progress.completed { color: #10B981; }    /* Completado - 绿色 */
-.card-progress.in-progress { color: #F59E0B; }  /* En progreso - 橙色 */
-.card-progress.not-started { color: #9CA3AF; }  /* Sin iniciar - 灰色 */
+/* Colores de estado de progreso */
+.card-progress.completed { color: #10B981; }    /* Completado - verde */
+.card-progress.in-progress { color: #F59E0B; }  /* En progreso - naranja */
+.card-progress.not-started { color: #9CA3AF; }  /* Sin iniciar - gris */
 .card-status.pending { color: #9CA3AF; }
 
 /* Área de lista de archivos */
@@ -772,7 +846,7 @@ onUnmounted(() => {
   gap: 4px;
 }
 
-/* 更多文件提示 */
+/* Indicador de más archivos */
 .files-more {
   display: flex;
   align-items: center;
@@ -802,7 +876,7 @@ onUnmounted(() => {
   border-color: #e5e7eb;
 }
 
-/* 简约文件标签样式 */
+/* Estilo simplificado de etiqueta de archivo */
 .file-tag {
   display: inline-flex;
   align-items: center;
@@ -820,7 +894,7 @@ onUnmounted(() => {
   min-width: 28px;
 }
 
-/* 低饱和度配色方案 - Morandi色系 */
+/* Esquema de color de baja saturación - paleta Morandi */
 .file-tag.pdf { background: #f2e6e6; color: #a65a5a; }
 .file-tag.doc { background: #e6eff5; color: #5a7ea6; }
 .file-tag.xls { background: #e6f2e8; color: #5aa668; }
@@ -862,13 +936,13 @@ onUnmounted(() => {
   letter-spacing: 0.5px;
 }
 
-/* 悬停时文件区域效果 */
+/* Efecto de área de archivos al pasar cursor */
 .project-card:hover .card-files-wrapper {
   border-color: #d1d5db;
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
 }
 
-/* 角落装饰 */
+/* Decoración de esquina */
 .corner-mark.top-left-only {
   position: absolute;
   top: 6px;
@@ -881,7 +955,7 @@ onUnmounted(() => {
   z-index: 10;
 }
 
-/* 卡片标题 */
+/* Título de tarjeta */
 .card-title {
   font-family: 'Inter', -apple-system, sans-serif;
   font-size: 0.9rem;
@@ -899,7 +973,145 @@ onUnmounted(() => {
   color: #2563EB;
 }
 
-/* 卡片描述 */
+/* Descripción de tarjeta */
+.card-desc {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin: 0 0 16px 0;
+  line-height: 1.5;
+  height: 34px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* fondo de tarjeta */
+.card-footer {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top:1px solid #F3F4F6;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: #9CA3AF;
+  font-weight: 500;
+}
+
+/* Combinación de fecha y hora */
+.card-datetime {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Visualización de progreso de rondas en parte inferior */
+.card-footer .card-progress {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  font-size: 0.65rem;
+}
+
+.card-footer .status-dot {
+  font-size: 0.5rem;
+}
+
+/* Colores de estado de progreso - parte inferior */
+.card-footer .card-progress.completed { color: #10B981; }
+.card-footer .card-progress.in-progress { color: #F59E0B; }
+.card-footer .card-progress.not-started { color: #9CA3AF; }
+
+/* Línea decorativa inferior */
+.card-bottom-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background-color: #000;
+  transition: width 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: 20;
+}
+
+.project-card:hover .card-bottom-line {
+  width: 100%;
+}
+
+/* Estado vacío */
+.empty-state, .loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 48px;
+  color: #9CA3AF;
+}
+
+/* Marcador cuando no hay archivos */
+.files-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  color: #9CA3AF;
+}
+
+.empty-file-icon {
+  font-size: 1rem;
+  opacity: 0.5;
+}
+
+.empty-file-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+}
+
+/* Efecto de área de archivos al pasar cursor */
+.project-card:hover .card-files-wrapper {
+  border-color: #d1d5db;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+/* Decoración de esquina */
+.corner-mark.top-left-only {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 8px;
+  height: 8px;
+  border-top: 1.5px solid rgba(0, 0, 0, 0.4);
+  border-left: 1.5px solid rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Título de tarjeta */
+.card-title {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 6px 0;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.3s ease;
+}
+
+.project-card:hover .card-title {
+  color: #2563EB;
+}
+
+/* Descripción de tarjeta */
 .card-desc {
   font-family: 'Inter', sans-serif;
   font-size: 0.75rem;
@@ -927,14 +1139,14 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-/* 日期时间组合 */
+/* Combinación de fecha y hora */
 .card-datetime {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* 底部rondas数进度显示 */
+/* Visualización de progreso de rondas en parte inferior */
 .card-footer .card-progress {
   display: flex;
   align-items: center;
@@ -948,12 +1160,12 @@ onUnmounted(() => {
   font-size: 0.5rem;
 }
 
-/* 进度状态颜色 - 底部 */
+/* Colores de estado de progreso - parte inferior */
 .card-footer .card-progress.completed { color: #10B981; }
 .card-footer .card-progress.in-progress { color: #F59E0B; }
 .card-footer .card-progress.not-started { color: #9CA3AF; }
 
-/* 底部装饰线 */
+/* Línea decorativa inferior */
 .card-bottom-line {
   position: absolute;
   bottom: 0;
@@ -969,7 +1181,7 @@ onUnmounted(() => {
   width: 100%;
 }
 
-/* 空状态 */
+/* Estado vacío */
 .empty-state, .loading-state {
   display: flex;
   flex-direction: column;
@@ -997,7 +1209,7 @@ onUnmounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* 响应式 */
+/* Responsivo */
 @media (max-width: 1200px) {
   .project-card {
     width: 240px;
@@ -1013,7 +1225,7 @@ onUnmounted(() => {
   }
 }
 
-/* ===== ventana emergente de detalles de reproducción histórica样式 ===== */
+/* ===== ventana emergente de detalles de reproducción histórica estilos ===== */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1039,7 +1251,7 @@ onUnmounted(() => {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* 动画过渡 */
+/* Transiciones de animación */
 .modal-enter-active,
 .modal-leave-active {
   transition: opacity 0.3s ease;
@@ -1177,7 +1389,7 @@ onUnmounted(() => {
   padding-right: 4px;
 }
 
-/* Personalizar滚动条样式 */
+/* Personalizar estilo de barra de desplazamiento */
 .modal-files::-webkit-scrollbar {
   width: 4px;
 }
@@ -1322,7 +1534,7 @@ onUnmounted(() => {
   color: #111827;
 }
 
-/* indicación de no reproducción */
+/* Indicación de sin reproducción */
 .modal-playback-hint {
   display: flex;
   align-items: center;

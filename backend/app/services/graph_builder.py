@@ -432,7 +432,7 @@ class GraphBuilderService:
                 )
 
             if pending_episodes:
-                time.sleep(3)  # 每3秒检查一次
+                time.sleep(3)  # verificar cada 3 segundos
 
         if progress_callback:
             progress_callback(
@@ -505,7 +505,7 @@ class GraphBuilderService:
 
         edges_data = []
         for edge in edges:
-            # Obtener时间信息
+            # Obtener información de tiempo
             created_at = getattr(edge, "created_at", None)
             valid_at = getattr(edge, "valid_at", None)
             invalid_at = getattr(edge, "invalid_at", None)
@@ -551,5 +551,5 @@ class GraphBuilderService:
         }
 
     def delete_graph(self, graph_id: str):
-        """删除Grafo"""
+        """Eliminar Grafo"""
         self.client.graph.delete(graph_id=graph_id)

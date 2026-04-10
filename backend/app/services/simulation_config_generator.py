@@ -1,13 +1,13 @@
 """
 Generador inteligente de configuración de simulación
-Usar LLM para generar automáticaMente parámetros de simulación detallados según Requisito de simulación, contenido de documentos e inFormación de grafo
-Implementa automatización completa, Ninguno necesita configuración manual de parámetros
+Usa LLM para generar automáticamente parámetros de simulación detallados según requisito de simulación, contenido de documentos e información de grafo
+Implementa automatización completa, ninguno necesita configuración manual de parámetros
 
-Adoptar Estrategia de generación por pasos para evitar Falido por generar contenido Demasiado Largo de una vez:
-1. Generar Configuración de tiempo
-2. Generar Configuración de eventos
-3. Generar configuración de Agente en lotes
-4. Generar configuración de plataForma
+Adoptar estrategia de generación por pasos para evitar fallido por generar contenido demasiado largo de una vez:
+1. Generar configuración de tiempo
+2. Generar configuración de eventos
+3. Generar configuración de agente en lotes
+4. Generar configuración de plataforma
 """
 
 import json
@@ -25,22 +25,22 @@ from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger("mirofish.simulation_config")
 
-# Configuración de tiempo de Hábitos chinos (hora de Beijing)
+# Configuración de tiempo de hábitos chinos (hora de Beijing)
 CHINA_TIMEZONE_CONFIG = {
-    # Horas de madrugada (casi Ninguno actividad)
+    # Horas de madrugada (casi ninguna actividad)
     "dead_hours": [0, 1, 2, 3, 4, 5],
-    # Horario matutino (despertando gradualMente)
+    # Horario matutino (despertando gradualmente)
     "morning_hours": [6, 7, 8],
     # Horario laboral
     "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-    # Horas pico nocturnas (Más activas)
+    # Horas pico nocturnas (más activas)
     "peak_hours": [19, 20, 21, 22],
-    # Horas nocturnas (Nivel de actividad descendiendo)
+    # Horas nocturnas (nivel de actividad descendiendo)
     "night_hours": [23],
-    # Coeficientes de Nivel de actividad
+    # Coeficientes de nivel de actividad
     "activity_multipliers": {
-        "dead": 0.05,  # Madrugada casi Ninguna actividad
-        "morning": 0.4,  # Mañana gradualMente activo
+        "dead": 0.05,  # Madrugada casi ninguna actividad
+        "morning": 0.4,  # Mañana gradualmente activo
         "work": 0.7,  # Horario laboral moderado
         "peak": 1.5,  # Pico nocturno
         "night": 0.5,  # Madrugada descendiendo
@@ -57,52 +57,52 @@ class AgentActivityConfig:
     entity_name: str
     entity_type: str
 
-    # Configuración de Nivel de actividad (0.0-1.0)
+    # Configuración de nivel de actividad (0.0-1.0)
     activity_level: float = 0.5  # Nivel de actividad general
 
     # Frecuencia de publicaciones (número esperado de publicaciones por hora)
     posts_per_hour: float = 1.0
     comments_per_hour: float = 2.0
 
-    # Período de actividad (Sistema de 24horas, 0-23)
+    # Período de actividad (sistema de 24 horas, 0-23)
     active_hours: List[int] = field(default_factory=lambda: list(range(8, 23)))
 
-    # Velocidad de Respuesta (retraso de reacción a eventos candentes, Unidad: minutos de simulación)
+    # Velocidad de respuesta (retraso de reacción a eventos candentes, unidad: minutos de simulación)
     response_delay_min: int = 5
     response_delay_max: int = 60
 
     # Tendencia emocional (-1.0 a 1.0, negativo a positivo)
     sentiment_bias: float = 0.0
 
-    # Postura (Actitud hacia temas específicos)
+    # Postura (actitud hacia temas específicos)
     stance: str = "neutral"  # supportive, opposing, neutral, observer
 
-    # Peso de Influencia (determina la probabilidad de que sus publicaciones sean vistas por Otros agentes)
+    # Peso de influencia (determina la probabilidad de que sus publicaciones sean vistas por otros agentes)
     influence_weight: float = 1.0
 
 
 @dataclass
 class TimeSimulationConfig:
-    """Configuración de simulación de tiempo (basada en Hábitos chinos)"""
+    """Configuración de simulación de tiempo (basada en hábitos chinos)"""
 
     # Duración total de simulación (número de horas de simulación)
-    total_simulation_hours: int = 72  # Por deFecto simular 72horas (3 días)
+    total_simulation_hours: int = 72  # Por defecto simular 72 horas (3 días)
 
-    # Tiempo representado por ronda (minutos de simulación) - Por deFecto 60minutos (1hora), acelerar flujo de tiempo
+    # Tiempo representado por ronda (minutos de simulación) - Por defecto 60 minutos (1 hora), acelerar flujo de tiempo
     minutes_per_round: int = 60
 
-    # Rango de cantidad de Agentes activados por hora
+    # Rango de cantidad de agentes activados por hora
     agents_per_hour_min: int = 5
     agents_per_hour_max: int = 20
 
-    # Horas pico (19-22h, tiempo Más activo para chinos)
+    # Horas pico (19-22h, tiempo más activo para chinos)
     peak_hours: List[int] = field(default_factory=lambda: [19, 20, 21, 22])
     peak_activity_multiplier: float = 1.5
 
-    # Horas valle (0-5h, casi Ninguna actividad)
+    # Horas valle (0-5h, casi ninguna actividad)
     off_peak_hours: List[int] = field(default_factory=lambda: [0, 1, 2, 3, 4, 5])
     off_peak_activity_multiplier: float = (
-        0.05  # Nivel de actividad extremadaMente Bajo en madrugada
+        0.05  # Nivel de actividad extremadamente bajo en madrugada
     )
 
     # Horario matutino
@@ -123,39 +123,39 @@ class EventConfig:
     # Eventos iniciales (eventos desencadenados al inicio de simulación)
     initial_posts: List[Dict[str, Any]] = field(default_factory=list)
 
-    # Eventos Programados (eventos desencadenados en tiempos específicos)
+    # Eventos programados (eventos desencadenados en tiempos específicos)
     scheduled_events: List[Dict[str, Any]] = field(default_factory=list)
 
     # Palabras clave de temas candentes
     hot_topics: List[str] = field(default_factory=list)
 
-    # Dirección de guía de Opinión pública
+    # Dirección de guía de opinión pública
     narrative_direction: str = ""
 
 
 @dataclass
 class PlatformConfig:
-    """Plataforma特定Configuración"""
+    """Configuración específica de plataforma"""
 
     platform: str  # twitter or reddit
 
-    # Recomendar算法Peso
-    recency_weight: float = 0.4  # Tiempo新鲜度
-    popularity_weight: float = 0.3  # 热度
-    relevance_weight: float = 0.3  # Relacionado性
+    # Peso de algoritmo de recomendación
+    recency_weight: float = 0.4  # Frescura de tiempo
+    popularity_weight: float = 0.3  # Popularidad
+    relevance_weight: float = 0.3  # Relevancia
 
-    # 病毒传播阈Valor（达HastaCuánto互动后Disparar扩散）
-    vIral_threshold: int = 10
+    # Umbral de propagación viral (cuánta interacción antes de disparar difusión)
+    viral_threshold: int = 10
 
-    # 回声室效应强度（相似观点聚集程度）
+    # Intensidad del efecto de cámara de eco (grado de concentración de opiniones similares)
     echo_chamber_strength: float = 0.5
 
 
 @dataclass
 class SimulationParameters:
-    """完整的Simulación参数Configuración"""
+    """Configuración completa de parámetros de simulación"""
 
-    # 基础Información
+    # Información base
     simulation_id: str
     project_id: str
     graph_id: str
@@ -164,26 +164,26 @@ class SimulationParameters:
     # Configuración de tiempo
     time_config: TimeSimulationConfig = field(default_factory=TimeSimulationConfig)
 
-    # AgentConfiguraciónLista
+    # Lista de configuración de agentes
     agent_configs: List[AgentActivityConfig] = field(default_factory=list)
 
     # Configuración de eventos
     event_config: EventConfig = field(default_factory=EventConfig)
 
-    # PlataFormaConfiguración
+    # Configuración de plataforma
     twitter_config: Optional[PlatformConfig] = None
     reddit_config: Optional[PlatformConfig] = None
 
-    # LLMConfiguración
+    # Configuración de LLM
     llm_model: str = ""
     llm_base_url: str = ""
 
-    # Generación元Datos
-    generated_at: str = field(default_factory=lambda: datetime.now().isoFormat())
-    geneRation_reasoning: str = ""  # LLM的推理Decir明
+    # Metadatos de generación
+    generated_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    generation_reasoning: str = ""  # Explicación de razonamiento del LLM
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convertir为Diccionario"""
+        """Convertir a diccionario"""
         time_dict = asdict(self.time_config)
         return {
             "simulation_id": self.simulation_id,
@@ -200,38 +200,38 @@ class SimulationParameters:
             "llm_model": self.llm_model,
             "llm_base_url": self.llm_base_url,
             "generated_at": self.generated_at,
-            "geneRation_reasoning": self.geneRation_reasoning,
+            "generation_reasoning": self.generation_reasoning,
         }
 
     def to_json(self, indent: int = 2) -> str:
-        """Convertir为JSON字符串"""
+        """Convertir a cadena JSON"""
         return json.dumps(self.to_dict(), ensure_ascii=False, indent=indent)
 
 
 class SimulationConfigGenerator:
     """
-    SimulaciónConfiguración智能Generar器
+    Generador inteligente de configuración de simulación
 
-    使用LLMAnálisisRequisito de simulación、DocumentaciónContenido、GrafoEntidadInformación，
-    自动GenerarMás佳的Simulación参数Configuración
+    Usa LLM para analizar requisito de simulación, contenido de documentos, información de entidades del grafo,
+    y generar automáticamente la mejor configuración de parámetros de simulación
 
-    采用分步GenerarEstrategia：
-    1. GenerarConfiguración de tiempoYConfiguración de eventos（轻量级）
-    2. 分批GenerarAgentConfiguración（每批10-20Elementos）
-    3. GenerarPlataformaConfiguración
+    Adopta estrategia de generación por pasos:
+    1. Generar configuración de tiempo y configuración de eventos (ligero)
+    2. Generar configuración de agentes en lotes (cada lote de 10-20 elementos)
+    3. Generar configuración de plataforma
     """
 
-    # 上下文Más大字符数
+    # Máximo número de caracteres de contexto
     MAX_CONTEXT_LENGTH = 50000
-    # 每批Generar的AgentCantidad
+    # Cantidad de agentes por lote
     AGENTS_PER_BATCH = 15
 
-    # 各Paso的上下文截断长度（字符数）
+    # Longitud de truncamiento de contexto por paso (número de caracteres)
     TIME_CONFIG_CONTEXT_LENGTH = 10000  # Configuración de tiempo
     EVENT_CONFIG_CONTEXT_LENGTH = 8000  # Configuración de eventos
-    ENTITY_SUMMARY_LENGTH = 300  # Entidad摘要
-    AGENT_SUMMARY_LENGTH = 300  # AgentConfiguración中的Entidad摘要
-    ENTITIES_PER_TYPE_DISPLAY = 20  # 每ClaseEntidadMostrarCantidad
+    ENTITY_SUMMARY_LENGTH = 300  # Resumen de entidad
+    AGENT_SUMMARY_LENGTH = 300  # Resumen de entidad en configuración de agente
+    ENTITIES_PER_TYPE_DISPLAY = 20  # Cantidad de entidades por tipo a mostrar
 
     def __init__(
         self,
@@ -244,7 +244,7 @@ class SimulationConfigGenerator:
         self.model_name = model_name or Config.LLM_MODEL_NAME
 
         if not self.api_key:
-            raise ValueError("LLM_API_KEY 未Configuración")
+            raise ValueError("LLM_API_KEY no configurada")
 
         self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
@@ -261,31 +261,31 @@ class SimulationConfigGenerator:
         progress_callback: Optional[Callable[[int, int, str], None]] = None,
     ) -> SimulationParameters:
         """
-        智能Generar完整的SimulaciónConfiguración（分步Generar）
+        Generar inteligentemente configuración completa de simulación (por pasos)
 
         Args:
-            simulation_id: SimulaciónID
-            project_id: 项目ID
-            graph_id: GrafoID
-            simulation_requirement: Requisito de simulaciónDescripción
-            document_text: 原始DocumentaciónContenido
-            entities: Filtrado后的EntidadLista
-            enable_twitter: Si启用Twitter
-            enable_reddit: Si启用Reddit
-            progress_callback: 进度CallbackFunción(current_step, total_steps, message)
+            simulation_id: ID de simulación
+            project_id: ID de proyecto
+            graph_id: ID de grafo
+            simulation_requirement: Descripción de requisito de simulación
+            document_text: Contenido de documentación original
+            entities: Lista de entidades filtradas
+            enable_twitter: Si habilitar Twitter
+            enable_reddit: Si habilitar Reddit
+            progress_callback: Función de callback de progreso (current_step, total_steps, message)
 
         Returns:
-            SimulationParameters: 完整的Simulación参数
+            SimulationParameters: Parámetros completos de simulación
         """
         logger.info(
-            f"Inicio智能Generando configuración de simulación: simulation_id={simulation_id}, Entidad数={len(entities)}"
+            f"Inicio de generación inteligente de configuración de simulación: simulation_id={simulation_id}, cantidad de entidades={len(entities)}"
         )
 
-        # 计算总Paso数
+        # Calcular número total de pasos
         num_batches = math.ceil(len(entities) / self.AGENTS_PER_BATCH)
         total_steps = (
             3 + num_batches
-        )  # Configuración de tiempo + Configuración de eventos + N批Agent + PlataformaConfiguración
+        )  # Configuración de tiempo + Configuración de eventos + N lotes de agentes + Configuración de plataforma
         current_step = 0
 
         def report_progress(step: int, message: str):
@@ -295,7 +295,7 @@ class SimulationConfigGenerator:
                 progress_callback(step, total_steps, message)
             logger.info(f"[{step}/{total_steps}] {message}")
 
-        # 1. 构建基础上下文Información
+        # 1. Construir contexto base
         context = self._build_context(
             simulation_requirement=simulation_requirement,
             document_text=document_text,
@@ -304,8 +304,8 @@ class SimulationConfigGenerator:
 
         reasoning_parts = []
 
-        # ========== Paso1: GenerarConfiguración de tiempo ==========
-        report_progress(1, t("progress.geneRatingTimeConfig"))
+        # ========== Paso 1: Generar configuración de tiempo ==========
+        report_progress(1, t("progress.generatingTimeConfig"))
         num_entities = len(entities)
         time_config_result = self._generate_time_config(context, num_entities)
         time_config = self._parse_time_config(time_config_result, num_entities)
@@ -313,8 +313,8 @@ class SimulationConfigGenerator:
             f"{t('progress.timeConfigLabel')}: {time_config_result.get('reasoning', t('common.success'))}"
         )
 
-        # ========== Paso2: GenerarConfiguración de eventos ==========
-        report_progress(2, t("progress.geneRatingEventConfig"))
+        # ========== Paso 2: Generar configuración de eventos ==========
+        report_progress(2, t("progress.generatingEventConfig"))
         event_config_result = self._generate_event_config(
             context, simulation_requirement, entities
         )
@@ -323,7 +323,7 @@ class SimulationConfigGenerator:
             f"{t('progress.eventConfigLabel')}: {event_config_result.get('reasoning', t('common.success'))}"
         )
 
-        # ========== Paso3-N: 分批GenerarAgentConfiguración ==========
+        # ========== Paso 3-N: Generar configuración de agentes en lotes ==========
         all_agent_configs = []
         for batch_idx in range(num_batches):
             start_idx = batch_idx * self.AGENTS_PER_BATCH
@@ -333,7 +333,7 @@ class SimulationConfigGenerator:
             report_progress(
                 3 + batch_idx,
                 t(
-                    "progress.geneRatingAgentConfig",
+                    "progress.generatingAgentConfig",
                     start=start_idx + 1,
                     end=end_idx,
                     total=len(entities),
@@ -352,8 +352,10 @@ class SimulationConfigGenerator:
             t("progress.agentConfigResult", count=len(all_agent_configs))
         )
 
-        # ========== 为初始帖子分配Publicar者 Agent ==========
-        logger.info("为初始帖子分配合适的Publicar者 Agent...")
+        # ========== Asignar agente publicador a publicaciones iniciales ==========
+        logger.info(
+            "Asignando agente publicador apropiado a publicaciones iniciales..."
+        )
         event_config = self._assign_initial_post_agents(event_config, all_agent_configs)
         assigned_count = len(
             [
@@ -364,8 +366,8 @@ class SimulationConfigGenerator:
         )
         reasoning_parts.append(t("progress.postAssignResult", count=assigned_count))
 
-        # ========== Más后一步: GenerarPlataformaConfiguración ==========
-        report_progress(total_steps, t("progress.geneRatingPlatformConfig"))
+        # ========== Último paso: Generar configuración de plataforma ==========
+        report_progress(total_steps, t("progress.generatingPlatformConfig"))
         twitter_config = None
         reddit_config = None
 
@@ -375,7 +377,7 @@ class SimulationConfigGenerator:
                 recency_weight=0.4,
                 popularity_weight=0.3,
                 relevance_weight=0.3,
-                vIral_threshold=10,
+                viral_threshold=10,
                 echo_chamber_strength=0.5,
             )
 
@@ -385,11 +387,11 @@ class SimulationConfigGenerator:
                 recency_weight=0.3,
                 popularity_weight=0.4,
                 relevance_weight=0.3,
-                vIral_threshold=15,
+                viral_threshold=15,
                 echo_chamber_strength=0.6,
             )
 
-        # 构建Más终参数
+        # Construir parámetros finales
         params = SimulationParameters(
             simulation_id=simulation_id,
             project_id=project_id,
@@ -402,11 +404,11 @@ class SimulationConfigGenerator:
             reddit_config=reddit_config,
             llm_model=self.model_name,
             llm_base_url=self.base_url,
-            geneRation_reasoning=" | ".join(reasoning_parts),
+            generation_reasoning=" | ".join(reasoning_parts),
         )
 
         logger.info(
-            f"SimulaciónGeneración de configuración completada: {len(params.agent_configs)} ElementosAgentConfiguración"
+            f"Generación de configuración de simulación completada: {len(params.agent_configs)} elementos de configuración de agente"
         )
 
         return params
@@ -417,35 +419,37 @@ class SimulationConfigGenerator:
         document_text: str,
         entities: List[EntityNode],
     ) -> str:
-        """构建LLM上下文，截断HastaMás大长度"""
+        """Construir contexto LLM, truncar hasta longitud máxima"""
 
-        # Entidad摘要
+        # Resumen de entidades
         entity_summary = self._summarize_entities(entities)
 
-        # 构建上下文
+        # Construir contexto
         context_parts = [
             f"## Requisito de simulación\n{simulation_requirement}",
-            f"\n## EntidadInformación ({len(entities)}Elementos)\n{entity_summary}",
+            f"\n## Información de entidades ({len(entities)} elementos)\n{entity_summary}",
         ]
 
         current_length = sum(len(p) for p in context_parts)
         remaining_length = (
             self.MAX_CONTEXT_LENGTH - current_length - 500
-        )  # 留500字符余量
+        )  # Dejar margen de 500 caracteres
 
         if remaining_length > 0 and document_text:
             doc_text = document_text[:remaining_length]
             if len(document_text) > remaining_length:
-                doc_text += "\n...(Documentación已截断)"
-            context_parts.append(f"\n## 原始DocumentaciónContenido\n{doc_text}")
+                doc_text += "\n...(documentación truncada)"
+            context_parts.append(
+                f"\n## Contenido de documentación original\n{doc_text}"
+            )
 
         return "\n".join(context_parts)
 
     def _summarize_entities(self, entities: List[EntityNode]) -> str:
-        """GenerarEntidad摘要"""
+        """Generar resumen de entidades"""
         lines = []
 
-        # 按TipoAgrupar
+        # Agrupar por tipo
         by_type: Dict[str, List[EntityNode]] = {}
         for e in entities:
             t = e.get_entity_type() or "Unknown"
@@ -454,8 +458,8 @@ class SimulationConfigGenerator:
             by_type[t].append(e)
 
         for entity_type, type_entities in by_type.items():
-            lines.append(f"\n### {entity_type} ({len(type_entities)}Elementos)")
-            # 使用Configuración的MostrarCantidadY摘要长度
+            lines.append(f"\n### {entity_type} ({len(type_entities)} elementos)")
+            # Usar cantidad de muestra y longitud de resumen de la configuración
             display_count = self.ENTITIES_PER_TYPE_DISPLAY
             summary_len = self.ENTITY_SUMMARY_LENGTH
             for e in type_entities[:display_count]:
@@ -467,13 +471,13 @@ class SimulationConfigGenerator:
                 lines.append(f"- {e.name}: {summary_preview}")
             if len(type_entities) > display_count:
                 lines.append(
-                    f"  ... TodavíaTener {len(type_entities) - display_count} Elementos"
+                    f"  ... Aún quedan {len(type_entities) - display_count} elementos"
                 )
 
         return "\n".join(lines)
 
     def _call_llm_with_retry(self, prompt: str, system_prompt: str) -> Dict[str, Any]:
-        """带Reintentar的LLM调用，ContieneJSONCorrección逻辑"""
+        """Llamada LLM con reintento, contiene lógica de corrección JSON"""
         import re
 
         max_attempts = 3
@@ -487,28 +491,29 @@ class SimulationConfigGenerator:
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": prompt},
                     ],
-                    response_Format={"type": "json_object"},
-                    temperature=0.7 - (attempt * 0.1),  # 每次Reintentar降低温度
-                    # 不Configurarmax_tokens，让LLM自由发挥
+                    response_format={"type": "json_object"},
+                    temperature=0.7
+                    - (attempt * 0.1),  # Reducir temperatura en cada reintento
+                    # No configurar max_tokens, dejar que LLM decida
                 )
 
                 content = response.choices[0].message.content
                 finish_reason = response.choices[0].finish_reason
 
-                # InspecciónSi被截断
+                # Verificar si fue truncado
                 if finish_reason == "length":
-                    logger.warning(f"LLM输出被截断 (attempt {attempt + 1})")
+                    logger.warning(f"Salida LLM truncada (intento {attempt + 1})")
                     content = self._fix_truncated_json(content)
 
-                # 尝试AnalizarJSON
+                # Intentar analizar JSON
                 try:
                     return json.loads(content)
                 except json.JSONDecodeError as e:
                     logger.warning(
-                        f"JSONAnalizarFallido (attempt {attempt + 1}): {str(e)[:80]}"
+                        f"Análisis JSON fallido (intento {attempt + 1}): {str(e)[:80]}"
                     )
 
-                    # 尝试CorrecciónJSON
+                    # Intentar corregir JSON
                     fixed = self._try_fix_config_json(content)
                     if fixed:
                         return fixed
@@ -516,45 +521,47 @@ class SimulationConfigGenerator:
                     last_error = e
 
             except Exception as e:
-                logger.warning(f"LLM调用Fallido (attempt {attempt + 1}): {str(e)[:80]}")
+                logger.warning(
+                    f"Llamada LLM fallida (intento {attempt + 1}): {str(e)[:80]}"
+                )
                 last_error = e
                 import time
 
                 time.sleep(2 * (attempt + 1))
 
-        raise last_error or Exception("LLM调用Fallido")
+        raise last_error or Exception("Llamada LLM fallida")
 
     def _fix_truncated_json(self, content: str) -> str:
-        """Corrección被截断的JSON"""
+        """Corregir JSON truncado"""
         content = content.strip()
 
-        # 计算未闭合的括号
+        # Calcular llaves sin cerrar
         open_braces = content.count("{") - content.count("}")
         open_brackets = content.count("[") - content.count("]")
 
-        # InspecciónSiTener未闭合的字符串
+        # Verificar si hay cadenas sin cerrar
         if content and content[-1] not in '",}]':
             content += '"'
 
-        # 闭合括号
+        # Cerrar llaves
         content += "]" * open_brackets
         content += "}" * open_braces
 
         return content
 
     def _try_fix_config_json(self, content: str) -> Optional[Dict[str, Any]]:
-        """尝试CorrecciónConfiguraciónJSON"""
+        """Intentar corregir configuración JSON"""
         import re
 
-        # Corrección被截断的情况
+        # Corregir casos truncados
         content = self._fix_truncated_json(content)
 
-        # ExtracciónJSON部分
+        # Extraer parte JSON
         json_match = re.search(r"\{[\s\S]*\}", content)
         if json_match:
             json_str = json_match.group()
 
-            # Eliminar字符串中的换Fila符
+            # Eliminar saltos de línea en cadenas
             def fix_string(match):
                 s = match.group(0)
                 s = s.replace("\n", " ").replace("\r", " ")
@@ -566,7 +573,7 @@ class SimulationConfigGenerator:
             try:
                 return json.loads(json_str)
             except:
-                # 尝试移除Todos控制字符
+                # Intentar eliminar todos los caracteres de control
                 json_str = re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", json_str)
                 json_str = re.sub(r"\s+", " ", json_str)
                 try:
@@ -577,35 +584,35 @@ class SimulationConfigGenerator:
         return None
 
     def _generate_time_config(self, context: str, num_entities: int) -> Dict[str, Any]:
-        """GenerarConfiguración de tiempo"""
-        # 使用Configuración的上下文截断长度
+        """Generar configuración de tiempo"""
+        # Usar longitud de truncamiento de contexto de la configuración
         context_truncated = context[: self.TIME_CONFIG_CONTEXT_LENGTH]
 
-        # 计算Más大允许Valor（80%的agent数）
+        # Calcular valor máximo permitido (90% del número de agentes)
         max_agents_allowed = max(1, int(num_entities * 0.9))
 
-        prompt = f"""基于以下Requisito de simulación，GenerarTiempoSimulaciónConfiguración。
+        prompt = f"""Basado en el siguiente requisito de simulación, generar configuración de simulación de tiempo.
 
 {context_truncated}
 
 ## Tarea
-请GenerarConfiguración de tiempoJSON。
+Por favor generar configuración de tiempo en JSON.
 
-### Básico原则（仅供ReFerencia，需Basado en具体EventoY参Con群体灵活调整）：
-- 请Basado enSimulación场景推断目标用户群体所En时区Y作息习惯，以下为东八区(UTC+8)的ReFerencia示例
-- 凌晨0-5点CasiNinguno人Campaña（Nivel de actividad系数0.05）
-- 早上6-8点逐渐活跃（Nivel de actividad系数0.4）
-- 工作Tiempo9-18点中等活跃（Nivel de actividad系数0.7）
-- 晚间19-22点Es高峰期（Nivel de actividad系数1.5）
-- 23点后Nivel de actividad下降（Nivel de actividad系数0.5）
-- 一般规律：凌晨低活跃、早间渐增、Horario laboral中等、晚间高峰
-- **重要**：以下示例Valor仅供ReFerencia，你NecesitaBasado enEvento性质、参Con群体特点来调整具体时段
-  - 例如：学生群体高峰PosibleEs21-23点；媒体全天活跃；官方机构SoloEn工作Tiempo
-  - 例如：突发热点Posible导致深夜也TenerDiscusión，off_peak_hours 可适Cuando缩短
+### Principios básicos (solo para referencia, ajustar según evento específico y grupo de participantes):
+- Por favor inferir zona horaria y hábitos de sueño/vigilia del grupo de usuarios objetivo según escenario de simulación, ejemplo de referencia para zona UTC+8
+- Madrugada 0-5 Casi nadie en campaña (coeficiente nivel de actividad 0.05)
+- Mañana 6-8 gradualmente activo (coeficiente nivel de actividad 0.4)
+- Horario de trabajo 9-18 actividad media (coeficiente nivel de actividad 0.7)
+- Noche 19-22 es horario pico (coeficiente nivel de actividad 1.5)
+- Después de 23h actividad baja (coeficiente nivel de actividad 0.5)
+- Regla general: madrugada baja actividad, mañana aumenta gradualmente, trabajo medio, noche pico
+- **Importante**: los valores de ejemplo solo son para referencia, necesitas ajustar horarios específicos según naturaleza del evento y características del grupo de participantes
+  - Por ejemplo: grupo estudiantil horario pico puede ser 21-23; medios activos todo el día; instituciones oficiales solo en horario laboral
+  - Por ejemplo: tema candente repentino puede causar discusión incluso de noche, off_peak_hours puede acortarse apropiadamente
 
-### VolverJSON格式（不要markdown）
+### Formato de retorno JSON (sin markdown)
 
-示例：
+Ejemplo:
 {{
     "total_simulation_hours": 72,
     "minutes_per_round": 60,
@@ -615,48 +622,50 @@ class SimulationConfigGenerator:
     "off_peak_hours": [0, 1, 2, 3, 4, 5],
     "morning_hours": [6, 7, 8],
     "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-    "reasoning": "针Para该Evento的Configuración de tiempoDecir明"
+    "reasoning": "Explicación de configuración para este evento"
 }}
 
-CampoDecir明：
-- total_simulation_hours (int): Simulación总时长，24-168horas，突发Evento短、持续话题长
-- minutes_per_round (int): Duración por ronda，30-120minutos，Sugerencia60minutos
-- agents_per_hour_min (int): 每horasMás少激活Agent数（取Valor范围: 1-{max_agents_allowed}）
-- agents_per_hour_max (int): 每horasMás多激活Agent数（取Valor范围: 1-{max_agents_allowed}）
-- peak_hours (int数组): Horas pico，Basado enEvento参Con群体调整
-- off_peak_hours (int数组): Horas valle，通常深夜凌晨
-- morning_hours (int数组): Horario matutino
-- work_hours (int数组): Horario laboral
-- reasoning (string): 简要Decir明Por qué这样Configuración"""
+Descripción de campos:
+- total_simulation_hours (int): Duración total de simulación, 24-168 horas, evento repentino corto, tema continuo largo
+- minutes_per_round (int): Duración por ronda, 30-120 minutos, sugerencia 60 minutos
+- agents_per_hour_min (int): Mínimo de agentes activados por hora (rango: 1-{max_agents_allowed})
+- agents_per_hour_max (int): Máximo de agentes activados por hora (rango: 1-{max_agents_allowed})
+- peak_hours (arreglo de int): Horas pico, ajustar según evento y grupo de participantes
+- off_peak_hours (arreglo de int): Horas valle, generalmente madrugada
+- morning_hours (arreglo de int): Horario matutino
+- work_hours (arreglo de int): Horario laboral
+- reasoning (string): Explicación breve de por qué esta configuración"""
 
-        system_prompt = "你Es社交媒体Simulación专家。Volver纯JSON格式，Configuración de tiempo需符合Simulación场景中目标用户群体的作息习惯。"
+        system_prompt = "Eres experto en simulación de redes sociales. Retornar en formato JSON puro, la configuración de tiempo debe coincidir con los hábitos de sueño/vigilia del grupo de usuarios objetivo en el escenario de simulación."
         system_prompt = f"{system_prompt}\n\n{get_language_instruction()}"
 
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
         except Exception as e:
-            logger.warning(f"Configuración de tiempoLLMGenerarFallido: {e}, 使用默认Configuración")
+            logger.warning(
+                f"Generación de configuración de tiempo con LLM fallida: {e}, usando configuración por defecto"
+            )
             return self._get_default_time_config(num_entities)
 
     def _get_default_time_config(self, num_entities: int) -> Dict[str, Any]:
-        """Obtener默认Configuración de tiempo（中国人作息）"""
+        """Obtener configuración de tiempo por defecto (hábitos chinos)"""
         return {
             "total_simulation_hours": 72,
-            "minutes_per_round": 60,  # 每rondas1horas，加快Tiempo流速
+            "minutes_per_round": 60,  # Cada ronda 1 hora, acelerar flujo de tiempo
             "agents_per_hour_min": max(1, num_entities // 15),
             "agents_per_hour_max": max(5, num_entities // 5),
             "peak_hours": [19, 20, 21, 22],
             "off_peak_hours": [0, 1, 2, 3, 4, 5],
             "morning_hours": [6, 7, 8],
             "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-            "reasoning": "使用默认中国人作息Configuración（每rondas1horas）",
+            "reasoning": "Usando configuración de hábitos chinos por defecto (cada ronda 1 hora)",
         }
 
     def _parse_time_config(
         self, result: Dict[str, Any], num_entities: int
     ) -> TimeSimulationConfig:
-        """AnalizarConfiguración de tiempo结果，并验证agents_per_hourValor不超过总agent数"""
-        # Obtener原始Valor
+        """Analizar resultado de configuración de tiempo, y verificar que valores de agents_per_hour no excedan total de agentes"""
+        # Obtener valores originales
         agents_per_hour_min = result.get(
             "agents_per_hour_min", max(1, num_entities // 15)
         )
@@ -664,36 +673,36 @@ CampoDecir明：
             "agents_per_hour_max", max(5, num_entities // 5)
         )
 
-        # Verificación并修正：确保不超过总agent数
+        # Verificar y corregir: asegurar no exceder total de agentes
         if agents_per_hour_min > num_entities:
             logger.warning(
-                f"agents_per_hour_min ({agents_per_hour_min}) 超过总Agent数 ({num_entities})，已修正"
+                f"agents_per_hour_min ({agents_per_hour_min}) excede total de agentes ({num_entities}), corregido"
             )
             agents_per_hour_min = max(1, num_entities // 10)
 
         if agents_per_hour_max > num_entities:
             logger.warning(
-                f"agents_per_hour_max ({agents_per_hour_max}) 超过总Agent数 ({num_entities})，已修正"
+                f"agents_per_hour_max ({agents_per_hour_max}) excede total de agentes ({num_entities}), corregido"
             )
             agents_per_hour_max = max(agents_per_hour_min + 1, num_entities // 2)
 
-        # 确保 min < max
+        # Asegurar min < max
         if agents_per_hour_min >= agents_per_hour_max:
             agents_per_hour_min = max(1, agents_per_hour_max // 2)
             logger.warning(
-                f"agents_per_hour_min >= max，已修正为 {agents_per_hour_min}"
+                f"agents_per_hour_min >= max, corregido a {agents_per_hour_min}"
             )
 
         return TimeSimulationConfig(
             total_simulation_hours=result.get("total_simulation_hours", 72),
             minutes_per_round=result.get(
                 "minutes_per_round", 60
-            ),  # Por deFecto每rondas1horas
+            ),  # Por defecto cada ronda 1 hora
             agents_per_hour_min=agents_per_hour_min,
             agents_per_hour_max=agents_per_hour_max,
             peak_hours=result.get("peak_hours", [19, 20, 21, 22]),
             off_peak_hours=result.get("off_peak_hours", [0, 1, 2, 3, 4, 5]),
-            off_peak_activity_multiplier=0.05,  # 凌晨CasiNinguno人
+            off_peak_activity_multiplier=0.05,  # Madrugada casi nadie
             morning_hours=result.get("morning_hours", [6, 7, 8]),
             morning_activity_multiplier=0.4,
             work_hours=result.get("work_hours", list(range(9, 19))),
@@ -704,14 +713,14 @@ CampoDecir明：
     def _generate_event_config(
         self, context: str, simulation_requirement: str, entities: List[EntityNode]
     ) -> Dict[str, Any]:
-        """GenerarConfiguración de eventos"""
+        """Generar configuración de eventos"""
 
-        # Obtener可用的EntidadTipoLista，供 LLM ReFerencia
+        # Obtener lista de tipos de entidad disponibles, para referencia del LLM
         entity_types_available = list(
             set(e.get_entity_type() or "Unknown" for e in entities)
         )
 
-        # 为每种TipoColumna出代表性EntidadNombre
+        # Listar nombre de entidad representativo para cada tipo
         type_examples = {}
         for e in entities:
             etype = e.get_entity_type() or "Unknown"
@@ -724,54 +733,56 @@ CampoDecir明：
             [f"- {t}: {', '.join(examples)}" for t, examples in type_examples.items()]
         )
 
-        # 使用Configuración的上下文截断长度
+        # Usar longitud de truncamiento de contexto de la configuración
         context_truncated = context[: self.EVENT_CONFIG_CONTEXT_LENGTH]
 
-        prompt = f"""基于以下Requisito de simulación，GenerarConfiguración de eventos。
+        prompt = f"""Basado en el siguiente requisito de simulación, generar configuración de eventos.
 
 Requisito de simulación: {simulation_requirement}
 
 {context_truncated}
 
-## 可用EntidadTipo及示例
+## Tipos de entidad disponibles y ejemplos
 {type_info}
 
 ## Tarea
-请GenerarConfiguración de eventosJSON：
-- Extracción热点话题关Clave词
-- Descripción舆论发展方Hacia
-- 设计初始帖子Contenido，**每Elementos帖子Debe指定 poster_type（Publicar者Tipo）**
+Por favor generar configuración de eventos en JSON:
+- Extraer palabras clave de temas candentes
+- Describir dirección de desarrollo de opinión pública
+- Diseñar contenido de publicaciones iniciales, **para cada publicación se debe especificar poster_type (tipo de publicador)**
 
-**重要**: poster_type DebeDesde上面的"可用EntidadTipo"中Selección，这样初始帖子才能分配给合适的 Agent Publicar。
-例如：官方声明应由 Official/University TipoPublicar，新闻由 MediaOutlet Publicar，学生观点由 Student Publicar。
+**Importante**: poster_type debe seleccionarse de los "tipos de entidad disponibles" de arriba, para que las publicaciones iniciales puedan asignarse al agente publicador apropiado.
+Por ejemplo: declaración oficial debe publicarse por tipo Official/University, noticias por MediaOutlet, opiniones de estudiantes por Student.
 
-VolverJSON格式（不要markdown）：
+Retornar formato JSON (sin markdown):
 {{
-    "hot_topics": ["关Clave词1", "关Clave词2", ...],
-    "narrative_direction": "<舆论发展方HaciaDescripción>",
+    "hot_topics": ["palabra clave 1", "palabra clave 2", ...],
+    "narrative_direction": "<descripción de dirección de desarrollo de opinión pública>",
     "initial_posts": [
-        {{"content": "帖子Contenido", "poster_type": "EntidadTipo（DebeDesde可用Tipo中Selección）"}},
+        {{"content": "contenido de publicación", "poster_type": "Tipo de entidad (debe seleccionarse de tipos disponibles)"}},
         ...
     ],
-    "reasoning": "<简要Decir明>"
+    "reasoning": "<explicación breve>"
 }}"""
 
-        system_prompt = "你Es舆论Análisis专家。Volver纯JSON格式。注意 poster_type Debe精确匹配可用EntidadTipo。"
+        system_prompt = "Eres experto en análisis de opinión pública. Retornar en formato JSON puro. Nota: el campo 'poster_type' debe coincidir exactamente con los tipos de entidad disponibles."
         system_prompt = f"{system_prompt}\n\n{get_language_instruction()}\nIMPORTANT: The 'poster_type' field value MUST be in English PascalCase exactly Matching the available entity types. Only 'content', 'narrative_direction', 'hot_topics' and 'reasoning' fields should use the specified language."
 
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
         except Exception as e:
-            logger.warning(f"Configuración de eventosLLMGenerarFallido: {e}, 使用默认Configuración")
+            logger.warning(
+                f"Generación de configuración de eventos con LLM fallida: {e}, usando configuración por defecto"
+            )
             return {
                 "hot_topics": [],
                 "narrative_direction": "",
                 "initial_posts": [],
-                "reasoning": "使用默认Configuración",
+                "reasoning": "Usando configuración por defecto",
             }
 
     def _parse_event_config(self, result: Dict[str, Any]) -> EventConfig:
-        """AnalizarConfiguración de eventos结果"""
+        """Analizar resultado de configuración de eventos"""
         return EventConfig(
             initial_posts=result.get("initial_posts", []),
             scheduled_events=[],
@@ -783,14 +794,14 @@ VolverJSON格式（不要markdown）：
         self, event_config: EventConfig, agent_configs: List[AgentActivityConfig]
     ) -> EventConfig:
         """
-        为初始帖子分配合适的Publicar者 Agent
+        Asignar agente publicador apropiado a publicaciones iniciales
 
-        Basado en每Elementos帖子的 poster_type 匹配Más合适的 agent_id
+        Basado en el poster_type de cada publicación, encontrar el agent_id más apropiado
         """
         if not event_config.initial_posts:
             return event_config
 
-        # 按EntidadTipo建立 agent Índice
+        # Crear índice de agentes por tipo de entidad
         agents_by_type: Dict[str, List[AgentActivityConfig]] = {}
         for agent in agent_configs:
             etype = agent.entity_type.lower()
@@ -798,19 +809,19 @@ VolverJSON格式（不要markdown）：
                 agents_by_type[etype] = []
             agents_by_type[etype].append(agent)
 
-        # TipoMapeo表（Procesar LLM Posible输出的不同格式）
+        # Tabla de mapeo de tipos (para manejar diferentes formatos que LLM puede devolver)
         type_aliases = {
             "official": ["official", "university", "governmentagency", "government"],
             "university": ["university", "official"],
             "mediaoutlet": ["mediaoutlet", "media"],
             "student": ["student", "person"],
-            "proFessor": ["proFessor", "expert", "teacher"],
+            "professor": ["professor", "expert", "teacher"],
             "alumni": ["alumni", "person"],
             "organization": ["organization", "ngo", "company", "group"],
             "person": ["person", "student", "alumni"],
         }
 
-        # Registrar每种Tipo已使用的 agent Índice，避免重复使用同一Elementos agent
+        # Registrar índice de agente usado para cadaclase de tipo, para evitar usar el mismo agente repetidamente
         used_indices: Dict[str, int] = {}
 
         updated_posts = []
@@ -818,17 +829,17 @@ VolverJSON格式（不要markdown）：
             poster_type = post.get("poster_type", "").lower()
             content = post.get("content", "")
 
-            # 尝试找Hasta匹配的 agent
+            # Intentar encontrar agente coincidente
             matched_agent_id = None
 
-            # 1. 直接匹配
+            # 1. Coincidencia directa
             if poster_type in agents_by_type:
                 agents = agents_by_type[poster_type]
                 idx = used_indices.get(poster_type, 0) % len(agents)
                 matched_agent_id = agents[idx].agent_id
                 used_indices[poster_type] = idx + 1
             else:
-                # 2. 使用别名匹配
+                # 2. Usar coincidencia por alias
                 for alias_key, aliases in type_aliases.items():
                     if poster_type in aliases or alias_key == poster_type:
                         for alias in aliases:
@@ -841,13 +852,13 @@ VolverJSON格式（不要markdown）：
                     if matched_agent_id is not None:
                         break
 
-            # 3. Si仍未找Hasta，使用InfluenciaMás高的 agent
+            # 3. Si aún no se encuentra, usar agente con mayor influencia
             if matched_agent_id is None:
                 logger.warning(
-                    f"未找HastaTipo '{poster_type}' 的匹配 Agent，使用InfluenciaMás高的 Agent"
+                    f"No se encontró agente para tipo '{poster_type}', usando agente de mayor influencia"
                 )
                 if agent_configs:
-                    # 按InfluenciaOrdenamiento，SelecciónInfluenciaMás高的
+                    # Ordenar por influencia, seleccionar el de mayor
                     sorted_agents = sorted(
                         agent_configs, key=lambda a: a.influence_weight, reverse=True
                     )
@@ -864,7 +875,7 @@ VolverJSON格式（不要markdown）：
             )
 
             logger.info(
-                f"初始帖子分配: poster_type='{poster_type}' -> agent_id={matched_agent_id}"
+                f"Asignación de publicación inicial: poster_type='{poster_type}' -> agent_id={matched_agent_id}"
             )
 
         event_config.initial_posts = updated_posts
@@ -877,9 +888,9 @@ VolverJSON格式（不要markdown）：
         start_idx: int,
         simulation_requirement: str,
     ) -> List[AgentActivityConfig]:
-        """分批GenerarAgentConfiguración"""
+        """Generar configuración de agentes en lotes"""
 
-        # 构建EntidadInformación（使用Configuración的摘要长度）
+        # Construir información de entidades (usando longitud de resumen de la configuración)
         entity_list = []
         summary_len = self.AGENT_SUMMARY_LENGTH
         for i, e in enumerate(entities):
@@ -892,43 +903,43 @@ VolverJSON格式（不要markdown）：
                 }
             )
 
-        prompt = f"""基于以下Información，为每ElementosEntidadGenerar社交媒体CampañaConfiguración。
+        prompt = f"""Basado en la siguiente información, generar configuración de campaña en redes sociales para cada entidad.
 
 Requisito de simulación: {simulation_requirement}
 
-## EntidadLista
+## Lista de entidades
 ```json
 {json.dumps(entity_list, ensure_ascii=False, indent=2)}
 ```
 
 ## Tarea
-为每ElementosEntidadGenerarCampañaConfiguración，注意：
-- **Tiempo符合目标用户群体作息**：以下为ReFerencia（东八区），请Basado enSimulación场景调整
-- **官方机构**（University/GovernmentAgency）：Nivel de actividad低(0.1-0.3)，工作Tiempo(9-17)Campaña，Respuesta慢(60-240minutos)，Influencia高(2.5-3.0)
-- **媒体**（MediaOutlet）：Nivel de actividad中(0.4-0.6)，全天Campaña(8-23)，Respuesta快(5-30minutos)，Influencia高(2.0-2.5)
-- **Elementos人**（Student/Person/Alumni）：Nivel de actividad高(0.6-0.9)，Principal晚间Campaña(18-23)，Respuesta快(1-15minutos)，Influencia低(0.8-1.2)
-- **公众人物/专家**：Nivel de actividad中(0.4-0.6)，Influencia中高(1.5-2.0)
+Generar configuración de campaña para cada entidad, notar:
+- **Horario debe coincidir con hábitos del grupo de usuarios objetivo**: a continuación referencia (zona UTC+8), por favor ajustar según escenario de simulación
+- **Instituciones oficiales** (University/GovernmentAgency): nivel de actividad bajo (0.1-0.3), campaña en horario laboral (9-17), respuesta lenta (60-240 minutos), influencia alta (2.5-3.0)
+- **Medios** (MediaOutlet): nivel de actividad medio (0.4-0.6), campaña todo el día (8-23), respuesta rápida (5-30 minutos), influencia alta (2.0-2.5)
+- **Individuos** (Student/Person/Alumni): nivel de actividad alto (0.6-0.9), principalmente campaña nocturna (18-23), respuesta rápida (1-15 minutos), influencia baja (0.8-1.2)
+- **Personas públicas/expertos**: nivel de actividad medio (0.4-0.6), influencia media-alta (1.5-2.0)
 
-VolverJSON格式（不要markdown）：
+Retornar formato JSON (sin markdown):
 {{
     "agent_configs": [
         {{
-            "agent_id": <DebeCon输入一致>,
+            "agent_id": <debe coincidir con entrada>,
             "activity_level": <0.0-1.0>,
-            "posts_per_hour": <发帖频率>,
-            "comments_per_hour": <评论频率>,
-            "active_hours": [<活跃horasLista，考虑中国人作息>],
-            "response_delay_min": <Más小Retraso de Respuestaminutos>,
-            "response_delay_max": <Más大Retraso de Respuestaminutos>,
-            "sentiment_bias": <-1.0Hasta1.0>,
+            "posts_per_hour": <frecuencia de publicación>,
+            "comments_per_hour": <frecuencia de comentarios>,
+            "active_hours": [<lista de horas activas, considerar hábitos chinos>],
+            "response_delay_min": <retraso mínimo de respuesta en minutos>,
+            "response_delay_max": <retraso máximo de respuesta en minutos>,
+            "sentiment_bias": <-1.0 a 1.0>,
             "stance": "<supportive/opposing/neutral/observer>",
-            "influence_weight": <InfluenciaPeso>
+            "influence_weight": <peso de influencia>
         }},
         ...
     ]
 }}"""
 
-        system_prompt = "你Es社交媒体Fila为Análisis专家。Volver纯JSON，Configuración需符合Simulación场景中目标用户群体的作息习惯。"
+        system_prompt = "Eres experto en análisis de comportamiento en redes sociales. Retornar en JSON puro, la configuración debe coincidir con los hábitos de sueño/vigilia del grupo de usuarios objetivo en el escenario de simulación."
         system_prompt = f"{system_prompt}\n\n{get_language_instruction()}\nIMPORTANT: The 'stance' field value MUST be one of the English strings: 'supportive', 'opposing', 'neutral', 'observer'. All JSON field names and numeric values must remain unchanged. Only natural language text fields should use the specified language."
 
         try:
@@ -937,16 +948,18 @@ VolverJSON格式（不要markdown）：
                 cfg["agent_id"]: cfg for cfg in result.get("agent_configs", [])
             }
         except Exception as e:
-            logger.warning(f"AgentConfiguración批次LLMGenerarFallido: {e}, 使用ReglaGenerar")
+            logger.warning(
+                f"Generación de lote de configuración de agentes con LLM fallida: {e}, usando generación por reglas"
+            )
             llm_configs = {}
 
-        # 构建AgentActivityConfigObjeto
+        # Construir objeto AgentActivityConfig
         configs = []
         for i, entity in enumerate(entities):
             agent_id = start_idx + i
             cfg = llm_configs.get(agent_id, {})
 
-            # SiLLM没TenerGenerar，使用ReglaGenerar
+            # Si LLM no generó, usar generación por reglas
             if not cfg:
                 cfg = self._generate_agent_config_by_rule(entity)
 
@@ -970,11 +983,11 @@ VolverJSON格式（不要markdown）：
         return configs
 
     def _generate_agent_config_by_rule(self, entity: EntityNode) -> Dict[str, Any]:
-        """基于ReglaGenerar单ElementosAgentConfiguración（中国人作息）"""
+        """Generar configuración de un solo agente por reglas (hábitos chinos)"""
         entity_type = (entity.get_entity_type() or "Unknown").lower()
 
         if entity_type in ["university", "governmentagency", "ngo"]:
-            # 官方机构：工作TiempoCampaña，低频率，高Influencia
+            # Institución oficial: campaña en horario laboral, baja frecuencia, alta influencia
             return {
                 "activity_level": 0.2,
                 "posts_per_hour": 0.1,
@@ -987,7 +1000,7 @@ VolverJSON格式（不要markdown）：
                 "influence_weight": 3.0,
             }
         elif entity_type in ["mediaoutlet"]:
-            # 媒体：全天Campaña，中等频率，高Influencia
+            # Medios: campaña todo el día, frecuencia media, alta influencia
             return {
                 "activity_level": 0.5,
                 "posts_per_hour": 0.8,
@@ -999,8 +1012,8 @@ VolverJSON格式（不要markdown）：
                 "stance": "observer",
                 "influence_weight": 2.5,
             }
-        elif entity_type in ["proFessor", "expert", "official"]:
-            # 专家/教授：工作+晚间Campaña，中等频率
+        elif entity_type in ["professor", "expert", "official"]:
+            # Experto/profesor: campaña en horario laboral más noche, frecuencia media
             return {
                 "activity_level": 0.4,
                 "posts_per_hour": 0.3,
@@ -1013,7 +1026,7 @@ VolverJSON格式（不要markdown）：
                 "influence_weight": 2.0,
             }
         elif entity_type in ["student"]:
-            # 学生：晚间为主，高频率
+            # Estudiante: principalmente noche, alta frecuencia
             return {
                 "activity_level": 0.8,
                 "posts_per_hour": 0.6,
@@ -1031,7 +1044,7 @@ VolverJSON格式（不要markdown）：
                     21,
                     22,
                     23,
-                ],  # 上午+晚间
+                ],  # Mañana más noche
                 "response_delay_min": 1,
                 "response_delay_max": 15,
                 "sentiment_bias": 0.0,
@@ -1039,12 +1052,12 @@ VolverJSON格式（不要markdown）：
                 "influence_weight": 0.8,
             }
         elif entity_type in ["alumni"]:
-            # 校友：晚间为主
+            # Egresado: principalmente noche
             return {
                 "activity_level": 0.6,
                 "posts_per_hour": 0.4,
                 "comments_per_hour": 0.8,
-                "active_hours": [12, 13, 19, 20, 21, 22, 23],  # 午休+晚间
+                "active_hours": [12, 13, 19, 20, 21, 22, 23],  # Mediodía más noche
                 "response_delay_min": 5,
                 "response_delay_max": 30,
                 "sentiment_bias": 0.0,
@@ -1052,7 +1065,7 @@ VolverJSON格式（不要markdown）：
                 "influence_weight": 1.0,
             }
         else:
-            # 普通人：晚间高峰
+            # Persona común: pico nocturno
             return {
                 "activity_level": 0.7,
                 "posts_per_hour": 0.5,
@@ -1069,7 +1082,7 @@ VolverJSON格式（不要markdown）：
                     21,
                     22,
                     23,
-                ],  # 白天+晚间
+                ],  # Día más noche
                 "response_delay_min": 2,
                 "response_delay_max": 20,
                 "sentiment_bias": 0.0,

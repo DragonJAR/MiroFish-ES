@@ -611,6 +611,18 @@
     "generatingSection": "Generando sección",
     "executingTool": "Ejecutando herramienta",
     "deepInsightSearch": "Búsqueda de insight profundo",
+    "zep": {
+      "relatedFacts": "Hechos relacionados",
+      "summary": "Resumen",
+      "convertToText": "Convertir a texto",
+      "toDate": "a la fecha",
+      "validity": "Vigencia",
+      "expired": "Expirado",
+      "ifExpired": "Si expirado",
+      "ifInvalidated": "Si invalidado",
+      "reportAlreadyGenerated": "Informe ya generado",
+      "toolFailed": "Herramienta fallida"
+    },
     "subQuestionsGenerated": "sub-preguntas generadas",
     "searchComplete": "Búsqueda completada",
     "foundRelatedFacts": "hechos relacionados encontrados",
