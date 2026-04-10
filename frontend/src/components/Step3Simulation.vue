@@ -301,10 +301,10 @@ const { t } = useI18n()
 
 const props = defineProps({
   simulationId: String,
-  maxRounds: Number, // 从Step2传入的最大rondas数
+  maxRounds: Number, // número máximo de rondas desde Step2
   minutesPerRound: {
     type: Number,
-    default: 30 // 默认每rondas30minutos
+    default: 30 // por defecto 30 minutos por ronda
   },
   projectData: Object,
   graphData: Object,
@@ -376,10 +376,10 @@ const resetAllState = () => {
   startError.value = null
   isStarting.value = false
   isStopping.value = false
-  stopPolling()  // 停止之前可能存在的rondas询
+  stopPolling()  // detener consultas de rondas previas
 }
 
-// 启动模拟
+// iniciar simulación
 const doStartSimulation = async () => {
   if (!props.simulationId) {
     addLog(t('log.errorMissingSimId'))
@@ -424,7 +424,7 @@ const doStartSimulation = async () => {
       startStatusPolling()
       startDetailPolling()
     } else {
-      startError.value = res.error || '启动Fallido'
+      startError.value = res.error || 'inicio fallido'
       addLog(t('log.startFailed', { error: res.error || t('common.unknownError') }))
       emit('update-status', 'error')
     }
@@ -437,7 +437,7 @@ const doStartSimulation = async () => {
   }
 }
 
-// 停止模拟
+// detener simulación
 const handleStopSimulation = async () => {
   if (!props.simulationId) return
   
@@ -462,7 +462,7 @@ const handleStopSimulation = async () => {
   }
 }
 
-// rondas询状态
+// consultar estado
 let statusTimer = null
 let detailTimer = null
 
@@ -485,7 +485,7 @@ const stopPolling = () => {
   }
 }
 
-// 追踪各平台的上一次rondas次，用于检测变化并输出日志
+// rastrear la ronda anterior de cada plataforma para detectar cambios y generar logs
 const prevTwitterRound = ref(0)
 const prevRedditRound = ref(0)
 
@@ -500,22 +500,22 @@ const fetchRunStatus = async () => {
       
       runStatus.value = data
       
-      // 分别检测各平台的rondas次变化并输出日志
+      // Detectar cambios de rondas en cada plataforma y generar logs
       if (data.twitter_current_round > prevTwitterRound.value) {
         addLog(`[Plaza] R${data.twitter_current_round}/${data.total_rounds} | T:${data.twitter_simulated_hours || 0}h | A:${data.twitter_actions_count}`)
         prevTwitterRound.value = data.twitter_current_round
       }
       
       if (data.reddit_current_round > prevRedditRound.value) {
-        addLog(`[Community] R${data.reddit_current_round}/${data.total_rounds} | T:${data.reddit_simulated_hours || 0}h | A:${data.reddit_actions_count}`)
+        addLog(`[Comunidad] R${data.reddit_current_round}/${data.total_rounds} | T:${data.reddit_simulated_hours || 0}h | A:${data.reddit_actions_count}`)
         prevRedditRound.value = data.reddit_current_round
       }
       
-      // 检测模拟是否Completado（通过 runner_status 或平台完成状态判断）
+      // detectar si la simulación completada (mediante runner_status o estado de plataforma)
       const isCompleted = data.runner_status === 'completed' || data.runner_status === 'stopped'
       
-      // 额外检查：如果后端还没来得及更新 runner_status，但平台已经报告完成
-      // 通过检测 twitter_completed 和 reddit_completed 状态判断
+      // verificación adicional: si el backend aún no actualizó runner_status pero la plataforma ya completó
+      // mediante detectar twitter_completed y reddit_completed
       const platformsCompleted = checkPlatformsCompleted(data)
       
       if (isCompleted || platformsCompleted) {
@@ -529,28 +529,28 @@ const fetchRunStatus = async () => {
       }
     }
   } catch (err) {
-    console.warn('获取运行状态Fallido:', err)
+    console.warn('obtención de estado de ejecución fallida:', err)
   }
 }
 
-// 检查所有启用的平台是否Completado
+// verificar si todas las plataformas habilitadas completaron
 const checkPlatformsCompleted = (data) => {
-  // 如果没有任何平台数据，Volver false
+  // si no hay datos de plataforma, volver false
   if (!data) return false
   
-  // 检查各平台的完成状态
+  // verificar el estado de finalización de cada plataforma
   const twitterCompleted = data.twitter_completed === true
   const redditCompleted = data.reddit_completed === true
   
-  // 如果至少有一elementos平台完成了，检查是否所有启用的平台都完成了
-  // 通过 actions_count 判断平台是否被启用（如果 count > 0 或 running 曾为 true）
+  // si al menos una plataforma completó, verificar si todas las plataformas habilitadas completaron
+  // verificar si la plataforma está habilitada mediante actions_count (si count > 0 o running fue true)
   const twitterEnabled = (data.twitter_actions_count > 0) || data.twitter_running || twitterCompleted
   const redditEnabled = (data.reddit_actions_count > 0) || data.reddit_running || redditCompleted
   
-  // 如果没有任何平台被启用，Volver false
+  // si ninguna plataforma está habilitada, volver false
   if (!twitterEnabled && !redditEnabled) return false
   
-  // 检查所有启用的平台是否都Completado
+  // verificar si todas las plataformas habilitadas completaron
   if (twitterEnabled && !twitterCompleted) return false
   if (redditEnabled && !redditCompleted) return false
   
@@ -564,13 +564,13 @@ const fetchRunStatusDetail = async () => {
     const res = await getRunStatusDetail(props.simulationId)
     
     if (res.success && res.data) {
-      // 使用 all_actions 获取完整的动作列表
+      // usar all_actions para obtener la lista completa de acciones
       const serverActions = res.data.all_actions || []
       
-      // 增量添加新动作（去重）
+      // agregar nuevas acciones de forma incremental (deduplicación)
       let newActionsAdded = 0
       serverActions.forEach(action => {
-        // 生成唯一ID
+        // generar ID único
         const actionId = action.id || `${action.timestamp}-${action.platform}-${action.agent_id}-${action.action_type}`
         
         if (!actionIds.value.has(actionId)) {
@@ -583,11 +583,11 @@ const fetchRunStatusDetail = async () => {
         }
       })
       
-      // 不自动滚动，让用户自由查看时间轴
-      // 新动作会在底部追加
+      // no desplazamiento automático para que el usuario vea la línea de tiempo libremente
+      // nuevas acciones se agregan al final
     }
   } catch (err) {
-    console.warn('获取详细状态Fallido:', err)
+    console.warn('obtención de estado detallado fallida:', err)
   }
 }
 
@@ -665,7 +665,7 @@ const handleNextStep = async () => {
       const reportId = res.data.report_id
       addLog(t('log.reportGenTaskStarted', { reportId }))
       
-      // 跳转到报告页面
+      // saltar a la página del informe
       router.push({ name: 'Report', params: { reportId } })
     } else {
       addLog(t('log.reportGenFailed', { error: res.error || t('common.unknownError') }))

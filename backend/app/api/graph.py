@@ -436,7 +436,7 @@ def build_graph():
 
                 def wait_progress_callback(msg, progress_ratio):
                     progress = 55 + int(progress_ratio * 35)  # 55% - 90%
-                    task_manager.update_task(task_id_id, message=msg, progress=progress)
+                    task_manager.update_task(task_id, message=msg, progress=progress)
 
                 builder._wait_for_episodes(episode_uuids, wait_progress_callback)
 

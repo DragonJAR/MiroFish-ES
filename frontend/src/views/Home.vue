@@ -227,7 +227,6 @@ const formData = ref({
 // Lista de archivos
 const files = ref([])
 
-// 状态
 const loading = ref(false)
 const error = ref('')
 const isDragOver = ref(false)
@@ -253,7 +252,7 @@ const handleFileSelect = (event) => {
   addFiles(selectedFiles)
 }
 
-// 处理拖拽相关
+// procesar arrastre
 const handleDragOver = (e) => {
   if (!loading.value) {
     isDragOver.value = true
@@ -272,7 +271,7 @@ const handleDrop = (e) => {
   addFiles(droppedFiles)
 }
 
-// 添加文件
+// agregar archivos
 const addFiles = (newFiles) => {
   const validFiles = newFiles.filter(file => {
     const ext = file.name.split('.').pop().toLowerCase()
@@ -281,12 +280,12 @@ const addFiles = (newFiles) => {
   files.value.push(...validFiles)
 }
 
-// 移除文件
+// quitar archivo
 const removeFile = (index) => {
   files.value.splice(index, 1)
 }
 
-// 滚动到底部
+// scroll abajo
 const scrollToBottom = () => {
   window.scrollTo({
     top: document.body.scrollHeight,
@@ -294,15 +293,15 @@ const scrollToBottom = () => {
   })
 }
 
-// Iniciar simulación - 立即跳转，API调用在Process页面进行
+// Iniciar simulación - navegación inmediata, la llamada API se hace en la página Process
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
   
-  // 存储待上传的数据
+  // almacenar datos pendientes de subir
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
     setPendingUpload(files.value, formData.value.simulationRequirement)
     
-    // 立即跳转到Process页面（使用特殊标识表示新建项目）
+    // navegación a la página Process (usar identificador especial para nuevo proyecto)
     router.push({
       name: 'Process',
       params: { projectId: 'new' }
@@ -312,7 +311,7 @@ const startSimulation = () => {
 </script>
 
 <style scoped>
-/* 全局变量与重置 */
+/* Variables globales y reset */
 :root {
   --black: #000000;
   --white: #FFFFFF;
@@ -321,8 +320,8 @@ const startSimulation = () => {
   --gray-text: #666666;
   --border: #E5E5E5;
   /* 
-    使用 Space Grotesk 作为主要标题字体，JetBrains Mono 作为代码/标签字体
-    确保已在 index.html 引入这些 Google Fonts 
+    Usar Space Grotesk como fuente principal para títulos, JetBrains Mono para código/etiquetas
+    Asegurar que estas Google Fonts estén importadas en index.html 
   */
   --font-mono: 'JetBrains Mono', monospace;
   --font-sans: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
@@ -336,7 +335,7 @@ const startSimulation = () => {
   color: var(--black);
 }
 
-/* 顶部导航 */
+/* Barra de navegación superior */
 .navbar {
   height: 60px;
   background: var(--black);
@@ -380,14 +379,14 @@ const startSimulation = () => {
   font-family: sans-serif;
 }
 
-/* 主要内容区 */
+/* Área de contenido principal */
 .main-content {
   max-width: 1400px;
   margin: 0 auto;
   padding: 60px 40px;
 }
 
-/* Hero 区域 */
+/* Área Hero */
 .hero-section {
   display: flex;
   justify-content: space-between;
@@ -518,7 +517,7 @@ const startSimulation = () => {
 }
 
 .hero-logo {
-  max-width: 500px; /* 调整logo大小 */
+  max-width: 500px; /* ajustar tamaño del logo */
   width: 100%;
 }
 
@@ -540,7 +539,7 @@ const startSimulation = () => {
   border-color: var(--orange);
 }
 
-/* Dashboard Doble columna布局 */
+/* Dashboard diseño de dos columnas */
 .dashboard-section {
   display: flex;
   gap: 60px;
@@ -555,7 +554,7 @@ const startSimulation = () => {
   flex-direction: column;
 }
 
-/* 左侧面板 */
+/* Panel izquierdo */
 .left-panel {
   flex: 0.8;
 }
@@ -611,7 +610,7 @@ const startSimulation = () => {
   color: #999;
 }
 
-/* 项目模拟步骤介绍 */
+/* Introducción a pasos de simulación del proyecto */
 .steps-container {
   border: 1px solid var(--border);
   padding: 30px;
@@ -667,14 +666,14 @@ const startSimulation = () => {
   color: var(--gray-text);
 }
 
-/* 右侧交互控制台 */
+/* Panel derecho: consola de interacción */
 .right-panel {
   flex: 1.2;
 }
 
 .console-box {
-  border: 1px solid #CCC; /* 外部实线 */
-  padding: 8px; /* 内边距形成双重边框感 */
+  border: 1px solid #CCC; /* borde externo sólido */
+  padding: 8px; /* padding interno para efecto de doble borde */
 }
 
 .console-section {
@@ -842,7 +841,7 @@ const startSimulation = () => {
   overflow: hidden;
 }
 
-/* 可点击状态（非禁用） */
+/* Estado clickeable (no disabled) */
 .start-engine-btn:not(:disabled) {
   background: var(--black);
   border: 1px solid var(--black);
@@ -867,14 +866,14 @@ const startSimulation = () => {
   border: 1px solid #E5E5E5;
 }
 
-/* 引导动画：微妙的边框脉冲 */
+/* Animación guía: pulso sutil del borde */
 @keyframes pulse-border {
   0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2); }
   70% { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
   100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
 }
 
-/* 响应式适配 */
+/* Adaptación responsive */
 @media (max-width: 1024px) {
   .dashboard-section {
     flex-direction: column;

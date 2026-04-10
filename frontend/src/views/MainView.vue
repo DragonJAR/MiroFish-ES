@@ -135,11 +135,11 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (error.value) return 'Error'
-  if (currentPhase.value >= 2) return 'Ready'
-  if (currentPhase.value === 1) return 'Building Graph'
-  if (currentPhase.value === 0) return 'Generating Ontology'
-  return 'Initializing'
+  if (error.value) return t('mainView.statusError')
+  if (currentPhase.value >= 2) return t('mainView.statusReady')
+  if (currentPhase.value === 1) return t('mainView.statusBuildingGraph')
+  if (currentPhase.value === 0) return t('mainView.statusGeneratingOntology')
+  return t('mainView.statusInitializing')
 })
 
 // --- Helpers ---
@@ -166,7 +166,7 @@ const handleNextStep = (params = {}) => {
     currentStep.value++
     addLog(t('log.enterStep', { step: currentStep.value, name: stepNames.value[currentStep.value - 1] }))
     
-    // 如果是从 Step 2 进入 Step 3，记录模拟rondas数配置
+    // si es desde Step 2 hacia Step 3, registrar la configuración de rondas de simulación
     if (currentStep.value === 3 && params.maxRounds) {
       addLog(t('log.customSimRounds', { rounds: params.maxRounds }))
     }
@@ -183,7 +183,7 @@ const handleGoBack = () => {
 // --- Data Logic ---
 
 const initProject = async () => {
-  addLog('Project view initialized.')
+  addLog(t('mainView.projectViewInitialized'))
   if (currentProjectId.value === 'new') {
     await handleNewProject()
   } else {
@@ -194,16 +194,16 @@ const initProject = async () => {
 const handleNewProject = async () => {
   const pending = getPendingUpload()
   if (!pending.isPending || pending.files.length === 0) {
-    error.value = 'No pending files found.'
-    addLog('Error: No pending files found for new project.')
+    error.value = t('mainView.noPendingFiles')
+    addLog(t('mainView.errorNoPendingFiles'))
     return
   }
   
   try {
     loading.value = true
     currentPhase.value = 0
-    ontologyProgress.value = { message: 'Uploading and analyzing docs...' }
-    addLog('Starting ontology generation: Uploading files...')
+    ontologyProgress.value = { message: t('mainView.uploadingAnalyzing') }
+    addLog(t('mainView.startingOntology'))
     
     const formData = new FormData()
     pending.files.forEach(f => formData.append('files', f))
@@ -217,15 +217,15 @@ const handleNewProject = async () => {
       
       router.replace({ name: 'Process', params: { projectId: res.data.project_id } })
       ontologyProgress.value = null
-      addLog(`Ontology generated successfully for project ${res.data.project_id}`)
+      addLog(t('mainView.ontologyGenerated', { projectId: res.data.project_id }))
       await startBuildGraph()
     } else {
-      error.value = res.error || 'Ontology generation failed'
-      addLog(`Error generating ontology: ${error.value}`)
+      error.value = res.error || t('mainView.ontologyGenerationFailed', { error: res.error })
+      addLog(t('mainView.errorGeneratingOntology', { error: error.value }))
     }
   } catch (err) {
     error.value = err.message
-    addLog(`Exception in handleNewProject: ${err.message}`)
+    addLog(t('mainView.exceptionInHandleNewProject', { error: err.message }))
   } finally {
     loading.value = false
   }
@@ -234,12 +234,12 @@ const handleNewProject = async () => {
 const loadProject = async () => {
   try {
     loading.value = true
-    addLog(`Loading project ${currentProjectId.value}...`)
+    addLog(t('mainView.loadingProject', { projectId: currentProjectId.value }))
     const res = await getProject(currentProjectId.value)
     if (res.success) {
       projectData.value = res.data
       updatePhaseByStatus(res.data.status)
-      addLog(`Project loaded. Status: ${res.data.status}`)
+      addLog(t('mainView.projectLoaded', { status: res.data.status }))
       
       if (res.data.status === 'ontology_generated' && !res.data.graph_id) {
         await startBuildGraph()
@@ -253,11 +253,11 @@ const loadProject = async () => {
       }
     } else {
       error.value = res.error
-      addLog(`Error loading project: ${res.error}`)
+      addLog(t('mainView.errorLoadingProject', { error: res.error }))
     }
   } catch (err) {
     error.value = err.message
-    addLog(`Exception in loadProject: ${err.message}`)
+    addLog(t('mainView.exceptionInLoadProject', { error: err.message }))
   } finally {
     loading.value = false
   }
@@ -269,7 +269,7 @@ const updatePhaseByStatus = (status) => {
     case 'ontology_generated': currentPhase.value = 0; break;
     case 'graph_building': currentPhase.value = 1; break;
     case 'graph_completed': currentPhase.value = 2; break;
-    case 'failed': error.value = 'Project failed'; break;
+    case 'failed': error.value = t('mainView.projectFailed'); break;
   }
 }
 

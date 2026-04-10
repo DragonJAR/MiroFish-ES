@@ -7,7 +7,7 @@
 </script>
 
 <style>
-/* 全局样式重置 */
+/* Reset global de estilos */
 * {
   margin: 0;
   padding: 0;
@@ -22,7 +22,7 @@
   background-color: #ffffff;
 }
 
-/* 滚动条样式 */
+/* Estilos de barra de desplazamiento */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -40,7 +40,7 @@
   background: #333333;
 }
 
-/* 全局按钮样式 */
+/* Estilos de botón global */
 button {
   font-family: inherit;
 }
