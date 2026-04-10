@@ -1,8 +1,16 @@
 """
-Modulo de utilidades
+Módulo de utilidades
 """
 
 from .file_parser import FileParser
 from .llm_client import LLMClient
+from .locale import t, get_locale, set_locale, get_language_instruction
 
-__all__ = ['FileParser', 'LLMClient']
+__all__ = [
+    "FileParser",
+    "LLMClient",
+    "t",
+    "get_locale",
+    "set_locale",
+    "get_language_instruction",
+]

@@ -6,12 +6,12 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">01</span>
-            <span class="step-title">{{ $t('step1.ontologyTitle') }}</span>
+            <span class="step-title">{{ $t('step1.ontologyGeneration') }}</span>
           </div>
           <div class="step-status">
-            <span v-if="currentPhase > 0" class="badge success">{{ $t('step1.completed') }}</span>
-            <span v-else-if="currentPhase === 0" class="badge processing">{{ $t('step1.generating') }}</span>
-            <span v-else class="badge pending">{{ $t('step1.waiting') }}</span>
+            <span v-if="currentPhase > 0" class="badge success">{{ $t('step1.ontologyCompleted') }}</span>
+            <span v-else-if="currentPhase === 0" class="badge processing">{{ $t('step1.ontologyGenerating') }}</span>
+            <span v-else class="badge pending">{{ $t('step1.ontologyPending') }}</span>
           </div>
         </div>
         
@@ -41,7 +41,7 @@
                
                <!-- Attributes -->
                <div class="detail-section" v-if="selectedOntologyItem.attributes?.length">
-                  <span class="section-label">{{ $t('step1.attributes') }}</span>
+                  <span class="section-label">ATTRIBUTES</span>
                   <div class="attr-list">
                      <div v-for="attr in selectedOntologyItem.attributes" :key="attr.name" class="attr-item">
                         <span class="attr-name">{{ attr.name }}</span>
@@ -53,7 +53,7 @@
 
                <!-- Examples (Entity) -->
                <div class="detail-section" v-if="selectedOntologyItem.examples?.length">
-                  <span class="section-label">{{ $t('step1.examples') }}</span>
+                  <span class="section-label">EXAMPLES</span>
                   <div class="example-list">
                      <span v-for="ex in selectedOntologyItem.examples" :key="ex" class="example-tag">{{ ex }}</span>
                   </div>
@@ -61,7 +61,7 @@
 
                <!-- Source/Target (Relation) -->
                <div class="detail-section" v-if="selectedOntologyItem.source_targets?.length">
-                  <span class="section-label">{{ $t('step1.connections') }}</span>
+                  <span class="section-label">CONNECTIONS</span>
                   <div class="conn-list">
                      <div v-for="(conn, idx) in selectedOntologyItem.source_targets" :key="idx" class="conn-item">
                         <span class="conn-node">{{ conn.source }}</span>
@@ -75,7 +75,7 @@
 
           <!-- Generated Entity Tags -->
           <div v-if="projectData?.ontology?.entity_types" class="tags-container" :class="{ 'dimmed': selectedOntologyItem }">
-            <span class="tag-label">{{ $t('step1.generatedEntityTypes') }}</span>
+            <span class="tag-label">GENERATED ENTITY TYPES</span>
             <div class="tags-list">
               <span 
                 v-for="entity in projectData.ontology.entity_types" 
@@ -90,7 +90,7 @@
 
           <!-- Generated Relation Tags -->
           <div v-if="projectData?.ontology?.edge_types" class="tags-container" :class="{ 'dimmed': selectedOntologyItem }">
-            <span class="tag-label">{{ $t('step1.generatedRelationTypes') }}</span>
+            <span class="tag-label">GENERATED RELATION TYPES</span>
             <div class="tags-list">
               <span 
                 v-for="rel in projectData.ontology.edge_types" 
@@ -110,19 +110,19 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">02</span>
-            <span class="step-title">{{ $t('step1.graphBuildTitle') }}</span>
+            <span class="step-title">{{ $t('step1.graphRagBuild') }}</span>
           </div>
           <div class="step-status">
-            <span v-if="currentPhase > 1" class="badge success">{{ $t('step1.completed') }}</span>
+            <span v-if="currentPhase > 1" class="badge success">{{ $t('step1.ontologyCompleted') }}</span>
             <span v-else-if="currentPhase === 1" class="badge processing">{{ buildProgress?.progress || 0 }}%</span>
-            <span v-else class="badge pending">{{ $t('step1.waiting') }}</span>
+            <span v-else class="badge pending">{{ $t('step1.ontologyPending') }}</span>
           </div>
         </div>
 
         <div class="card-content">
           <p class="api-note">POST /api/graph/build</p>
           <p class="description">
-            {{ $t('step1.graphBuildDesc') }}
+            {{ $t('step1.graphRagDesc') }}
           </p>
           
           <!-- Stats Cards -->
@@ -148,7 +148,7 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">03</span>
-            <span class="step-title">{{ $t('step1.completeTitle') }}</span>
+            <span class="step-title">{{ $t('step1.buildComplete') }}</span>
           </div>
           <div class="step-status">
             <span v-if="currentPhase >= 2" class="badge accent">{{ $t('step1.inProgress') }}</span>
@@ -157,7 +157,7 @@
         
         <div class="card-content">
           <p class="api-note">POST /api/simulation/create</p>
-          <p class="description">{{ $t('step1.completeDesc') }}</p>
+          <p class="description">{{ $t('step1.buildCompleteDesc') }}</p>
           <button 
             class="action-btn" 
             :disabled="currentPhase < 2 || creatingSimulation"
@@ -173,13 +173,13 @@
     <!-- Bottom Info / Logs -->
     <div class="system-logs">
       <div class="log-header">
-        <span class="log-title">{{ $t('logs.systemDashboard') }}</span>
+        <span class="log-title">SYSTEM DASHBOARD</span>
         <span class="log-id">{{ projectData?.project_id || 'NO_PROJECT' }}</span>
       </div>
       <div class="log-content" ref="logContent">
         <div class="log-line" v-for="(log, idx) in systemLogs" :key="idx">
           <span class="log-time">{{ log.time }}</span>
-          <span class="log-msg">{{ translateLog(log.msg) }}</span>
+          <span class="log-msg">{{ log.msg }}</span>
         </div>
       </div>
     </div>
@@ -191,11 +191,9 @@ import { computed, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { createSimulation } from '../api/simulation'
-import { useTranslateLog } from '../composables/useTranslateLog'
 
 const router = useRouter()
 const { t } = useI18n()
-const { translateLog } = useTranslateLog()
 
 const props = defineProps({
   currentPhase: { type: Number, default: 0 },
@@ -212,10 +210,10 @@ const selectedOntologyItem = ref(null)
 const logContent = ref(null)
 const creatingSimulation = ref(false)
 
-// 进入环境搭建 - 创建 simulation 并跳转
+// Entrar a configuración del entorno - 创建 simulation 并跳转
 const handleEnterEnvSetup = async () => {
   if (!props.projectData?.project_id || !props.projectData?.graph_id) {
-    console.error(t('step1.missingProjectOrGraphData'))
+    console.error('缺少项目或Grafo信息')
     return
   }
   
@@ -236,12 +234,12 @@ const handleEnterEnvSetup = async () => {
         params: { simulationId: res.data.simulation_id }
       })
     } else {
-      console.error(t('step1.errorCreatingSimulation') + ':', res.error)
-      alert(t('step1.errorCreatingSimulation') + ': ' + (res.error || t('common.unknownError')))
+      console.error('创建Simulación fallida:', res.error)
+      alert(t('step1.createSimulationFailed', { error: res.error || t('common.unknownError') }))
     }
   } catch (err) {
-    console.error(t('step1.exceptionCreatingSimulation') + ':', err)
-    alert(t('step1.exceptionCreatingSimulation') + ': ' + err.message)
+    console.error('创建模拟异常:', err)
+    alert(t('step1.createSimulationException', { error: err.message }))
   } finally {
     creatingSimulation.value = false
   }

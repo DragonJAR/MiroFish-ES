@@ -42,7 +42,7 @@ export const getSimulationProfiles = (simulationId, platform = 'reddit') => {
 }
 
 /**
- * 实时获取生成中的 Agent Profiles
+ * 实时获取Generando的 Agent Profiles
  * @param {string} simulationId
  * @param {string} platform - 'reddit' | 'twitter'
  */
@@ -59,9 +59,9 @@ export const getSimulationConfig = (simulationId) => {
 }
 
 /**
- * 实时获取生成中的模拟配置
+ * 实时获取Generando的模拟配置
  * @param {string} simulationId
- * @returns {Promise} 返回配置信息，包含元数据和配置内容
+ * @returns {Promise} Volver配置信息，包含元数据和配置内容
  */
 export const getSimulationConfigRealtime = (simulationId) => {
   return service.get(`/api/simulation/${simulationId}/config/realtime`)
@@ -112,7 +112,7 @@ export const getRunStatusDetail = (simulationId) => {
  * 获取模拟中的帖子
  * @param {string} simulationId
  * @param {string} platform - 'reddit' | 'twitter'
- * @param {number} limit - 返回数量
+ * @param {number} limit - Volver数量
  * @param {number} offset - 偏移量
  */
 export const getSimulationPosts = (simulationId, platform = 'reddit', limit = 50, offset = 0) => {
@@ -122,10 +122,10 @@ export const getSimulationPosts = (simulationId, platform = 'reddit', limit = 50
 }
 
 /**
- * 获取模拟时间线（按轮次汇总）
+ * 获取模拟时间线（按rondas次汇总）
  * @param {string} simulationId
- * @param {number} startRound - 起始轮次
- * @param {number} endRound - 结束轮次
+ * @param {number} startRound - 起始rondas次
+ * @param {number} endRound - 结束rondas次
  */
 export const getSimulationTimeline = (simulationId, startRound = 0, endRound = null) => {
   const params = { start_round: startRound }
@@ -153,7 +153,7 @@ export const getSimulationActions = (simulationId, params = {}) => {
 }
 
 /**
- * 关闭模拟环境（优雅退出）
+ * Cerrar模拟环境（优雅退出）
  * @param {Object} data - { simulation_id, timeout? }
  */
 export const closeSimulationEnv = (data) => {
@@ -179,7 +179,7 @@ export const interviewAgents = (data) => {
 /**
  * 获取历史模拟列表（带项目详情）
  * 用于首页历史项目展示
- * @param {number} limit - 返回数量限制
+ * @param {number} limit - Volver数量限制
  */
 export const getSimulationHistory = (limit = 20) => {
   return service.get('/api/simulation/history', { params: { limit } })

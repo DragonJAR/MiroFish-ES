@@ -15,15 +15,17 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: t('mainView.graphView'), split: t('mainView.splitView'), workbench: t('mainView.workbenchView') }[mode] }}
+            {{ { graph: $t('main.layoutGraph'), split: $t('main.layoutSplit'), workbench: $t('main.layoutWorkbench') }[mode] }}
           </button>
         </div>
       </div>
 
       <div class="header-right">
+        <LanguageSwitcher />
+        <div class="step-divider"></div>
         <div class="workflow-step">
-          <span class="step-num">{{ $t('mainView.stepIndicator', { current: currentStep }) }}</span>
-          <span class="step-name">{{ stepNames[currentStep - 1] }}</span>
+          <span class="step-num">Step {{ currentStep }}/5</span>
+          <span class="step-name">{{ $tm('main.stepNames')[currentStep - 1] }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -48,7 +50,7 @@
 
       <!-- Right Panel: Step Components -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
-        <!-- Step 1: Construcción del Grafo -->
+        <!-- Step 1: Construcción de grafo -->
         <Step1GraphBuild 
           v-if="currentStep === 1"
           :currentPhase="currentPhase"
@@ -59,7 +61,7 @@
           :systemLogs="systemLogs"
           @next-step="handleNextStep"
         />
-        <!-- Step 2: Configuración del Entorno -->
+        <!-- Step 2: Configuración del entorno -->
         <Step2EnvSetup
           v-else-if="currentStep === 2"
           :projectData="projectData"
@@ -83,23 +85,18 @@ import Step1GraphBuild from '../components/Step1GraphBuild.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
 import { generateOntology, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
+const { t, tm } = useI18n()
 
 // Layout State
 const viewMode = ref('split') // graph | split | workbench
 
 // Step State
-const currentStep = ref(1) // 1: 图谱构建, 2: 环境搭建, 3: 开始模拟, 4: 报告生成, 5: 深度互动
-const stepNames = computed(() => [
-  t('mainView.step1'),
-  t('mainView.step2'),
-  t('mainView.step3'),
-  t('mainView.step4'),
-  t('mainView.step5')
-])
+const currentStep = ref(1) // 1: Construcción de grafo, 2: Configuración del entorno, 3: Iniciar simulación, 4: Generación de informes, 5: Interacción profunda
+const stepNames = computed(() => tm('main.stepNames'))
 
 // Data State
 const currentProjectId = ref(route.params.projectId)
@@ -138,11 +135,11 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (error.value) return t('common.error')
-  if (currentPhase.value >= 2) return t('common.ready')
-  if (currentPhase.value === 1) return t('common.buildingGraph')
-  if (currentPhase.value === 0) return t('common.generatingOntology')
-  return t('common.initializing')
+  if (error.value) return 'Error'
+  if (currentPhase.value >= 2) return 'Ready'
+  if (currentPhase.value === 1) return 'Building Graph'
+  if (currentPhase.value === 0) return 'Generating Ontology'
+  return 'Initializing'
 })
 
 // --- Helpers ---
@@ -167,11 +164,11 @@ const toggleMaximize = (target) => {
 const handleNextStep = (params = {}) => {
   if (currentStep.value < 5) {
     currentStep.value++
-    addLog(`${t('logs.stepEntered')} ${currentStep.value}: ${stepNames[currentStep.value - 1]}`)
+    addLog(t('log.enterStep', { step: currentStep.value, name: stepNames.value[currentStep.value - 1] }))
     
-    // 如果是从 Step 2 进入 Step 3，记录模拟轮数配置
+    // 如果是从 Step 2 进入 Step 3，记录模拟rondas数配置
     if (currentStep.value === 3 && params.maxRounds) {
-      addLog(`${t('logs.customSimRounds')}: ${params.maxRounds}`)
+      addLog(t('log.customSimRounds', { rounds: params.maxRounds }))
     }
   }
 }
@@ -179,14 +176,14 @@ const handleNextStep = (params = {}) => {
 const handleGoBack = () => {
   if (currentStep.value > 1) {
     currentStep.value--
-    addLog(`${t('logs.stepEntered')} ${currentStep.value}: ${stepNames[currentStep.value - 1]}`)
+    addLog(t('log.returnToStep', { step: currentStep.value, name: stepNames.value[currentStep.value - 1] }))
   }
 }
 
 // --- Data Logic ---
 
 const initProject = async () => {
-  addLog(t('logs.projectViewInit'))
+  addLog('Project view initialized.')
   if (currentProjectId.value === 'new') {
     await handleNewProject()
   } else {
@@ -197,8 +194,8 @@ const initProject = async () => {
 const handleNewProject = async () => {
   const pending = getPendingUpload()
   if (!pending.isPending || pending.files.length === 0) {
-    error.value = t('common.error')
-    addLog(t('common.error') + ': No pending files found for new project.')
+    error.value = 'No pending files found.'
+    addLog('Error: No pending files found for new project.')
     return
   }
   
@@ -206,7 +203,7 @@ const handleNewProject = async () => {
     loading.value = true
     currentPhase.value = 0
     ontologyProgress.value = { message: 'Uploading and analyzing docs...' }
-    addLog(t('logs.ontologyGenStarted'))
+    addLog('Starting ontology generation: Uploading files...')
     
     const formData = new FormData()
     pending.files.forEach(f => formData.append('files', f))
@@ -220,15 +217,15 @@ const handleNewProject = async () => {
       
       router.replace({ name: 'Process', params: { projectId: res.data.project_id } })
       ontologyProgress.value = null
-      addLog(`${t('logs.ontologyGenSuccess')} ${res.data.project_id}`)
+      addLog(`Ontology generated successfully for project ${res.data.project_id}`)
       await startBuildGraph()
     } else {
-      error.value = res.error || t('common.error')
-      addLog(`${t('logs.ontologyGenError')}: ${error.value}`)
+      error.value = res.error || 'Ontology generation failed'
+      addLog(`Error generating ontology: ${error.value}`)
     }
   } catch (err) {
     error.value = err.message
-    addLog(`${t('logs.newProjectException')}: ${err.message}`)
+    addLog(`Exception in handleNewProject: ${err.message}`)
   } finally {
     loading.value = false
   }
@@ -237,12 +234,12 @@ const handleNewProject = async () => {
 const loadProject = async () => {
   try {
     loading.value = true
-    addLog(`${t('logs.loadingProject')} ${currentProjectId.value}...`)
+    addLog(`Loading project ${currentProjectId.value}...`)
     const res = await getProject(currentProjectId.value)
     if (res.success) {
       projectData.value = res.data
       updatePhaseByStatus(res.data.status)
-      addLog(`${t('logs.projectLoadedSuccessfully')}. Status: ${res.data.status}`)
+      addLog(`Project loaded. Status: ${res.data.status}`)
       
       if (res.data.status === 'ontology_generated' && !res.data.graph_id) {
         await startBuildGraph()
@@ -256,11 +253,11 @@ const loadProject = async () => {
       }
     } else {
       error.value = res.error
-      addLog(`${t('logs.loadProjectError')}: ${res.error}`)
+      addLog(`Error loading project: ${res.error}`)
     }
   } catch (err) {
     error.value = err.message
-    addLog(`${t('logs.loadProjectException')}: ${err.message}`)
+    addLog(`Exception in loadProject: ${err.message}`)
   } finally {
     loading.value = false
   }
@@ -272,7 +269,7 @@ const updatePhaseByStatus = (status) => {
     case 'ontology_generated': currentPhase.value = 0; break;
     case 'graph_building': currentPhase.value = 1; break;
     case 'graph_completed': currentPhase.value = 2; break;
-    case 'failed': error.value = t('common.projectFailed'); break;
+    case 'failed': error.value = 'Project failed'; break;
   }
 }
 
@@ -280,25 +277,25 @@ const startBuildGraph = async () => {
   try {
     currentPhase.value = 1
     buildProgress.value = { progress: 0, message: 'Starting build...' }
-    addLog(t('logs.graphBuildStarted'))
+    addLog('Initiating graph build...')
     
     const res = await buildGraph({ project_id: currentProjectId.value })
     if (res.success) {
-      addLog(`${t('logs.graphBuildTaskStarted')}. ${t('logs.taskId')}: ${res.data.task_id}`)
+      addLog(`Graph build task started. Task ID: ${res.data.task_id}`)
       startGraphPolling()
       startPollingTask(res.data.task_id)
     } else {
       error.value = res.error
-      addLog(`${t('logs.graphBuildFailed')}: ${res.error}`)
+      addLog(`Error starting build: ${res.error}`)
     }
   } catch (err) {
     error.value = err.message
-    addLog(`${t('logs.graphBuildException')}: ${err.message}`)
+    addLog(`Exception in startBuildGraph: ${err.message}`)
   }
 }
 
 const startGraphPolling = () => {
-  addLog(t('logs.graphPollStarted'))
+  addLog('Started polling for graph data...')
   fetchGraphData()
   graphPollTimer = setInterval(fetchGraphData, 10000)
 }
@@ -313,7 +310,7 @@ const fetchGraphData = async () => {
         graphData.value = gRes.data
         const nodeCount = gRes.data.node_count || gRes.data.nodes?.length || 0
         const edgeCount = gRes.data.edge_count || gRes.data.edges?.length || 0
-        addLog(`${t('logs.graphDataRefreshed')}. Nodes: ${nodeCount}, Edges: ${edgeCount}`)
+        addLog(`Graph data refreshed. Nodes: ${nodeCount}, Edges: ${edgeCount}`)
       }
     }
   } catch (err) {
@@ -340,7 +337,7 @@ const pollTaskStatus = async (taskId) => {
       buildProgress.value = { progress: task.progress || 0, message: task.message }
       
       if (task.status === 'completed') {
-        addLog(t('logs.graphBuildCompleted'))
+        addLog('Graph build task completed.')
         stopPolling()
         stopGraphPolling() // Stop polling, do final load
         currentPhase.value = 2
@@ -354,7 +351,7 @@ const pollTaskStatus = async (taskId) => {
       } else if (task.status === 'failed') {
         stopPolling()
         error.value = task.error
-        addLog(`${t('logs.graphBuildTaskFailed')}: ${task.error}`)
+        addLog(`Graph build task failed: ${task.error}`)
       }
     }
   } catch (e) {
@@ -364,17 +361,17 @@ const pollTaskStatus = async (taskId) => {
 
 const loadGraph = async (graphId) => {
   graphLoading.value = true
-  addLog(`${t('logs.loadingFullGraph')}: ${graphId}`)
+  addLog(`Loading full graph data: ${graphId}`)
   try {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog(t('logs.graphLoadSuccess'))
+      addLog('Graph data loaded successfully.')
     } else {
-      addLog(`${t('logs.graphLoadError')}: ${res.error}`)
+      addLog(`Failed to load graph data: ${res.error}`)
     }
   } catch (e) {
-    addLog(`${t('logs.graphLoadException')}: ${e.message}`)
+    addLog(`Exception loading graph: ${e.message}`)
   } finally {
     graphLoading.value = false
   }
@@ -382,7 +379,7 @@ const loadGraph = async (graphId) => {
 
 const refreshGraph = () => {
   if (projectData.value?.graph_id) {
-    addLog(t('logs.manualGraphRefresh'))
+    addLog('Manual graph refresh triggered.')
     loadGraph(projectData.value.graph_id)
   }
 }
@@ -398,7 +395,7 @@ const stopGraphPolling = () => {
   if (graphPollTimer) {
     clearInterval(graphPollTimer)
     graphPollTimer = null
-    addLog(t('logs.graphPollStopped'))
+    addLog('Graph polling stopped.')
   }
 }
 

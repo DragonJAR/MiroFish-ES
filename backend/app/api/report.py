@@ -1,6 +1,6 @@
 """
-API de rutas de informes
-Proporciona interfaces para generación, obtención y diálogo de informes de simulación
+API de rutas de reportes
+Proporciona interfaces para generación, obtención y diálogo de reportes de simulación
 """
 
 import os
@@ -15,20 +15,21 @@ from ..services.simulation_manager import SimulationManager
 from ..models.project import ProjectManager
 from ..models.task import TaskManager, TaskStatus
 from ..utils.logger import get_logger
+from ..utils.locale import t, get_locale, set_locale
 
 logger = get_logger("mirofish.api.report")
 
 
-# ============== Interfaz de generación de informe ==============
+# ============== Interfaces de generación de reportes ==============
 
 
 @report_bp.route("/generate", methods=["POST"])
 def generate_report():
     """
-    Generar informe de análisis de simulación (tarea asíncrona)
+    Generar reporte de análisis de simulación (tarea asíncrona)
 
-    Esta es una operación que toma tiempo, la interfaz devolverá task_id inmediatamente,
-    usa GET /api/report/generate/status para consultar el progreso
+    Esta es una operación que consume tiempo, la interfaz retorna task_id inmediatamente,
+    use GET /api/report/generate/status para consultar el progreso
 
     Solicitud (JSON):
         {
@@ -36,14 +37,14 @@ def generate_report():
             "force_regenerate": false        // Opcional, forzar regeneración
         }
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
                 "simulation_id": "sim_xxxx",
                 "task_id": "task_xxxx",
                 "status": "generating",
-                "message": "Tarea de generación de informe iniciada"
+                "message": "Tarea de generación de reporte iniciada"
             }
         }
     """
@@ -53,7 +54,7 @@ def generate_report():
         simulation_id = data.get("simulation_id")
         if not simulation_id:
             return jsonify(
-                {"success": False, "error": "Por favor proporciona simulation_id"}
+                {"success": False, "error": t("api.requireSimulationId")}
             ), 400
 
         force_regenerate = data.get("force_regenerate", False)
@@ -64,10 +65,13 @@ def generate_report():
 
         if not state:
             return jsonify(
-                {"success": False, "error": f"La simulación no existe: {simulation_id}"}
+                {
+                    "success": False,
+                    "error": t("api.simulationNotFound", id=simulation_id),
+                }
             ), 404
 
-        # Verificar si ya existe un informe
+        # Verificar si ya existe reporte
         if not force_regenerate:
             existing_report = ReportManager.get_report_by_simulation(simulation_id)
             if existing_report and existing_report.status == ReportStatus.COMPLETED:
@@ -78,7 +82,7 @@ def generate_report():
                             "simulation_id": simulation_id,
                             "report_id": existing_report.report_id,
                             "status": "completed",
-                            "message": "El informe ya existe",
+                            "message": t("api.reportAlreadyExists"),
                             "already_generated": True,
                         },
                     }
@@ -90,29 +94,23 @@ def generate_report():
             return jsonify(
                 {
                     "success": False,
-                    "error": f"El proyecto no existe: {state.project_id}",
+                    "error": t("api.projectNotFound", id=state.project_id),
                 }
             ), 404
 
         graph_id = state.graph_id or project.graph_id
         if not graph_id:
             return jsonify(
-                {
-                    "success": False,
-                    "error": "Falta el ID del grafo, asegurate de haber construido el grafo",
-                }
+                {"success": False, "error": t("api.missingGraphIdEnsure")}
             ), 400
 
         simulation_requirement = project.simulation_requirement
         if not simulation_requirement:
             return jsonify(
-                {
-                    "success": False,
-                    "error": "Falta la descripción del requerimiento de simulación",
-                }
+                {"success": False, "error": t("api.missingSimRequirement")}
             ), 400
 
-        # Generar report_id de antemano para devolver inmediatamente al frontend
+        # Generar report_id por adelantado, para retornar inmediatamente al frontend
         import uuid
 
         report_id = f"report_{uuid.uuid4().hex[:12]}"
@@ -128,97 +126,60 @@ def generate_report():
             },
         )
 
-        # Definir tarea en segundo plano con reintentos automáticos
-        MAX_RETRIES = 5
-        INITIAL_DELAY = 3  # segundos
+        # Capturar locale antes de iniciar hilo en background
+        current_locale = get_locale()
 
+        # Definir tarea de background
         def run_generate():
-            last_error = None
-
-            for attempt in range(MAX_RETRIES):
-                try:
-                    task_manager.update_task(
-                        task_id,
-                        status=TaskStatus.PROCESSING,
-                        progress=0,
-                        message="Inicializando Report Agent...",
-                    )
-
-                    # Crear Report Agent
-                    agent = ReportAgent(
-                        graph_id=graph_id,
-                        simulation_id=simulation_id,
-                        simulation_requirement=simulation_requirement,
-                    )
-
-                    # Progreso callback
-                    def progress_callback(stage, progress, message):
-                        task_manager.update_task(
-                            task_id, progress=progress, message=f"[{stage}] {message}"
-                        )
-
-                    # Generar reporte
-                    report = agent.generate_report(
-                        progress_callback=progress_callback, report_id=report_id
-                    )
-
-                    # Guardar reporte
-                    ReportManager.save_report(report)
-
-                    if report.status == ReportStatus.COMPLETED:
-                        task_manager.complete_task(
-                            task_id,
-                            result={
-                                "report_id": report.report_id,
-                                "simulation_id": simulation_id,
-                                "status": "completed",
-                            },
-                        )
-                    else:
-                        task_manager.fail_task(
-                            task_id, report.error or "Reporte fallido"
-                        )
-
-                    # Si llegó aquí, exitosa - salir del loop
-                    return
-
-                except Exception as e:
-                    error_str = str(e)
-                    last_error = e
-
-                    # Verificar si es error 429 (rate limit)
-                    is_rate_limit = (
-                        "429" in error_str or "rate limit" in error_str.lower()
-                    )
-
-                    if is_rate_limit and attempt < MAX_RETRIES - 1:
-                        delay = INITIAL_DELAY * (2**attempt)  # Exponential backoff
-                        print(
-                            f"⚠️ Rate limit detectado (intento {attempt + 1}/{MAX_RETRIES}). Reintentando en {delay}s..."
-                        )
-                        task_manager.update_task(
-                            task_id,
-                            progress=-1,
-                            message=f"Rate limit, reintento {attempt + 1}/{MAX_RETRIES} en {delay}s...",
-                        )
-                        import time
-
-                        time.sleep(delay)
-                        continue
-                    else:
-                        # Error no reintenable o se agotaron los reintentos
-                        logger.error(f"Reporte falló: {error_str}")
-                        task_manager.fail_task(task_id, error_str)
-                        return
-
-            # Si salieron del loop por error
-            if last_error:
-                task_manager.fail_task(
+            set_locale(current_locale)
+            try:
+                task_manager.update_task(
                     task_id,
-                    f"Falló después de {MAX_RETRIES} intentos: {str(last_error)}",
+                    status=TaskStatus.PROCESSING,
+                    progress=0,
+                    message=t("api.initReportAgent"),
                 )
 
-        # Iniciar hilo en segundo plano
+                # Crear Report Agent
+                agent = ReportAgent(
+                    graph_id=graph_id,
+                    simulation_id=simulation_id,
+                    simulation_requirement=simulation_requirement,
+                )
+
+                # Callback de progreso
+                def progress_callback(stage, progress, message):
+                    task_manager.update_task(
+                        task_id, progress=progress, message=f"[{stage}] {message}"
+                    )
+
+                # Generar reporte (pasando report_id pre-generado)
+                report = agent.generate_report(
+                    progress_callback=progress_callback, report_id=report_id
+                )
+
+                # Guardar reporte
+                ReportManager.save_report(report)
+
+                if report.status == ReportStatus.COMPLETED:
+                    task_manager.complete_task(
+                        task_id,
+                        result={
+                            "report_id": report.report_id,
+                            "simulation_id": simulation_id,
+                            "status": "completed",
+                        },
+                    )
+                else:
+                    task_manager.fail_task(
+                        task_id, report.error or t("api.reportGenerateFailed")
+                    )
+
+            except Exception as e:
+                logger.error(f"Fallo de generación de informe: {str(e)}")
+                task_manager.fail_task(task_id, str(e))
+
+        # Iniciar hilo de background
         thread = threading.Thread(target=run_generate, daemon=True)
         thread.start()
 
@@ -230,14 +191,14 @@ def generate_report():
                     "report_id": report_id,
                     "task_id": task_id,
                     "status": "generating",
-                    "message": "Tarea de generación de informe iniciada, consulta el progreso en /api/report/generate/status",
+                    "message": t("api.reportGenerateStarted"),
                     "already_generated": False,
                 },
             }
         )
 
     except Exception as e:
-        logger.error(f"Inicio de tarea de generación de informe falló: {str(e)}")
+        logger.error(f"Error al iniciar tarea de generación de reporte: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
@@ -246,15 +207,15 @@ def generate_report():
 @report_bp.route("/generate/status", methods=["POST"])
 def get_generate_status():
     """
-    Consultar progreso de tarea de generación de informe
+    Consultar progreso de tarea de generación de reporte
 
     Solicitud (JSON):
         {
-            "task_id": "task_xxxx",         // Opcional, task_id devuelto por generate
+            "task_id": "task_xxxx",         // Opcional, task_id retornado por generate
             "simulation_id": "sim_xxxx"     // Opcional, ID de simulación
         }
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
@@ -271,7 +232,7 @@ def get_generate_status():
         task_id = data.get("task_id")
         simulation_id = data.get("simulation_id")
 
-        # Si se proporciona simulation_id, primero verificar si ya existe un informe completado
+        # Si se proporciona simulation_id, verificar primero si ya existe reporte completado
         if simulation_id:
             existing_report = ReportManager.get_report_by_simulation(simulation_id)
             if existing_report and existing_report.status == ReportStatus.COMPLETED:
@@ -283,7 +244,7 @@ def get_generate_status():
                             "report_id": existing_report.report_id,
                             "status": "completed",
                             "progress": 100,
-                            "message": "El reporte ya ha sido generado",
+                            "message": t("api.reportGenerated"),
                             "already_completed": True,
                         },
                     }
@@ -291,10 +252,7 @@ def get_generate_status():
 
         if not task_id:
             return jsonify(
-                {
-                    "success": False,
-                    "error": "Por favor proporciona task_id o simulation_id",
-                }
+                {"success": False, "error": t("api.requireTaskOrSimId")}
             ), 400
 
         task_manager = TaskManager()
@@ -302,25 +260,25 @@ def get_generate_status():
 
         if not task:
             return jsonify(
-                {"success": False, "error": f"La tarea no existe: {task_id}"}
+                {"success": False, "error": t("api.taskNotFound", id=task_id)}
             ), 404
 
         return jsonify({"success": True, "data": task.to_dict()})
 
     except Exception as e:
-        logger.error(f"Consulta de estado de tarea fallida: {str(e)}")
+        logger.error(f"Error al consultar estado de tarea: {str(e)}")
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-# ============== Interfaz de obtención de informe ==============
+# ============== Interfaces de obtención de reportes ==============
 
 
 @report_bp.route("/<report_id>", methods=["GET"])
 def get_report(report_id: str):
     """
-    Obtener detalles del informe
+    Obtener detalles del reporte
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
@@ -339,13 +297,13 @@ def get_report(report_id: str):
 
         if not report:
             return jsonify(
-                {"success": False, "error": f"El informe no existe: {report_id}"}
+                {"success": False, "error": t("api.reportNotFound", id=report_id)}
             ), 404
 
         return jsonify({"success": True, "data": report.to_dict()})
 
     except Exception as e:
-        logger.error(f"Obtención de informe fallida: {str(e)}")
+        logger.error(f"Error al obtener reporte: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
@@ -354,9 +312,9 @@ def get_report(report_id: str):
 @report_bp.route("/by-simulation/<simulation_id>", methods=["GET"])
 def get_report_by_simulation(simulation_id: str):
     """
-    Obtener informe según ID de simulación
+    Obtener reporte por ID de simulación
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
@@ -372,7 +330,7 @@ def get_report_by_simulation(simulation_id: str):
             return jsonify(
                 {
                     "success": False,
-                    "error": f"No hay informe para esta simulación: {simulation_id}",
+                    "error": t("api.noReportForSim", id=simulation_id),
                     "has_report": False,
                 }
             ), 404
@@ -380,7 +338,7 @@ def get_report_by_simulation(simulation_id: str):
         return jsonify({"success": True, "data": report.to_dict(), "has_report": True})
 
     except Exception as e:
-        logger.error(f"Obtención de informe fallida: {str(e)}")
+        logger.error(f"Error al obtener reporte: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
@@ -389,13 +347,13 @@ def get_report_by_simulation(simulation_id: str):
 @report_bp.route("/list", methods=["GET"])
 def list_reports():
     """
-    Listar todos los informes
+    Listar todos los reportes
 
-    Parámetros de query:
+    Parámetros Query:
         simulation_id: Filtrar por ID de simulación (opcional)
-        limit: Límite de cantidad a devolver (por defecto 50)
+        limit: Límite de cantidad retornada (por defecto 50)
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": [...],
@@ -417,7 +375,7 @@ def list_reports():
         )
 
     except Exception as e:
-        logger.error(f"Listar informes fallido: {str(e)}")
+        logger.error(f"Error al listar reportes: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
@@ -426,7 +384,7 @@ def list_reports():
 @report_bp.route("/<report_id>/download", methods=["GET"])
 def download_report(report_id: str):
     """
-    Descargar informe (formato Markdown)
+    Descargar reporte (formato Markdown)
 
     Retorna archivo Markdown
     """
@@ -435,13 +393,13 @@ def download_report(report_id: str):
 
         if not report:
             return jsonify(
-                {"success": False, "error": f"El informe no existe: {report_id}"}
+                {"success": False, "error": t("api.reportNotFound", id=report_id)}
             ), 404
 
         md_path = ReportManager._get_report_markdown_path(report_id)
 
         if not os.path.exists(md_path):
-            # Si el archivo MD no existe, generar un archivo temporal
+            # Si archivo MD no existe, generar un archivo temporal
             import tempfile
 
             with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
@@ -455,7 +413,7 @@ def download_report(report_id: str):
         return send_file(md_path, as_attachment=True, download_name=f"{report_id}.md")
 
     except Exception as e:
-        logger.error(f"Descarga de informe fallida: {str(e)}")
+        logger.error(f"Error al descargar reporte: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
@@ -463,25 +421,27 @@ def download_report(report_id: str):
 
 @report_bp.route("/<report_id>", methods=["DELETE"])
 def delete_report(report_id: str):
-    """Eliminar informe"""
+    """Eliminar reporte"""
     try:
         success = ReportManager.delete_report(report_id)
 
         if not success:
             return jsonify(
-                {"success": False, "error": f"El informe no existe: {report_id}"}
+                {"success": False, "error": t("api.reportNotFound", id=report_id)}
             ), 404
 
-        return jsonify({"success": True, "message": f"Informe eliminado: {report_id}"})
+        return jsonify(
+            {"success": True, "message": t("api.reportDeleted", id=report_id)}
+        )
 
     except Exception as e:
-        logger.error(f"Eliminación de informe fallida: {str(e)}")
+        logger.error(f"Error al eliminar reporte: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
 
 
-# ============== Interfaz de diálogo con Report Agent ==============
+# ============== Interfaces de diálogo con Report Agent ==============
 
 
 @report_bp.route("/chat", methods=["POST"])
@@ -489,24 +449,24 @@ def chat_with_report_agent():
     """
     Dialogar con Report Agent
 
-    Report Agent puede llamar herramientas de recuperación de forma autónoma durante el diálogo
+    El Report Agent puede invocar herramientas de recuperación autónomamente durante el diálogo para responder preguntas
 
     Solicitud (JSON):
         {
             "simulation_id": "sim_xxxx",        // Obligatorio, ID de simulación
-            "message": "Por favor explica la tendencia del sentimiento",    // Obligatorio, mensaje del usuario
+            "message": "Por favor explica la tendencia de opinión pública",    // Obligatorio, mensaje del usuario
             "chat_history": [                   // Opcional, historial de diálogo
                 {"role": "user", "content": "..."},
                 {"role": "assistant", "content": "..."}
             ]
         }
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
                 "response": "Respuesta del Agent...",
-                "tool_calls": [lista de herramientas llamadas],
+                "tool_calls": [lista de herramientas invocadas],
                 "sources": [fuentes de información]
             }
         }
@@ -520,21 +480,22 @@ def chat_with_report_agent():
 
         if not simulation_id:
             return jsonify(
-                {"success": False, "error": "Por favor proporciona simulation_id"}
+                {"success": False, "error": t("api.requireSimulationId")}
             ), 400
 
         if not message:
-            return jsonify(
-                {"success": False, "error": "Por favor proporciona message"}
-            ), 400
+            return jsonify({"success": False, "error": t("api.requireMessage")}), 400
 
-        # Obtener información de simulación y proyecto
+        # Obtener simulación e información del proyecto
         manager = SimulationManager()
         state = manager.get_simulation(simulation_id)
 
         if not state:
             return jsonify(
-                {"success": False, "error": f"La simulación no existe: {simulation_id}"}
+                {
+                    "success": False,
+                    "error": t("api.simulationNotFound", id=simulation_id),
+                }
             ), 404
 
         project = ProjectManager.get_project(state.project_id)
@@ -542,17 +503,17 @@ def chat_with_report_agent():
             return jsonify(
                 {
                     "success": False,
-                    "error": f"El proyecto no existe: {state.project_id}",
+                    "error": t("api.projectNotFound", id=state.project_id),
                 }
             ), 404
 
         graph_id = state.graph_id or project.graph_id
         if not graph_id:
-            return jsonify({"success": False, "error": "Falta el ID del grafo"}), 400
+            return jsonify({"success": False, "error": t("api.missingGraphId")}), 400
 
         simulation_requirement = project.simulation_requirement or ""
 
-        # Crear agente y mantener conversación
+        # Crear Agent y realizar diálogo
         agent = ReportAgent(
             graph_id=graph_id,
             simulation_id=simulation_id,
@@ -564,21 +525,21 @@ def chat_with_report_agent():
         return jsonify({"success": True, "data": result})
 
     except Exception as e:
-        logger.error(f"Diálogo fallido: {str(e)}")
+        logger.error(f"Error en diálogo: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
 
 
-# ============== Interfaz de progreso y secciones del informe ==============
+# ============== Interfaces de progreso de reporte y secciones ==============
 
 
 @report_bp.route("/<report_id>/progress", methods=["GET"])
 def get_report_progress(report_id: str):
     """
-    Obtener progreso de generación del informe (tiempo real)
+    Obtener progreso de generación de reporte (tiempo real)
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
@@ -598,14 +559,14 @@ def get_report_progress(report_id: str):
             return jsonify(
                 {
                     "success": False,
-                    "error": f"El informe no existe o información de progreso no disponible: {report_id}",
+                    "error": t("api.reportProgressNotAvail", id=report_id),
                 }
             ), 404
 
         return jsonify({"success": True, "data": progress})
 
     except Exception as e:
-        logger.error(f"Obtención de progreso del informe fallida: {str(e)}")
+        logger.error(f"Error al obtener progreso de reporte: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
@@ -616,10 +577,9 @@ def get_report_sections(report_id: str):
     """
     Obtener lista de secciones ya generadas (salida por secciones)
 
-    El frontend puede consultar esta interfaz para obtener el contenido de las secciones generadas
-    sin esperar a que todo el informe esté completo
+    El frontend puede hacer polling de esta interfaz para obtener contenido de secciones ya generadas, sin necesidad de esperar que todo el reporte se complete
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
@@ -640,7 +600,7 @@ def get_report_sections(report_id: str):
     try:
         sections = ReportManager.get_generated_sections(report_id)
 
-        # Obtener estado del informe
+        # Obtener estado del reporte
         report = ReportManager.get_report(report_id)
         is_complete = report is not None and report.status == ReportStatus.COMPLETED
 
@@ -657,7 +617,7 @@ def get_report_sections(report_id: str):
         )
 
     except Exception as e:
-        logger.error(f"Obtención de lista de secciones fallida: {str(e)}")
+        logger.error(f"Error al obtener lista de capítulos: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
@@ -666,9 +626,9 @@ def get_report_sections(report_id: str):
 @report_bp.route("/<report_id>/section/<int:section_index>", methods=["GET"])
 def get_single_section(report_id: str, section_index: int):
     """
-    Obtener contenido de una sola sección
+    Obtener contenido de una sección individual
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
@@ -684,7 +644,7 @@ def get_single_section(report_id: str, section_index: int):
             return jsonify(
                 {
                     "success": False,
-                    "error": f"La sección no existe: section_{section_index:02d}.md",
+                    "error": t("api.sectionNotFound", index=f"{section_index:02d}"),
                 }
             ), 404
 
@@ -703,23 +663,23 @@ def get_single_section(report_id: str, section_index: int):
         )
 
     except Exception as e:
-        logger.error(f"Obtención de contenido de sección fallida: {str(e)}")
+        logger.error(f"Error al obtener contenido de capítulo: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
 
 
-# ============== Interfaz de verificación de estado del informe ==============
+# ============== Interfaces de verificación de estado de reporte ==============
 
 
 @report_bp.route("/check/<simulation_id>", methods=["GET"])
 def check_report_status(simulation_id: str):
     """
-    Verificar si la simulación tiene informe y el estado del informe
+    Verificar si la simulación tiene reporte, y el estado del reporte
 
-    Usado por el frontend para determinar si desbloquear la funcionalidad Interview
+    Utilizado por el frontend para determinar si desbloquear funcionalidad de Interview
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
@@ -738,7 +698,7 @@ def check_report_status(simulation_id: str):
         report_status = report.status.value if report else None
         report_id = report.report_id if report else None
 
-        # Solo se desbloquea interview cuando el informe está completo
+        # Solo desbloquear interview cuando el reporte esté completado
         interview_unlocked = has_report and report.status == ReportStatus.COMPLETED
 
         return jsonify(
@@ -755,29 +715,29 @@ def check_report_status(simulation_id: str):
         )
 
     except Exception as e:
-        logger.error(f"Verificación de estado del informe fallida: {str(e)}")
+        logger.error(f"Error al verificar estado de reporte: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
 
 
-# ============== Interfaz de logs del Agent ==============
+# ============== Interfaces de logs de Agent ==============
 
 
 @report_bp.route("/<report_id>/agent-log", methods=["GET"])
 def get_agent_log(report_id: str):
     """
-    Obtener logs detallados de ejecución del Report Agent
+    Obtener logs de ejecución detallados del Report Agent
 
-    Obtiene en tiempo real cada paso del proceso de generación del informe, incluyendo:
-    - Inicio del informe, inicio/completado de planificación
-    - Inicio de cada sección, llamadas a herramientas, respuestas LLM, completado
-    - Informe completado o fallido
+    Obtener en tiempo real cada paso de acción durante el proceso de generación de reporte, incluyendo:
+    - Inicio del reporte, inicio/completado de planificación
+    - Inicio de cada sección, llamada a herramientas, respuesta LLM, completado
+    - Completado o fallido del reporte
 
-    Parámetros de query:
-        from_line: Desde qué línea empezar a leer (opcional, por defecto 0, para obtención incremental)
+    Parámetros Query:
+        from_line: Comenzar lectura desde qué línea (opcional, por defecto 0, para obtención incremental)
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
@@ -812,7 +772,7 @@ def get_agent_log(report_id: str):
         return jsonify({"success": True, "data": log_data})
 
     except Exception as e:
-        logger.error(f"Obtención de logs del Agent fallida: {str(e)}")
+        logger.error(f"Error al obtener logs del agente: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
@@ -821,9 +781,9 @@ def get_agent_log(report_id: str):
 @report_bp.route("/<report_id>/agent-log/stream", methods=["GET"])
 def stream_agent_log(report_id: str):
     """
-    Obtener logs completos del Agent (todos de una vez)
+    Obtener logs completos de Agent (obtener todo de una vez)
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
@@ -838,13 +798,13 @@ def stream_agent_log(report_id: str):
         return jsonify({"success": True, "data": {"logs": logs, "count": len(logs)}})
 
     except Exception as e:
-        logger.error(f"Obtención de logs del Agent fallida: {str(e)}")
+        logger.error(f"Error al obtener logs del agente: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
 
 
-# ============== Interfaz de logs de consola ==============
+# ============== Interfaces de logs de consola ==============
 
 
 @report_bp.route("/<report_id>/console-log", methods=["GET"])
@@ -852,20 +812,20 @@ def get_console_log(report_id: str):
     """
     Obtener logs de salida de consola del Report Agent
 
-    Obtiene en tiempo real la salida de consola durante la generación del informe (INFO, WARNING, etc.),
-    esto es diferente de los logs JSON estructurados devueltos por la interfaz agent-log,
-    es un log de estilo consola en formato de texto plano.
+    Obtener en tiempo real la salida de consola durante el proceso de generación de reporte (INFO, WARNING, etc),
+    Esto es diferente de los logs JSON estructurados retornados por la interfaz agent-log,
+    es logs de estilo de consola en formato de texto plano.
 
-    Parámetros de query:
-        from_line: Desde qué línea empezar a leer (opcional, por defecto 0, para obtención incremental)
+    Parámetros Query:
+        from_line: Comenzar lectura desde qué línea (opcional, por defecto 0, para obtención incremental)
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
                 "logs": [
-                    "[19:46:14] INFO: Búsqueda completada: Se encontraron 15 hechos relacionados",
-                    "[19:46:14] INFO: Búsqueda en grafo: graph_id=xxx, query=...",
+                    "[19:46:14] INFO: Búsqueda completada: Se encontraron 15 hechos relevantes",
+                    "[19:46:14] INFO: Búsqueda de grafo: graph_id=xxx, query=...",
                     ...
                 ],
                 "total_lines": 100,
@@ -882,7 +842,7 @@ def get_console_log(report_id: str):
         return jsonify({"success": True, "data": log_data})
 
     except Exception as e:
-        logger.error(f"Obtención de logs de consola fallida: {str(e)}")
+        logger.error(f"Error al obtener logs de consola: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
@@ -891,9 +851,9 @@ def get_console_log(report_id: str):
 @report_bp.route("/<report_id>/console-log/stream", methods=["GET"])
 def stream_console_log(report_id: str):
     """
-    Obtener logs completos de consola (todos de una vez)
+    Obtener logs completos de consola (obtener todo de una vez)
 
-    Retorna:
+    Respuesta:
         {
             "success": true,
             "data": {
@@ -908,19 +868,19 @@ def stream_console_log(report_id: str):
         return jsonify({"success": True, "data": {"logs": logs, "count": len(logs)}})
 
     except Exception as e:
-        logger.error(f"Obtención de logs de consola fallida: {str(e)}")
+        logger.error(f"Error al obtener logs de consola: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
 
 
-# ============== Interfaz de herramientas (para depuración) ==============
+# ============== Interfaces de llamadas a herramientas (para uso de depuración) ==============
 
 
 @report_bp.route("/tools/search", methods=["POST"])
 def search_graph_tool():
     """
-    Interfaz de herramienta de búsqueda en grafo (para depuración)
+    Interfaz de herramienta de búsqueda de grafo (para uso de depuración)
 
     Solicitud (JSON):
         {
@@ -938,7 +898,7 @@ def search_graph_tool():
 
         if not graph_id or not query:
             return jsonify(
-                {"success": False, "error": "Por favor proporciona graph_id y query"}
+                {"success": False, "error": t("api.requireGraphIdAndQuery")}
             ), 400
 
         from ..services.zep_tools import ZepToolsService
@@ -949,7 +909,7 @@ def search_graph_tool():
         return jsonify({"success": True, "data": result.to_dict()})
 
     except Exception as e:
-        logger.error(f"Búsqueda en grafo fallida: {str(e)}")
+        logger.error(f"Error en búsqueda de grafo: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500
@@ -958,7 +918,7 @@ def search_graph_tool():
 @report_bp.route("/tools/statistics", methods=["POST"])
 def get_graph_statistics_tool():
     """
-    Interfaz de herramienta de estadísticas del grafo (para depuración)
+    Interfaz de herramienta de estadísticas de grafo (para uso de depuración)
 
     Solicitud (JSON):
         {
@@ -971,9 +931,7 @@ def get_graph_statistics_tool():
         graph_id = data.get("graph_id")
 
         if not graph_id:
-            return jsonify(
-                {"success": False, "error": "Por favor proporciona graph_id"}
-            ), 400
+            return jsonify({"success": False, "error": t("api.requireGraphId")}), 400
 
         from ..services.zep_tools import ZepToolsService
 
@@ -983,7 +941,7 @@ def get_graph_statistics_tool():
         return jsonify({"success": True, "data": result})
 
     except Exception as e:
-        logger.error(f"Obtención de estadísticas del grafo fallida: {str(e)}")
+        logger.error(f"Error al obtener estadísticas de grafo: {str(e)}")
         return jsonify(
             {"success": False, "error": str(e), "traceback": traceback.format_exc()}
         ), 500

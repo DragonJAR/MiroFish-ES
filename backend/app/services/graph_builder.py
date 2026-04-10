@@ -1,24 +1,23 @@
 """
 Servicio de construcción de grafos
-Interfaz 2: Construcción de Standalone Graph usando Zep API
+Interfaz 2: Usa Zep API para construir grafos independientes
 """
 
 import os
 import uuid
 import time
 import threading
-import warnings
-from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass
 
+from zep_cloud.client import Zep
+from zep_cloud import EpisodeData, EntityEdgeSourceTarget
+
 from ..config import Config
 from ..models.task import TaskManager, TaskStatus
-from ..utils.logger import get_logger
+from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
 from .text_processor import TextProcessor
-from ..memory import get_memory_backend
-
-logger = get_logger(__name__)
+from ..utils.locale import t, get_locale, set_locale
 
 
 @dataclass
@@ -45,8 +44,12 @@ class GraphBuilderService:
     Responsable de llamar a Zep API para construir grafos de conocimiento
     """
 
-    def __init__(self, backend=None):
-        self.backend = backend or get_memory_backend()
+    def __init__(self, api_key: Optional[str] = None):
+        self.api_key = api_key or Config.ZEP_API_KEY
+        if not self.api_key:
+            raise ValueError("ZEP_API_KEY no está configurado")
+
+        self.client = Zep(api_key=self.api_key)
         self.task_manager = TaskManager()
 
     def build_graph_async(
@@ -63,15 +66,16 @@ class GraphBuilderService:
 
         Args:
             text: Texto de entrada
-            ontology: Definición de ontología (proveniente del interfaz 1)
+            ontology: Definición de ontología (desde la salida de la interfaz 1)
             graph_name: Nombre del grafo
-            chunk_size: Tamaño del chunk de texto
-            chunk_overlap: Tamaño de superposición de chunks
-            batch_size: Cantidad de chunks a enviar por lote
+            chunk_size: Tamaño de los bloques de texto
+            chunk_overlap: Tamaño de superposición de bloques
+            batch_size: Cantidad de bloques enviados por lote
 
         Returns:
             ID de tarea
         """
+
         # Crear tarea
         task_id = self.task_manager.create_task(
             task_type="graph_build",
@@ -82,7 +86,10 @@ class GraphBuilderService:
             },
         )
 
-        # Ejecutar construcción en thread en background
+        # Capture locale before spawning background thread
+        current_locale = get_locale()
+
+        # Ejecutar construcción en hilo de fondo
         thread = threading.Thread(
             target=self._build_graph_worker,
             args=(
@@ -93,6 +100,7 @@ class GraphBuilderService:
                 chunk_size,
                 chunk_overlap,
                 batch_size,
+                current_locale,
             ),
         )
         thread.daemon = True
@@ -109,36 +117,42 @@ class GraphBuilderService:
         chunk_size: int,
         chunk_overlap: int,
         batch_size: int,
+        locale: str = "zh",
     ):
-        """Worker thread para construcción del grafo"""
+        """Hilo de trabajo de construcción de grafos"""
+        set_locale(locale)
         try:
             self.task_manager.update_task(
                 task_id,
                 status=TaskStatus.PROCESSING,
                 progress=5,
-                message="Iniciando construcción del grafo...",
+                message=t("progress.startBuildingGraph"),
             )
 
             # 1. Crear grafo
             graph_id = self.create_graph(graph_name)
             self.task_manager.update_task(
-                task_id, progress=10, message=f"Grafo creado: {graph_id}"
+                task_id,
+                progress=10,
+                message=t("progress.graphCreated", graphId=graph_id),
             )
 
             # 2. Configurar ontología
             self.set_ontology(graph_id, ontology)
             self.task_manager.update_task(
-                task_id, progress=15, message="Ontología configurada"
+                task_id, progress=15, message=t("progress.ontologySet")
             )
 
-            # 3. Dividir texto en chunks
+            # 3. Dividir texto en bloques
             chunks = TextProcessor.split_text(text, chunk_size, chunk_overlap)
             total_chunks = len(chunks)
             self.task_manager.update_task(
-                task_id, progress=20, message=f"Texto dividido en {total_chunks} chunks"
+                task_id,
+                progress=20,
+                message=t("progress.textSplit", count=total_chunks),
             )
 
-            # 4. Enviar datos en lotes
+            # 4. Enviar datos por lotes
             episode_uuids = self.add_text_batches(
                 graph_id,
                 chunks,
@@ -150,11 +164,9 @@ class GraphBuilderService:
                 ),
             )
 
-            # 5. Esperar a que Zep termine el procesamiento
+            # 5. Esperar que Zep termine de procesar
             self.task_manager.update_task(
-                task_id,
-                progress=60,
-                message="Esperando procesamiento de datos...",
+                task_id, progress=60, message=t("progress.waitingZepProcess")
             )
 
             self._wait_for_episodes(
@@ -168,12 +180,12 @@ class GraphBuilderService:
 
             # 6. Obtener información del grafo
             self.task_manager.update_task(
-                task_id, progress=90, message="Obteniendo información del grafo..."
+                task_id, progress=90, message=t("progress.fetchingGraphInfo")
             )
 
             graph_info = self._get_graph_info(graph_id)
 
-            # Completar
+            # Completado
             self.task_manager.complete_task(
                 task_id,
                 {
@@ -190,44 +202,31 @@ class GraphBuilderService:
             self.task_manager.fail_task(task_id, error_msg)
 
     def create_graph(self, name: str) -> str:
-        """Crear grafo Zep (método público)"""
-        graph_id = self.backend.create_graph(name=name, ontology=None)
+        """Crear grafo de Zep (método público)"""
+        graph_id = f"mirofish_{uuid.uuid4().hex[:16]}"
+
+        self.client.graph.create(
+            graph_id=graph_id, name=name, description="MiroFish Social Simulation Graph"
+        )
 
         return graph_id
 
     def set_ontology(self, graph_id: str, ontology: Dict[str, Any]):
         """Configurar ontología del grafo (método público)"""
-        if hasattr(self.backend, "set_ontology"):
-            self.backend.set_ontology(graph_id, ontology)
-        else:
-            logger.warning(
-                f"Backend {type(self.backend).__name__} no soporta set_ontology, omitiendo"
-            )
-
-        # Check if backend supports advanced ontology configuration
-        has_advanced = hasattr(self.backend, "client") or hasattr(
-            self.backend, "_graphiti"
+        import warnings
+        from typing import Optional
+        from pydantic import Field
+        from zep_cloud.external_clients.ontology import (
+            EntityModel,
+            EntityText,
+            EdgeModel,
         )
-        if not has_advanced:
-            logger.warning(f"Backend no soporta ontología avanzada")
-            return
-
-        try:
-            from zep_cloud import EntityEdgeSourceTarget
-            from zep_cloud.model.entity_model import EntityModel
-            from zep_cloud.model.edge_model import EdgeModel
-            from zep_cloud.model.entity_text import EntityText
-            from pydantic import Field
-        except ImportError:
-            logger.warning(
-                "Zep Cloud SDK no disponible, omitiendo configuración de ontología avanzada"
-            )
-            return
 
         # Suprimir advertencias de Pydantic v2 sobre Field(default=None)
+        # Este es el uso requerido por Zep SDK, las advertencias vienen de la creación dinámica de clases, se pueden ignorar de forma segura
         warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
-        # Nombres reservados por Zep, no pueden usarse como nombres de atributos
+        # Nombres reservados por Zep, no se pueden usar como nombres de atributos
         RESERVED_NAMES = {
             "uuid",
             "name",
@@ -238,7 +237,7 @@ class GraphBuilderService:
         }
 
         def safe_attr_name(attr_name: str) -> str:
-            """Convierte nombres reservados a nombres seguros"""
+            """Convertir nombres reservados a nombres seguros"""
             if attr_name.lower() in RESERVED_NAMES:
                 return f"entity_{attr_name}"
             return attr_name
@@ -249,16 +248,16 @@ class GraphBuilderService:
             name = entity_def["name"]
             description = entity_def.get("description", f"A {name} entity.")
 
-            # Crear diccionario de atributos y anotaciones de tipo (Pydantic v2 necesita esto)
+            # Crear diccionario de atributos y anotaciones de tipo (requerido por Pydantic v2)
             attrs = {"__doc__": description}
             annotations = {}
 
             for attr_def in entity_def.get("attributes", []):
-                attr_name = safe_attr_name(attr_def["name"])
+                attr_name = safe_attr_name(attr_def["name"])  # Usar nombre seguro
                 attr_desc = attr_def.get("description", attr_name)
-                # Zep API necesita Field con description, esto es obligatorio
+                # Zep API requiere la descripción de Field, esto es obligatorio
                 attrs[attr_name] = Field(description=attr_desc, default=None)
-                annotations[attr_name] = Optional[EntityText]
+                annotations[attr_name] = Optional[EntityText]  # Anotación de tipo
 
             attrs["__annotations__"] = annotations
 
@@ -267,27 +266,33 @@ class GraphBuilderService:
             entity_class.__doc__ = description
             entity_types[name] = entity_class
 
-        # Crear tipos de borde dinámicamente
+        # Crear tipos de bordes dinámicamente
         edge_definitions = {}
         for edge_def in ontology.get("edge_types", []):
             name = edge_def["name"]
             description = edge_def.get("description", f"A {name} relationship.")
 
+            # Crear diccionario de atributos y anotaciones de tipo
             attrs = {"__doc__": description}
             annotations = {}
 
             for attr_def in edge_def.get("attributes", []):
-                attr_name = safe_attr_name(attr_def["name"])
+                attr_name = safe_attr_name(attr_def["name"])  # Usar nombre seguro
                 attr_desc = attr_def.get("description", attr_name)
+                # Zep API requiere la descripción de Field, esto es obligatorio
                 attrs[attr_name] = Field(description=attr_desc, default=None)
-                annotations[attr_name] = Optional[str]
+                annotations[attr_name] = Optional[
+                    str
+                ]  # Atributos de borde usan tipo str
 
             attrs["__annotations__"] = annotations
 
+            # Crear clase dinámicamente
             class_name = "".join(word.capitalize() for word in name.split("_"))
             edge_class = type(class_name, (EdgeModel,), attrs)
             edge_class.__doc__ = description
 
+            # Construir source_targets
             source_targets = []
             for st in edge_def.get("source_targets", []):
                 source_targets.append(
@@ -300,8 +305,9 @@ class GraphBuilderService:
             if source_targets:
                 edge_definitions[name] = (edge_class, source_targets)
 
+        # Llamar a Zep API para configurar la ontología
         if entity_types or edge_definitions:
-            self.backend.client.graph.set_ontology(
+            self.client.graph.set_ontology(
                 graph_ids=[graph_id],
                 entities=entity_types if entity_types else None,
                 edges=edge_definitions if edge_definitions else None,
@@ -314,7 +320,7 @@ class GraphBuilderService:
         batch_size: int = 3,
         progress_callback: Optional[Callable] = None,
     ) -> List[str]:
-        """Agregar texto al grafo en lotes, devuelve lista de todos los UUIDs de episodes"""
+        """Agregar texto al grafo por lotes, devolver lista de uuid de todos los episodes"""
         episode_uuids = []
         total_chunks = len(chunks)
 
@@ -326,117 +332,42 @@ class GraphBuilderService:
             if progress_callback:
                 progress = (i + len(batch_chunks)) / total_chunks
                 progress_callback(
-                    f"Enviando lote {batch_num}/{total_batches} ({len(batch_chunks)} chunks)...",
+                    t(
+                        "progress.sendingBatch",
+                        current=batch_num,
+                        total=total_batches,
+                        chunks=len(batch_chunks),
+                    ),
                     progress,
                 )
 
+            # Construir datos de episode
+            episodes = [EpisodeData(data=chunk, type="text") for chunk in batch_chunks]
+
+            # Enviar a Zep
             try:
-                if hasattr(self.backend, "client") and hasattr(
-                    self.backend.client, "graph"
-                ):
-                    try:
-                        from zep_cloud import EpisodeData
+                batch_result = self.client.graph.add_batch(
+                    graph_id=graph_id, episodes=episodes
+                )
 
-                        episodes = [
-                            EpisodeData(data=chunk, type="text")
-                            for chunk in batch_chunks
-                        ]
-                        batch_result = self.backend.client.graph.add_batch(
-                            graph_id=graph_id, episodes=episodes
-                        )
-                    except ImportError:
-                        batch_result = None
-                elif hasattr(self.backend, "add_batch"):
-                    batch_result = self.backend.add_batch(
-                        graph_id=graph_id, episodes=batch_chunks
-                    )
-                else:
-                    batch_result = []
-                    for idx, chunk in enumerate(batch_chunks):
-                        result = self.backend.add_episode(
-                            graph_id=graph_id,
-                            content=chunk,
-                            reference_time=datetime.now(timezone.utc),
-                            name=f"chunk-{i + idx}",
-                            source_type="text",
-                        )
-                        batch_result.append(result)
-
+                # Recopilar los episode uuid devueltos
                 if batch_result and isinstance(batch_result, list):
                     for ep in batch_result:
-                        ep_uuid = (
-                            getattr(ep, "episode_uuid", None)
-                            or getattr(ep, "uuid_", None)
-                            or getattr(ep, "uuid", None)
+                        ep_uuid = getattr(ep, "uuid_", None) or getattr(
+                            ep, "uuid", None
                         )
                         if ep_uuid:
                             episode_uuids.append(ep_uuid)
 
-                time.sleep(3)  # Espera entre lotes para evitar rate limits del LLM
+                # Evitar solicitudes demasiado rápidas
+                time.sleep(1)
 
             except Exception as e:
-                error_msg = str(e)
-                # Retry con exponential backoff para rate limits (429)
-                if "429" in error_msg or "rate limit" in error_msg.lower():
-                    max_retries = 5
-                    for attempt in range(max_retries):
-                        wait_time = 60 * (2**attempt)  # 60s, 120s, 240s, 480s, 960s
-                        logger.warning(
-                            f"Rate limit en lote {batch_num}, reintentando en {wait_time}s "
-                            f"(intento {attempt + 1}/{max_retries})..."
-                        )
-                        if progress_callback:
-                            progress_callback(
-                                f"Rate limit — esperando {wait_time}s antes de reintentar lote {batch_num}...",
-                                i / total_chunks,
-                            )
-                        time.sleep(wait_time)
-                        try:
-                            batch_result = []
-                            for idx, chunk in enumerate(batch_chunks):
-                                result = self.backend.add_episode(
-                                    graph_id=graph_id,
-                                    content=chunk,
-                                    reference_time=datetime.now(timezone.utc),
-                                    name=f"chunk-{i + idx}",
-                                    source_type="text",
-                                )
-                                batch_result.append(result)
-                            if batch_result and isinstance(batch_result, list):
-                                for ep in batch_result:
-                                    ep_uuid = (
-                                        getattr(ep, "episode_uuid", None)
-                                        or getattr(ep, "uuid_", None)
-                                        or getattr(ep, "uuid", None)
-                                    )
-                                    if ep_uuid:
-                                        episode_uuids.append(ep_uuid)
-                            logger.info(f"Lote {batch_num} reintentado exitosamente")
-                            break
-                        except Exception as retry_e:
-                            if (
-                                "429" not in str(retry_e)
-                                and "rate limit" not in str(retry_e).lower()
-                            ):
-                                if progress_callback:
-                                    progress_callback(
-                                        f"Error al enviar lote {batch_num}: {str(retry_e)}",
-                                        0,
-                                    )
-                                raise
-                            if attempt == max_retries - 1:
-                                if progress_callback:
-                                    progress_callback(
-                                        f"Error al enviar lote {batch_num}: rate limit persistente después de {max_retries} intentos",
-                                        0,
-                                    )
-                                raise
-                else:
-                    if progress_callback:
-                        progress_callback(
-                            f"Error al enviar lote {batch_num}: {error_msg}", 0
-                        )
-                    raise
+                if progress_callback:
+                    progress_callback(
+                        t("progress.batchFailed", batch=batch_num, error=str(e)), 0
+                    )
+                raise
 
         return episode_uuids
 
@@ -446,27 +377,10 @@ class GraphBuilderService:
         progress_callback: Optional[Callable] = None,
         timeout: int = 600,
     ):
-        """Esperar a que todos los episodes se procesen (consultando el estado 'processed' de cada episode)"""
-        # Graphiti procesa episodios de forma síncrona, no necesita espera
-        if getattr(Config, "MEMORY_BACKEND", "zep") == "graphiti":
-            if progress_callback:
-                progress_callback(
-                    "Graphiti backend: procesamiento síncrono, no se requiere espera",
-                    1.0,
-                )
-            return
-
+        """Esperar a que todos los episodes se procesen (consultando el estado processed de cada episode)"""
         if not episode_uuids:
             if progress_callback:
-                progress_callback("No hay episodes que esperar", 1.0)
-            return
-
-        if not hasattr(self.backend, "client"):
-            if progress_callback:
-                progress_callback(
-                    "Backend no soporta verificación de estado de episodes, asumiendo procesamiento completado",
-                    1.0,
-                )
+                progress_callback(t("progress.noEpisodesWait"), 1.0)
             return
 
         start_time = time.time()
@@ -475,51 +389,70 @@ class GraphBuilderService:
         total_episodes = len(episode_uuids)
 
         if progress_callback:
-            progress_callback(
-                f"Esperando procesamiento de {total_episodes} chunks de texto...", 0
-            )
+            progress_callback(t("progress.waitingEpisodes", count=total_episodes), 0)
 
         while pending_episodes:
             if time.time() - start_time > timeout:
                 if progress_callback:
                     progress_callback(
-                        f"Timeout en algunos chunks, completados {completed_count}/{total_episodes}",
+                        t(
+                            "progress.episodesTimeout",
+                            completed=completed_count,
+                            total=total_episodes,
+                        ),
                         completed_count / total_episodes,
                     )
                 break
 
+            # Verificar estado de procesamiento de cada episode
             for ep_uuid in list(pending_episodes):
                 try:
-                    episode = self.backend.client.graph.episode.get(uuid_=ep_uuid)
+                    episode = self.client.graph.episode.get(uuid_=ep_uuid)
                     is_processed = getattr(episode, "processed", False)
 
                     if is_processed:
                         pending_episodes.remove(ep_uuid)
                         completed_count += 1
 
-                except Exception:
+                except Exception as e:
+                    # Ignorar error de consulta individual, continuar
                     pass
 
             elapsed = int(time.time() - start_time)
             if progress_callback:
                 progress_callback(
-                    f"Procesando... {completed_count}/{total_episodes} completados, {len(pending_episodes)} pendientes ({elapsed}seg)",
+                    t(
+                        "progress.zepProcessing",
+                        completed=completed_count,
+                        total=total_episodes,
+                        pending=len(pending_episodes),
+                        elapsed=elapsed,
+                    ),
                     completed_count / total_episodes if total_episodes > 0 else 0,
                 )
 
             if pending_episodes:
-                time.sleep(3)
+                time.sleep(3)  # 每3秒检查一次
 
         if progress_callback:
             progress_callback(
-                f"Procesamiento completado: {completed_count}/{total_episodes}", 1.0
+                t(
+                    "progress.processingComplete",
+                    completed=completed_count,
+                    total=total_episodes,
+                ),
+                1.0,
             )
 
     def _get_graph_info(self, graph_id: str) -> GraphInfo:
-        """Obtener información del grafo"""
-        nodes = self.backend.get_entities(graph_id=graph_id)
-        edges = self.backend.get_edges(graph_id=graph_id)
+        """Obtener información del Grafo"""
+        # Obtener nodos (paginación)
+        nodes = fetch_all_nodes(self.client, graph_id)
 
+        # Obtener bordes (paginación)
+        edges = fetch_all_edges(self.client, graph_id)
+
+        # Estadísticas de tipos de entidad
         entity_types = set()
         for node in nodes:
             if node.labels:
@@ -536,33 +469,32 @@ class GraphBuilderService:
 
     def get_graph_data(self, graph_id: str) -> Dict[str, Any]:
         """
-        Obtener datos completos del grafo (con información detallada)
+        Obtener datos completos del Grafo (contiene información detallada)
 
         Args:
-            graph_id: ID del grafo
+            graph_id: ID del Grafo
 
         Returns:
-            Diccionario con nodes y edges, incluyendo información temporal, atributos y otros datos detallados
+            Diccionario con nodes y edges, incluyendo información de tiempo, atributos y otros datos detallados
         """
-        import json
+        nodes = fetch_all_nodes(self.client, graph_id)
+        edges = fetch_all_edges(self.client, graph_id)
 
-        nodes = self.backend.get_entities(graph_id=graph_id)
-        edges = self.backend.get_edges(graph_id=graph_id)
-
+        # Crear mapeo de nodos para obtener nombres de nodos
         node_map = {}
         for node in nodes:
-            node_uuid = getattr(node, "uuid_", None) or getattr(node, "uuid", "")
-            node_map[node_uuid] = node.name or ""
+            node_map[node.uuid_] = node.name or ""
 
         nodes_data = []
         for node in nodes:
+            # Obtener tiempo de creación
             created_at = getattr(node, "created_at", None)
             if created_at:
                 created_at = str(created_at)
 
             nodes_data.append(
                 {
-                    "uuid": getattr(node, "uuid_", None) or getattr(node, "uuid", ""),
+                    "uuid": node.uuid_,
                     "name": node.name,
                     "labels": node.labels or [],
                     "summary": node.summary or "",
@@ -573,77 +505,44 @@ class GraphBuilderService:
 
         edges_data = []
         for edge in edges:
-            if isinstance(edge, dict):
-                src_uuid = edge.get("source_node_uuid", "")
-                tgt_uuid = edge.get("target_node_uuid", "")
-                edges_data.append(
-                    {
-                        "uuid": edge.get("uuid", ""),
-                        "name": edge.get("name", ""),
-                        "fact": edge.get("fact", "") or edge.get("name", ""),
-                        "fact_type": edge.get("fact_type", None)
-                        or edge.get("name", ""),
-                        "source_node_uuid": src_uuid,
-                        "target_node_uuid": tgt_uuid,
-                        "source_node_name": edge.get("source_node_name", "")
-                        or node_map.get(src_uuid, ""),
-                        "target_node_name": edge.get("target_node_name", "")
-                        or node_map.get(tgt_uuid, ""),
-                        "attributes": edge.get("attributes", {}) or {},
-                        "created_at": str(edge["created_at"])
-                        if edge.get("created_at")
-                        else None,
-                        "valid_at": str(edge["valid_at"])
-                        if edge.get("valid_at")
-                        else None,
-                        "invalid_at": str(edge["invalid_at"])
-                        if edge.get("invalid_at")
-                        else None,
-                        "expired_at": str(edge["expired_at"])
-                        if edge.get("expired_at")
-                        else None,
-                        "episodes": edge.get("episodes", []) or [],
-                    }
-                )
-            else:
-                created_at = getattr(edge, "created_at", None)
-                valid_at = getattr(edge, "valid_at", None)
-                invalid_at = getattr(edge, "invalid_at", None)
-                expired_at = getattr(edge, "expired_at", None)
+            # Obtener时间信息
+            created_at = getattr(edge, "created_at", None)
+            valid_at = getattr(edge, "valid_at", None)
+            invalid_at = getattr(edge, "invalid_at", None)
+            expired_at = getattr(edge, "expired_at", None)
 
-                episodes = getattr(edge, "episodes", None) or getattr(
-                    edge, "episode_ids", None
-                )
-                if episodes and not isinstance(episodes, list):
-                    episodes = [str(episodes)]
-                elif episodes:
-                    episodes = [str(e) for e in episodes]
+            # Obtener episodes
+            episodes = getattr(edge, "episodes", None) or getattr(
+                edge, "episode_ids", None
+            )
+            if episodes and not isinstance(episodes, list):
+                episodes = [str(episodes)]
+            elif episodes:
+                episodes = [str(e) for e in episodes]
 
-                fact_type = getattr(edge, "fact_type", None) or edge.name or ""
-                src_uuid = getattr(edge, "source_node_uuid", "")
-                tgt_uuid = getattr(edge, "target_node_uuid", "")
+            # Obtener fact_type
+            fact_type = getattr(edge, "fact_type", None) or edge.name or ""
 
-                edges_data.append(
-                    {
-                        "uuid": getattr(edge, "uuid_", None)
-                        or getattr(edge, "uuid", ""),
-                        "name": edge.name or "",
-                        "fact": getattr(edge, "fact", "") or getattr(edge, "name", ""),
-                        "fact_type": fact_type,
-                        "source_node_uuid": src_uuid,
-                        "target_node_uuid": tgt_uuid,
-                        "source_node_name": node_map.get(src_uuid, ""),
-                        "target_node_name": node_map.get(tgt_uuid, ""),
-                        "attributes": edge.attributes or {},
-                        "created_at": str(created_at) if created_at else None,
-                        "valid_at": str(valid_at) if valid_at else None,
-                        "invalid_at": str(invalid_at) if invalid_at else None,
-                        "expired_at": str(expired_at) if expired_at else None,
-                        "episodes": episodes or [],
-                    }
-                )
+            edges_data.append(
+                {
+                    "uuid": edge.uuid_,
+                    "name": edge.name or "",
+                    "fact": edge.fact or "",
+                    "fact_type": fact_type,
+                    "source_node_uuid": edge.source_node_uuid,
+                    "target_node_uuid": edge.target_node_uuid,
+                    "source_node_name": node_map.get(edge.source_node_uuid, ""),
+                    "target_node_name": node_map.get(edge.target_node_uuid, ""),
+                    "attributes": edge.attributes or {},
+                    "created_at": str(created_at) if created_at else None,
+                    "valid_at": str(valid_at) if valid_at else None,
+                    "invalid_at": str(invalid_at) if invalid_at else None,
+                    "expired_at": str(expired_at) if expired_at else None,
+                    "episodes": episodes or [],
+                }
+            )
 
-        result = {
+        return {
             "graph_id": graph_id,
             "nodes": nodes_data,
             "edges": edges_data,
@@ -651,8 +550,6 @@ class GraphBuilderService:
             "edge_count": len(edges_data),
         }
 
-        return json.loads(json.dumps(result, default=str))
-
     def delete_graph(self, graph_id: str):
-        """Eliminar grafo"""
-        self.backend.delete_graph(graph_id)
+        """删除Grafo"""
+        self.client.graph.delete(graph_id=graph_id)

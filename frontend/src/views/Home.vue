@@ -1,17 +1,18 @@
 <template>
   <div class="home-container">
-    <!-- 顶部导航栏 -->
+    <!-- Barra de navegación superior -->
     <nav class="navbar">
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
+        <LanguageSwitcher />
         <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
-          {{ $t('nav.github') }} <span class="arrow">↗</span>
+          {{ $t('nav.visitGithub') }} <span class="arrow">↗</span>
         </a>
       </div>
     </nav>
 
     <div class="main-content">
-      <!-- 上半部分：Hero 区域 -->
+      <!-- Sección superior: área Hero -->
       <section class="hero-section">
         <div class="hero-left">
           <div class="tag-row">
@@ -20,13 +21,17 @@
           </div>
           
           <h1 class="main-title">
-            {{ $t('home.title1') }}<br>
-            <span class="gradient-text">{{ $t('home.title2') }}</span>
+            {{ $t('home.heroTitle1') }}<br>
+            <span class="gradient-text">{{ $t('home.heroTitle2') }}</span>
           </h1>
           
           <div class="hero-desc">
             <p>
-              {{ $t('home.desc1') }}<span class="highlight-bold">MiroFish</span>{{ $t('home.desc2') }}<span class="highlight-orange">{{ $t('home.descAgents') }}</span>{{ $t('home.desc3') }}<span class="highlight-code">{{ $t('home.descOptimal') }}</span>{{ $t('home.desc4') }}
+              <i18n-t keypath="home.heroDesc" tag="span">
+                <template #brand><span class="highlight-bold">{{ $t('home.heroDescBrand') }}</span></template>
+                <template #agentScale><span class="highlight-orange">{{ $t('home.heroDescAgentScale') }}</span></template>
+                <template #optimalSolution><span class="highlight-code">{{ $t('home.heroDescOptimalSolution') }}</span></template>
+              </i18n-t>
             </p>
             <p class="slogan-text">
               {{ $t('home.slogan') }}<span class="blinking-cursor">_</span>
@@ -37,7 +42,7 @@
         </div>
         
         <div class="hero-right">
-          <!-- Logo 区域 -->
+          <!-- Área del Logo -->
           <div class="logo-container">
             <img src="../assets/logo/MiroFish_logo_left.jpeg" alt="MiroFish Logo" class="hero-logo" />
           </div>
@@ -48,84 +53,84 @@
         </div>
       </section>
 
-      <!-- 下半部分：双栏布局 -->
+      <!-- Sección inferior: diseño de dos columnas -->
       <section class="dashboard-section">
-        <!-- 左栏：状态与步骤 -->
+        <!-- Columna izquierda: estado y pasos -->
         <div class="left-panel">
           <div class="panel-header">
-            <span class="status-dot">■</span> {{ $t('home.status') }}
+            <span class="status-dot">■</span> {{ $t('home.systemStatus') }}
           </div>
           
-          <h2 class="section-title">{{ $t('home.ready') }}</h2>
+          <h2 class="section-title">{{ $t('home.systemReady') }}</h2>
           <p class="section-desc">
-            {{ $t('home.readyDesc') }}
+            {{ $t('home.systemReadyDesc') }}
           </p>
           
-          <!-- 数据指标卡片 -->
+          <!-- Tarjetas de métricas de datos -->
           <div class="metrics-row">
             <div class="metric-card">
-              <div class="metric-value">{{ $t('home.lowCost') }}</div>
-              <div class="metric-label">{{ $t('home.lowCostDesc') }}</div>
+              <div class="metric-value">{{ $t('home.metricLowCost') }}</div>
+              <div class="metric-label">{{ $t('home.metricLowCostDesc') }}</div>
             </div>
             <div class="metric-card">
-              <div class="metric-value">{{ $t('home.highAvail') }}</div>
-              <div class="metric-label">{{ $t('home.highAvailDesc') }}</div>
+              <div class="metric-value">{{ $t('home.metricHighAvail') }}</div>
+              <div class="metric-label">{{ $t('home.metricHighAvailDesc') }}</div>
             </div>
           </div>
 
-          <!-- 项目模拟步骤介绍 (新增区域) -->
+          <!-- Introducción de pasos de simulación del proyecto (nueva área) -->
           <div class="steps-container">
             <div class="steps-header">
-               <span class="diamond-icon">◇</span> {{ $t('home.workflow') }}
+               <span class="diamond-icon">◇</span> {{ $t('home.workflowSequence') }}
             </div>
             <div class="workflow-list">
               <div class="workflow-item">
                 <span class="step-num">01</span>
                 <div class="step-info">
-                  <div class="step-title">{{ $t('home.step1Title') }}</div>
-                  <div class="step-desc">{{ $t('home.step1Desc') }}</div>
+                  <div class="step-title">{{ $t('home.step01Title') }}</div>
+                  <div class="step-desc">{{ $t('home.step01Desc') }}</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">02</span>
                 <div class="step-info">
-                  <div class="step-title">{{ $t('home.step2Title') }}</div>
-                  <div class="step-desc">{{ $t('home.step2Desc') }}</div>
+                  <div class="step-title">{{ $t('home.step02Title') }}</div>
+                  <div class="step-desc">{{ $t('home.step02Desc') }}</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">03</span>
                 <div class="step-info">
-                  <div class="step-title">{{ $t('home.step3Title') }}</div>
-                  <div class="step-desc">{{ $t('home.step3Desc') }}</div>
+                  <div class="step-title">{{ $t('home.step03Title') }}</div>
+                  <div class="step-desc">{{ $t('home.step03Desc') }}</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">04</span>
                 <div class="step-info">
-                  <div class="step-title">{{ $t('home.step4Title') }}</div>
-                  <div class="step-desc">{{ $t('home.step4Desc') }}</div>
+                  <div class="step-title">{{ $t('home.step04Title') }}</div>
+                  <div class="step-desc">{{ $t('home.step04Desc') }}</div>
                 </div>
               </div>
               <div class="workflow-item">
                 <span class="step-num">05</span>
                 <div class="step-info">
-                  <div class="step-title">{{ $t('home.step5Title') }}</div>
-                  <div class="step-desc">{{ $t('home.step5Desc') }}</div>
+                  <div class="step-title">{{ $t('home.step05Title') }}</div>
+                  <div class="step-desc">{{ $t('home.step05Desc') }}</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 右栏：交互控制台 -->
+        <!-- Columna derecha: consola de interacción -->
         <div class="right-panel">
           <div class="console-box">
-            <!-- 上传区域 -->
+            <!-- Área de carga -->
             <div class="console-section">
               <div class="console-header">
-                <span class="console-label">{{ $t('home.seedLabel') }}</span>
-                <span class="console-meta">{{ $t('home.seedFormats') }}</span>
+                <span class="console-label">{{ $t('home.realitySeed') }}</span>
+                <span class="console-meta">{{ $t('home.supportedFormats') }}</span>
               </div>
               
               <div 
@@ -148,8 +153,8 @@
                 
                 <div v-if="files.length === 0" class="upload-placeholder">
                   <div class="upload-icon">↑</div>
-                  <div class="upload-title">{{ $t('home.dragUpload') }}</div>
-                  <div class="upload-hint">{{ $t('home.browseFiles') }}</div>
+                  <div class="upload-title">{{ $t('home.dragToUpload') }}</div>
+                  <div class="upload-hint">{{ $t('home.orBrowse') }}</div>
                 </div>
                 
                 <div v-else class="file-list">
@@ -162,15 +167,15 @@
               </div>
             </div>
 
-            <!-- 分割线 -->
+            <!-- Línea divisoria -->
             <div class="console-divider">
               <span>{{ $t('home.inputParams') }}</span>
             </div>
 
-            <!-- 输入区域 -->
+            <!-- Área de entrada -->
             <div class="console-section">
               <div class="console-header">
-                <span class="console-label">{{ $t('home.promptLabel') }}</span>
+                <span class="console-label">{{ $t('home.simulationPrompt') }}</span>
               </div>
               <div class="input-wrapper">
                 <textarea
@@ -184,7 +189,7 @@
               </div>
             </div>
 
-            <!-- 启动按钮 -->
+            <!-- Botón de inicio -->
             <div class="console-section btn-section">
               <button 
                 class="start-engine-btn"
@@ -200,7 +205,7 @@
         </div>
       </section>
 
-      <!-- 历史项目数据库 -->
+      <!-- Base de datos de proyectos históricos -->
       <HistoryDatabase />
     </div>
   </div>
@@ -210,15 +215,16 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 
 const router = useRouter()
 
-// 表单数据
+// Datos del formulario
 const formData = ref({
   simulationRequirement: ''
 })
 
-// 文件列表
+// Lista de archivos
 const files = ref([])
 
 // 状态
@@ -226,22 +232,22 @@ const loading = ref(false)
 const error = ref('')
 const isDragOver = ref(false)
 
-// 文件输入引用
+// Referencia de entrada de archivo
 const fileInput = ref(null)
 
-// 计算属性:是否可以提交
+// Propiedad computada: si se puede enviar
 const canSubmit = computed(() => {
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
 })
 
-// 触发文件选择
+// Activar selección de archivo
 const triggerFileInput = () => {
   if (!loading.value) {
     fileInput.value?.click()
   }
 }
 
-// 处理文件选择
+// Procesar selección de archivo
 const handleFileSelect = (event) => {
   const selectedFiles = Array.from(event.target.files)
   addFiles(selectedFiles)
@@ -288,7 +294,7 @@ const scrollToBottom = () => {
   })
 }
 
-// 开始模拟 - 立即跳转，API调用在Process页面进行
+// Iniciar simulación - 立即跳转，API调用在Process页面进行
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
   
@@ -351,6 +357,7 @@ const startSimulation = () => {
 .nav-links {
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 
 .github-link {
@@ -533,7 +540,7 @@ const startSimulation = () => {
   border-color: var(--orange);
 }
 
-/* Dashboard 双栏布局 */
+/* Dashboard Doble columna布局 */
 .dashboard-section {
   display: flex;
   gap: 60px;
@@ -886,5 +893,61 @@ const startSimulation = () => {
     max-width: 200px;
     margin-bottom: 20px;
   }
+}
+</style>
+
+<style>
+/* English locale adjustments (unscoped to target html[lang]) */
+html[lang="en"] .main-title {
+  font-size: 3.5rem;
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -1px;
+}
+
+html[lang="en"] .hero-desc {
+  text-align: left;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0;
+}
+
+html[lang="en"] .slogan-text {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0;
+}
+
+html[lang="en"] .tag-row {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[lang="en"] .navbar .nav-links {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Left pane: system status + workflow */
+html[lang="en"] .status-section {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[lang="en"] .status-section .status-ready {
+  font-size: 1.6rem;
+}
+
+html[lang="en"] .status-section .metric-value {
+  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 1.4rem;
+}
+
+html[lang="en"] .workflow-list .step-title {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html[lang="en"] .workflow-list .step-desc {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  font-size: 0.72rem !important;
+  line-height: 1.4 !important;
+}
+
+html[lang="en"] .workflow-list {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 </style>

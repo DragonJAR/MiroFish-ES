@@ -8,22 +8,24 @@
       
       <div class="header-center">
         <div class="view-switcher">
-          <button
-            v-for="mode in ['graph', 'split', 'workbench']"
+          <button 
+            v-for="mode in ['graph', 'split', 'workbench']" 
             :key="mode"
             class="switch-btn"
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ viewModeLabels[mode] }}
+            {{ { graph: $t('main.layoutGraph'), split: $t('main.layoutSplit'), workbench: $t('main.layoutWorkbench') }[mode] }}
           </button>
         </div>
       </div>
 
       <div class="header-right">
+        <LanguageSwitcher />
+        <div class="step-divider"></div>
         <div class="workflow-step">
-          <span class="step-num">{{ $t('mainView.step5') }}</span>
-          <span class="step-name">{{ t('mainView.step5') }}</span>
+          <span class="step-num">Step 5/5</span>
+          <span class="step-name">{{ $tm('main.stepNames')[4] }}</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -47,7 +49,7 @@
         />
       </div>
 
-      <!-- Right Panel: Step5 深度互动 -->
+      <!-- Right Panel: Step5 Interacción profunda -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
         <Step5Interaction
           :reportId="currentReportId"
@@ -70,6 +72,7 @@ import Step5Interaction from '../components/Step5Interaction.vue'
 import { getProject, getGraphData } from '../api/graph'
 import { getSimulation } from '../api/simulation'
 import { getReport } from '../api/report'
+import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -80,7 +83,7 @@ const props = defineProps({
   reportId: String
 })
 
-// Layout State - 默认切换到工作台视角
+// Layout State - 默认切换到Área de trabajo视角
 const viewMode = ref('workbench')
 
 // Data State
@@ -93,12 +96,6 @@ const systemLogs = ref([])
 const currentStatus = ref('ready') // ready | processing | completed | error
 
 // --- Computed Layout Styles ---
-const viewModeLabels = computed(() => ({
-  graph: t('mainView.graphView'),
-  split: t('mainView.splitView'),
-  workbench: t('mainView.workbenchView')
-}))
-
 const leftPanelStyle = computed(() => {
   if (viewMode.value === 'graph') return { width: '100%', opacity: 1, transform: 'translateX(0)' }
   if (viewMode.value === 'workbench') return { width: '0%', opacity: 0, transform: 'translateX(-20px)' }
@@ -117,10 +114,10 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (currentStatus.value === 'error') return t('common.error')
-  if (currentStatus.value === 'completed') return t('common.completed')
-  if (currentStatus.value === 'processing') return t('common.processing')
-  return t('common.completed')
+  if (currentStatus.value === 'error') return 'Error'
+  if (currentStatus.value === 'completed') return 'Completed'
+  if (currentStatus.value === 'processing') return 'Processing'
+  return 'Ready'
 })
 
 // --- Helpers ---
@@ -148,7 +145,7 @@ const toggleMaximize = (target) => {
 // --- Data Logic ---
 const loadReportData = async () => {
   try {
-    addLog(`${t('logs.reportDataLoaded')}: ${currentReportId.value}`)
+    addLog(t('log.loadReportData', { id: currentReportId.value }))
 
     // 获取 report 信息以获取 simulation_id
     const reportRes = await getReport(currentReportId.value)
@@ -167,7 +164,7 @@ const loadReportData = async () => {
             const projRes = await getProject(simData.project_id)
             if (projRes.success && projRes.data) {
               projectData.value = projRes.data
-              addLog(`${t('logs.projectLoadedSuccessfully')}: ${projRes.data.project_id}`)
+              addLog(t('log.projectLoadSuccess', { id: projRes.data.project_id }))
 
               // 获取 graph 数据
               if (projRes.data.graph_id) {
@@ -178,24 +175,24 @@ const loadReportData = async () => {
         }
       }
     } else {
-      addLog(`${t('logs.reportInfoFailed')}: ${reportRes.error || t('common.error')}`)
+      addLog(t('log.getReportInfoFailed', { error: reportRes.error || t('common.unknownError') }))
     }
   } catch (err) {
-    addLog(`${t('logs.simDataException')}: ${err.message}`)
+    addLog(t('log.loadException', { error: err.message }))
   }
 }
 
 const loadGraph = async (graphId) => {
   graphLoading.value = true
-
+  
   try {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog(t('logs.graphDataLoaded'))
+      addLog(t('log.graphDataLoadSuccess'))
     }
   } catch (err) {
-    addLog(`${t('logs.graphLoadFailed')}: ${err.message}`)
+    addLog(t('log.graphLoadFailed', { error: err.message }))
   } finally {
     graphLoading.value = false
   }
@@ -216,7 +213,7 @@ watch(() => route.params.reportId, (newId) => {
 }, { immediate: true })
 
 onMounted(() => {
-  addLog(t('logs.interactionViewInit'))
+  addLog(t('log.interactionViewInit'))
   loadReportData()
 })
 </script>

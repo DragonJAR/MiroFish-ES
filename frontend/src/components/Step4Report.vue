@@ -8,7 +8,7 @@
           <!-- Report Header -->
           <div class="report-header-block">
             <div class="report-meta">
-              <span class="report-tag">{{ $t('step4.predictionReport') }}</span>
+              <span class="report-tag">Prediction Report</span>
               <span class="report-id">ID: {{ reportId || 'REF-2024-X92' }}</span>
             </div>
             <h1 class="main-title">{{ reportOutline.title }}</h1>
@@ -58,7 +58,7 @@
                       <path d="M12 2a10 10 0 0 1 10 10" stroke-width="4" stroke="#4B5563" stroke-linecap="round"></path>
                     </svg>
                   </div>
-                  <span class="loading-text">{{ t('step4.generatingSection', { title: section.title }) }}</span>
+                  <span class="loading-text">{{ $t('step4.generatingSection', { title: section.title }) }}</span>
                 </div>
               </div>
             </div>
@@ -72,7 +72,7 @@
             <div class="waiting-ring"></div>
             <div class="waiting-ring"></div>
           </div>
-          <span class="waiting-text">{{ t('report.waitingAgent') }}</span>
+          <span class="waiting-text">Waiting for Report Agent...</span>
         </div>
       </div>
 
@@ -89,15 +89,15 @@
         <div class="workflow-overview" v-if="agentLogs.length > 0 || reportOutline">
           <div class="workflow-metrics">
             <div class="metric">
-              <span class="metric-label">{{ t('report.sections') }}</span>
+              <span class="metric-label">Sections</span>
               <span class="metric-value mono">{{ completedSections }}/{{ totalSections }}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">{{ t('report.elapsed') }}</span>
+              <span class="metric-label">Elapsed</span>
               <span class="metric-value mono">{{ formatElapsedTime }}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">{{ t('report.tools') }}</span>
+              <span class="metric-label">Tools</span>
               <span class="metric-value mono">{{ totalToolCalls }}</span>
             </div>
             <div class="metric metric-right">
@@ -127,9 +127,9 @@
             </div>
           </div>
 
-          <!-- Next Step Button - 在完成后显示 -->
+          <!-- Botón Siguiente - Mostrar tras completar -->
           <button v-if="isComplete" class="next-step-btn" @click="goToInteraction">
-            <span>{{ t('report.enterInteraction') }}</span>
+            <span>{{ $t('step4.goToInteraction') }}</span>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
@@ -166,11 +166,11 @@
                   <!-- Report Start -->
                   <template v-if="log.action === 'report_start'">
                     <div class="info-row">
-                      <span class="info-key">{{ $t('step4.simulation') }}</span>
+                      <span class="info-key">Simulation</span>
                       <span class="info-val mono">{{ log.details?.simulation_id }}</span>
                     </div>
                     <div class="info-row" v-if="log.details?.simulation_requirement">
-                      <span class="info-key">{{ $t('step4.requirement') }}</span>
+                      <span class="info-key">Requirement</span>
                       <span class="info-val">{{ log.details.simulation_requirement }}</span>
                     </div>
                   </template>
@@ -194,7 +194,7 @@
                     </div>
                   </template>
                   
-                  <!-- Section Content Generated (内容生成完成，但整个章节可能还没完成) -->
+                  <!-- Contenido de sección generado (contenido completo, pero la sección puede no haber terminado) -->
                   <template v-if="log.action === 'section_content'">
                     <div class="section-tag content-ready">
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -205,7 +205,7 @@
                     </div>
                   </template>
 
-                  <!-- Section Complete (章节生成完成) -->
+                  <!-- Sección Completa (generación de sección finalizada) -->
                   <template v-if="log.action === 'section_complete'">
                     <div class="section-tag completed">
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
@@ -307,20 +307,20 @@
                   <!-- LLM Response -->
                   <template v-if="log.action === 'llm_response'">
                     <div class="llm-meta">
-                      <span class="meta-tag">{{ $t('step4.iteration') }} {{ log.details?.iteration }}</span>
+                      <span class="meta-tag">Iteration {{ log.details?.iteration }}</span>
                       <span class="meta-tag" :class="{ active: log.details?.has_tool_calls }">
-                        Tools: {{ log.details?.has_tool_calls ? $t('common.yes') : $t('common.no') }}
+                        Tools: {{ log.details?.has_tool_calls ? 'Yes' : 'No' }}
                       </span>
                       <span class="meta-tag" :class="{ active: log.details?.has_final_answer, 'final-answer': log.details?.has_final_answer }">
-                        {{ $t('common.final') }}: {{ log.details?.has_final_answer ? $t('common.yes') : $t('common.no') }}
+                        Final: {{ log.details?.has_final_answer ? 'Yes' : 'No' }}
                       </span>
                     </div>
-                    <!-- 当是最终答案时，显示特殊提示 -->
+                    <!-- Cuando es la respuesta final, mostrar sugerencia especial -->
                     <div v-if="log.details?.has_final_answer" class="final-answer-hint">
                       <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
-                      <span>{{ $t('step4.sectionGenerated', { title: log.section_title }) }}</span>
+                      <span>Section "{{ log.section_title }}" content generated</span>
                     </div>
                     <div v-if="expandedLogs.has(log.timestamp) && log.details?.response" class="llm-content">
                       <pre>{{ log.details.response }}</pre>
@@ -334,7 +334,7 @@
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                         <polyline points="22 4 12 14.01 9 11.01"></polyline>
                       </svg>
-                      <span>{{ $t('step4.reportComplete') }}</span>
+                      <span>Report Generation Complete</span>
                     </div>
                   </template>
                 </div>
@@ -347,17 +347,17 @@
                   <div class="footer-actions">
                     <!-- Tool Call: Show/Hide Params -->
                     <button v-if="log.action === 'tool_call' && log.details?.parameters" class="action-btn" @click.stop="toggleLogExpand(log)">
-                      {{ expandedLogs.has(log.timestamp) ? $t('common.hideParams') : $t('common.showParams') }}
+                      {{ expandedLogs.has(log.timestamp) ? 'Hide Params' : 'Show Params' }}
                     </button>
                     
                     <!-- Tool Result: Raw/Structured View -->
                     <button v-if="log.action === 'tool_result'" class="action-btn" @click.stop="toggleRawResult(log.timestamp, $event)">
-                      {{ showRawResult[log.timestamp] ? $t('common.structuredView') : $t('common.rawOutput') }}
+                      {{ showRawResult[log.timestamp] ? 'Structured View' : 'Raw Output' }}
                     </button>
                     
                     <!-- LLM Response: Show/Hide Response -->
                     <button v-if="log.action === 'llm_response' && log.details?.response" class="action-btn" @click.stop="toggleLogExpand(log)">
-                      {{ expandedLogs.has(log.timestamp) ? $t('common.hideResponse') : $t('common.showResponse') }}
+                      {{ expandedLogs.has(log.timestamp) ? 'Hide Response' : 'Show Response' }}
                     </button>
                   </div>
                 </div>
@@ -368,7 +368,7 @@
           <!-- Empty State -->
           <div v-if="agentLogs.length === 0 && !isComplete" class="workflow-empty">
             <div class="empty-pulse"></div>
-            <span>{{ $t('step4.waitingForActivity') }}</span>
+            <span>Waiting for agent activity...</span>
           </div>
         </div>
       </div>
@@ -377,12 +377,12 @@
     <!-- Bottom Console Logs -->
     <div class="console-logs">
       <div class="log-header">
-        <span class="log-title">{{ $t('step4.consoleOutput') }}</span>
+        <span class="log-title">CONSOLE OUTPUT</span>
         <span class="log-id">{{ reportId || 'NO_REPORT' }}</span>
       </div>
       <div class="log-content" ref="logContent">
         <div class="log-line" v-for="(log, idx) in consoleLogs" :key="idx">
-          <span class="log-msg" :class="getLogLevelClass(log)">{{ translateLog(log) }}</span>
+          <span class="log-msg" :class="getLogLevelClass(log)">{{ log }}</span>
         </div>
       </div>
     </div>
@@ -394,11 +394,9 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick, h, reactive } f
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { getAgentLog, getConsoleLog } from '../api/report'
-import { useTranslateLog } from '../composables/useTranslateLog'
 
 const router = useRouter()
 const { t } = useI18n()
-const { translateLog } = useTranslateLog()
 
 const props = defineProps({
   reportId: String,
@@ -435,22 +433,22 @@ const showRawResult = reactive({})
 
 // Toggle functions
 const toggleRawResult = (timestamp, event) => {
-  // 保存按钮相对于视口的位置
+  // Guardar posición del botón relativa al viewport
   const button = event?.target
   const buttonRect = button?.getBoundingClientRect()
   const buttonTopBeforeToggle = buttonRect?.top
   
-  // 切换状态
+  // Cambiar estado
   showRawResult[timestamp] = !showRawResult[timestamp]
   
-  // 等待 DOM 更新后，调整滚动位置以保持按钮在相同位置
+  // Esperar actualización del DOM, ajustar posición de scroll para mantener el botón en su lugar
   if (button && buttonTopBeforeToggle !== undefined && rightPanel.value) {
     nextTick(() => {
       const newButtonRect = button.getBoundingClientRect()
       const buttonTopAfterToggle = newButtonRect.top
       const scrollDelta = buttonTopAfterToggle - buttonTopBeforeToggle
       
-      // 调整滚动位置
+      // Ajustar posición de scroll
       rightPanel.value.scrollTop += scrollDelta
     })
   }
@@ -468,7 +466,7 @@ const toggleSectionContent = (idx) => {
 }
 
 const toggleSectionCollapse = (idx) => {
-  // 只有已完成的章节才能折叠
+  // Solo las secciones completadas pueden colapsarse
   if (!generatedSections.value[idx + 1]) return
   const newSet = new Set(collapsedSections.value)
   if (newSet.has(idx)) {
@@ -499,34 +497,34 @@ const isLogCollapsed = (log) => {
 // Tool configurations with display names and colors
 const toolConfig = {
   'insight_forge': {
-    name: 'Insight Profundo',
+    name: 'Deep Insight',
     color: 'purple',
-    icon: 'lightbulb' // 灯泡图标 - 代表洞察
+    icon: 'lightbulb' // ícono de bombilla - representa perspicacia
   },
   'panorama_search': {
-    name: 'Búsqueda Panorámica',
+    name: 'Panorama Search',
     color: 'blue',
-    icon: 'globe' // 地球图标 - 代表全景搜索
+    icon: 'globe' // ícono de globo - representa búsqueda panorámica
   },
   'interview_agents': {
-    name: 'Entrevista de Agente',
+    name: 'Agent Interview',
     color: 'green',
-    icon: 'users' // 用户图标 - 代表对话
+    icon: 'users' // ícono de usuarios - representa diálogo
   },
   'quick_search': {
-    name: 'Búsqueda Rápida',
+    name: 'Quick Search',
     color: 'orange',
-    icon: 'zap' // 闪电图标 - 代表快速
+    icon: 'zap' // ícono de rayo - representa velocidad
   },
   'get_graph_statistics': {
-    name: 'Estadísticas del Grafo',
+    name: 'Graph Stats',
     color: 'cyan',
-    icon: 'chart' // 图表图标 - 代表统计
+    icon: 'chart' // ícono de gráfico - representa estadísticas
   },
   'get_entities_by_type': {
-    name: 'Consulta de Entidad',
+    name: 'Entity Query',
     color: 'pink',
-    icon: 'database' // 数据库图标 - 代表实体
+    icon: 'database' // ícono de base de datos - representa entidad
   }
 }
 
@@ -555,31 +553,31 @@ const parseInsightForge = (text) => {
   }
   
   try {
-    // 提取分析问题
-    const queryMatch = text.match(/分析问题:\s*(.+?)(?:\n|$)/)
+    // Extraer problema de análisis
+    const queryMatch = text.match(/Problema de análisis:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
-    // 提取预测场景
-    const reqMatch = text.match(/预测场景:\s*(.+?)(?:\n|$)/)
+    // Extraer escenario de predicción
+    const reqMatch = text.match(/Escenario de predicción:\s*(.+?)(?:\n|$)/)
     if (reqMatch) result.simulationRequirement = reqMatch[1].trim()
     
-    // 提取统计数据 - 匹配"相关预测事实: X条"格式
-    const factMatch = text.match(/相关预测事实:\s*(\d+)/)
-    const entityMatch = text.match(/涉及实体:\s*(\d+)/)
-    const relMatch = text.match(/关系链:\s*(\d+)/)
+    // Extraer estadísticas - coincide formato
+    const factMatch = text.match(/Hechos de predicción relacionados:\s*(\d+)/)
+    const entityMatch = text.match(/Entidades involucradas:\s*(\d+)/)
+    const relMatch = text.match(/Cadena de relaciones:\s*(\d+)/)
     if (factMatch) result.stats.facts = parseInt(factMatch[1])
     if (entityMatch) result.stats.entities = parseInt(entityMatch[1])
     if (relMatch) result.stats.relationships = parseInt(relMatch[1])
     
-    // 提取子问题 - 完整提取，不限制数量
-    const subQSection = text.match(/### 分析的子问题\n([\s\S]*?)(?=\n###|$)/)
+    // Extraer sub-preguntas - 完整提取，不限制数量
+    const subQSection = text.match(/### Sub-preguntas del análisis\n([\s\S]*?)(?=\n###|$)/)
     if (subQSection) {
       const lines = subQSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.subQueries = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
     }
     
-    // 提取关键事实 - 完整提取，不限制数量
-    const factsSection = text.match(/### 【关键事实】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
+    // Extraer hechos clave - 完整提取，不限制数量
+    const factsSection = text.match(/### 【Hechos clave】[\s\S]*?\n([\s\S]*?)(?=\n###|$)/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
       result.facts = lines.map(l => {
@@ -588,11 +586,11 @@ const parseInsightForge = (text) => {
       }).filter(Boolean)
     }
     
-    // 提取核心实体 - 完整提取，包含摘要和相关事实数
-    const entitySection = text.match(/### 【核心实体】\n([\s\S]*?)(?=\n###|$)/)
+    // Extraer entidades principales - 完整提取，包含摘要和相关事实数
+    const entitySection = text.match(/### 【Entidades principales】\n([\s\S]*?)(?=\n###|$)/)
     if (entitySection) {
       const entityText = entitySection[1]
-      // 按 "- **" 分割实体块
+      // Dividir bloques de entidad por "- **"
       const entityBlocks = entityText.split(/\n(?=- \*\*)/).filter(b => b.trim().startsWith('- **'))
       result.entities = entityBlocks.map(block => {
         const nameMatch = block.match(/^-\s*\*\*(.+?)\*\*\s*\((.+?)\)/)
@@ -607,8 +605,8 @@ const parseInsightForge = (text) => {
       }).filter(e => e.name)
     }
     
-    // 提取关系链 - 完整提取，不限制数量
-    const relSection = text.match(/### 【关系链】\n([\s\S]*?)(?=\n###|$)/)
+    // Extraer cadena de relaciones - 完整提取，不限制数量
+    const relSection = text.match(/### 【Cadena de relaciones】\n([\s\S]*?)(?=\n###|$)/)
     if (relSection) {
       const lines = relSection[1].split('\n').filter(l => l.trim().startsWith('-'))
       result.relations = lines.map(l => {
@@ -636,11 +634,11 @@ const parsePanorama = (text) => {
   }
   
   try {
-    // 提取查询
+    // Extraer consulta
     const queryMatch = text.match(/查询:\s*(.+?)(?:\n|$)/)
     if (queryMatch) result.query = queryMatch[1].trim()
     
-    // 提取统计数据
+    // Extraer estadísticas
     const nodesMatch = text.match(/总节点数:\s*(\d+)/)
     const edgesMatch = text.match(/总边数:\s*(\d+)/)
     const activeMatch = text.match(/当前有效事实:\s*(\d+)/)
@@ -671,8 +669,8 @@ const parsePanorama = (text) => {
       }).filter(Boolean)
     }
     
-    // 提取涉及实体 - 完整提取，不限制数量
-    const entitySection = text.match(/### 【涉及实体】\n([\s\S]*?)(?=\n###|$)/)
+    // 提取Entidades involucradas - 完整提取，不限制数量
+    const entitySection = text.match(/### 【Entidades involucradas】\n([\s\S]*?)(?=\n###|$)/)
     if (entitySection) {
       const lines = entitySection[1].split('\n').filter(l => l.trim().startsWith('-'))
       result.entities = lines.map(l => {
@@ -718,7 +716,7 @@ const parseInterview = (text) => {
       result.selectionReason = reasonMatch[1].trim()
     }
     
-    // 解析每个人的选择理由
+    // 解析每elementos人的选择理由
     const parseIndividualReasons = (reasonText) => {
       const reasons = {}
       if (!reasonText) return reasons
@@ -761,7 +759,7 @@ const parseInterview = (text) => {
         }
         
         if (name) {
-          // 保存上一个人的理由
+          // 保存上一elementos人的理由
           if (currentName && currentReason.length > 0) {
             reasons[currentName] = currentReason.join(' ').trim()
           }
@@ -774,7 +772,7 @@ const parseInterview = (text) => {
         }
       }
       
-      // 保存最后一个人的理由
+      // 保存最后一elementos人的理由
       if (currentName && currentReason.length > 0) {
         reasons[currentName] = currentReason.join(' ').trim()
       }
@@ -784,7 +782,7 @@ const parseInterview = (text) => {
     
     const individualReasons = parseIndividualReasons(result.selectionReason)
     
-    // 提取每个采访记录
+    // 提取每elementos采访记录
     const interviewBlocks = text.split(/#### 采访 #\d+:/).slice(1)
     
     interviewBlocks.forEach((block, index) => {
@@ -814,8 +812,8 @@ const parseInterview = (text) => {
         interview.selectionReason = individualReasons[interview.name] || ''
       }
       
-      // 提取简介
-      const bioMatch = block.match(/_简介:\s*([\s\S]*?)_\n/)
+      // 提取Biografía
+      const bioMatch = block.match(/_Biografía:\s*([\s\S]*?)_\n/)
       if (bioMatch) {
         interview.bio = bioMatch[1].trim().replace(/\.\.\.$/, '...')
       }
@@ -827,7 +825,7 @@ const parseInterview = (text) => {
         // 按数字编号分割问题
         const questions = qText.split(/\n\d+\.\s+/).filter(q => q.trim())
         if (questions.length > 0) {
-          // 如果第一个问题前面有"1."，需要特殊处理
+          // 如果第一elementos问题前面有"1."，需要特殊处理
           const firstQ = qText.match(/^1\.\s+(.+)/)
           if (firstQ) {
             interview.questions = [firstQ[1].trim(), ...questions.slice(1).map(q => q.trim())]
@@ -853,7 +851,7 @@ const parseInterview = (text) => {
           interview.redditAnswer = redditMatch[1].trim()
         }
         
-        // 平台回退逻辑（兼容旧格式：只有一个平台标记的情况）
+        // 平台回退逻辑（兼容旧格式：只有一elementos平台标记的情况）
         if (!twitterMatch && redditMatch) {
           // 只有 Reddit 回答，仅在非占位文本时复制为默认显示
           if (interview.redditAnswer && interview.redditAnswer !== '（该平台未获得回复）') {
@@ -942,7 +940,7 @@ const parseQuickSearch = (text) => {
     }
     
     // 尝试提取节点信息（如果有）
-    const nodesSection = text.match(/### 相关节点:\n([\s\S]*?)(?=\n###|$)/)
+    const nodesSection = text.match(/### Nodos relacionados:\n([\s\S]*?)(?=\n###|$)/)
     if (nodesSection) {
       const lines = nodesSection[1].split('\n').filter(l => l.trim().startsWith('-'))
       result.nodes = lines.map(l => {
@@ -966,6 +964,7 @@ const parseQuickSearch = (text) => {
 const InsightDisplay = {
   props: ['result', 'resultLength'],
   setup(props) {
+    const { t } = useI18n()
     const activeTab = ref('facts') // 'facts', 'entities', 'relations', 'subqueries'
     const expandedFacts = ref(false)
     const expandedEntities = ref(false)
@@ -989,17 +988,17 @@ const InsightDisplay = {
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.stats.facts || props.result.facts.length),
-              h('span', { class: 'stat-label' }, 'Hechos')
+              h('span', { class: 'stat-label' }, 'Facts')
             ]),
             h('span', { class: 'stat-divider' }, '/'),
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.stats.entities || props.result.entities.length),
-              h('span', { class: 'stat-label' }, 'Entidades')
+              h('span', { class: 'stat-label' }, 'Entities')
             ]),
             h('span', { class: 'stat-divider' }, '/'),
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.stats.relationships || props.result.relations.length),
-              h('span', { class: 'stat-label' }, 'Relaciones')
+              h('span', { class: 'stat-label' }, 'Relations')
             ]),
             props.resultLength && h('span', { class: 'stat-divider' }, '·'),
             props.resultLength && h('span', { class: 'stat-size' }, formatSize(props.resultLength))
@@ -1007,7 +1006,7 @@ const InsightDisplay = {
         ]),
         props.result.query && h('div', { class: 'header-topic' }, props.result.query),
         props.result.simulationRequirement && h('div', { class: 'header-scenario' }, [
-          h('span', { class: 'scenario-label' }, t('step4.predictionScenario') + ': '),
+          h('span', { class: 'scenario-label' }, t('step4.scenarioLabel')),
           h('span', { class: 'scenario-text' }, props.result.simulationRequirement)
         ])
       ]),
@@ -1018,25 +1017,25 @@ const InsightDisplay = {
           class: ['insight-tab', { active: activeTab.value === 'facts' }],
           onClick: () => { activeTab.value = 'facts' }
         }, [
-          h('span', { class: 'tab-label' }, t('step4.currentKeyMemories', { count: props.result.facts.length }))
+          h('span', { class: 'tab-label' }, t('step4.tabKeyFacts', { count: props.result.facts.length }))
         ]),
         h('button', {
           class: ['insight-tab', { active: activeTab.value === 'entities' }],
           onClick: () => { activeTab.value = 'entities' }
         }, [
-          h('span', { class: 'tab-label' }, t('step4.coreEntitiesCount', { count: props.result.entities.length }))
+          h('span', { class: 'tab-label' }, t('step4.tabCoreEntities', { count: props.result.entities.length }))
         ]),
         h('button', {
           class: ['insight-tab', { active: activeTab.value === 'relations' }],
           onClick: () => { activeTab.value = 'relations' }
         }, [
-          h('span', { class: 'tab-label' }, t('step4.relationChainsCount', { count: props.result.relations.length }))
+          h('span', { class: 'tab-label' }, t('step4.tabRelationChains', { count: props.result.relations.length }))
         ]),
         props.result.subQueries.length > 0 && h('button', {
           class: ['insight-tab', { active: activeTab.value === 'subqueries' }],
           onClick: () => { activeTab.value = 'subqueries' }
         }, [
-          h('span', { class: 'tab-label' }, t('step4.subQuestionsCount', { count: props.result.subQueries.length }))
+          h('span', { class: 'tab-label' }, t('step4.tabSubQueries', { count: props.result.subQueries.length }))
         ])
       ]),
       
@@ -1045,8 +1044,8 @@ const InsightDisplay = {
         // Facts Tab
         activeTab.value === 'facts' && props.result.facts.length > 0 && h('div', { class: 'facts-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, t('step4.latestKeyFacts')),
-            h('span', { class: 'panel-count' }, t('step4.totalFacts', { n: props.result.facts.length }))
+            h('span', { class: 'panel-title' }, t('step4.panelKeyFacts')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.facts.length }))
           ]),
           h('div', { class: 'facts-list' },
             (expandedFacts.value ? props.result.facts : props.result.facts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1059,35 +1058,35 @@ const InsightDisplay = {
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? t('step4.collapseBtn') : t('step4.expandAllBtn', { n: props.result.facts.length }))
+          }, expandedFacts.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.facts.length }))
         ]),
-        
+
         // Entities Tab
         activeTab.value === 'entities' && props.result.entities.length > 0 && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, t('step4.coreEntities')),
-            h('span', { class: 'panel-count' }, t('step4.totalEntities', { n: props.result.entities.length }))
+            h('span', { class: 'panel-title' }, t('step4.panelCoreEntities')),
+            h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.entities.length }))
           ]),
           h('div', { class: 'entities-grid' },
             (expandedEntities.value ? props.result.entities : props.result.entities.slice(0, 12)).map((entity, i) => 
               h('div', { class: 'entity-tag', key: i, title: entity.summary || '' }, [
                 h('span', { class: 'entity-name' }, entity.name),
                 h('span', { class: 'entity-type' }, entity.type),
-                entity.relatedFactsCount > 0 && h('span', { class: 'entity-fact-count' }, `${entity.relatedFactsCount} ${t('step4.facts')}`)
+                entity.relatedFactsCount > 0 && h('span', { class: 'entity-fact-count' }, t('step4.factCount', { count: entity.relatedFactsCount }))
               ])
             )
           ),
           props.result.entities.length > 12 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? t('step4.collapseBtn') : t('step4.expandAllBtn', { n: props.result.entities.length }))
+          }, expandedEntities.value ? t('step4.collapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
         ]),
-        
+
         // Relations Tab
         activeTab.value === 'relations' && props.result.relations.length > 0 && h('div', { class: 'relations-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, t('step4.relationChains')),
-            h('span', { class: 'panel-count' }, t('step4.totalRelations', { n: props.result.relations.length }))
+            h('span', { class: 'panel-title' }, t('step4.panelRelationChains')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.relations.length }))
           ]),
           h('div', { class: 'relations-list' },
             (expandedRelations.value ? props.result.relations : props.result.relations.slice(0, INITIAL_SHOW_COUNT)).map((rel, i) => 
@@ -1105,14 +1104,14 @@ const InsightDisplay = {
           props.result.relations.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedRelations.value = !expandedRelations.value }
-          }, expandedRelations.value ? t('step4.collapseBtn') : t('step4.expandAllBtn', { n: props.result.relations.length }))
+          }, expandedRelations.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.relations.length }))
         ]),
-        
+
         // Sub-queries Tab
         activeTab.value === 'subqueries' && props.result.subQueries.length > 0 && h('div', { class: 'subqueries-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, t('step4.subQueryAnalysis')),
-            h('span', { class: 'panel-count' }, t('step4.totalSubQueries', { n: props.result.subQueries.length }))
+            h('span', { class: 'panel-title' }, t('step4.panelSubQueries')),
+            h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.subQueries.length }))
           ]),
           h('div', { class: 'subqueries-list' },
             props.result.subQueries.map((sq, i) => 
@@ -1125,9 +1124,9 @@ const InsightDisplay = {
         ]),
         
         // Empty state
-        activeTab.value === 'facts' && props.result.facts.length === 0 && h('div', { class: 'empty-state' }, t('step4.noKeyMemories')),
-        activeTab.value === 'entities' && props.result.entities.length === 0 && h('div', { class: 'empty-state' }, t('step4.noEntities')),
-        activeTab.value === 'relations' && props.result.relations.length === 0 && h('div', { class: 'empty-state' }, t('step4.noRelations'))
+        activeTab.value === 'facts' && props.result.facts.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyKeyFacts')),
+        activeTab.value === 'entities' && props.result.entities.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyCoreEntities')),
+        activeTab.value === 'relations' && props.result.relations.length === 0 && h('div', { class: 'empty-state' }, t('step4.emptyRelationChains'))
       ])
     ])
   }
@@ -1137,6 +1136,7 @@ const InsightDisplay = {
 const PanoramaDisplay = {
   props: ['result', 'resultLength'],
   setup(props) {
+    const { t } = useI18n()
     const activeTab = ref('active') // 'active', 'historical', 'entities'
     const expandedActive = ref(false)
     const expandedHistorical = ref(false)
@@ -1160,12 +1160,12 @@ const PanoramaDisplay = {
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.stats.nodes),
-              h('span', { class: 'stat-label' }, t('step4.nodes'))
+              h('span', { class: 'stat-label' }, 'Nodes')
             ]),
             h('span', { class: 'stat-divider' }, '/'),
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.stats.edges),
-              h('span', { class: 'stat-label' }, t('step4.edges'))
+              h('span', { class: 'stat-label' }, 'Edges')
             ]),
             props.resultLength && h('span', { class: 'stat-divider' }, '·'),
             props.resultLength && h('span', { class: 'stat-size' }, formatSize(props.resultLength))
@@ -1180,19 +1180,19 @@ const PanoramaDisplay = {
           class: ['panorama-tab', { active: activeTab.value === 'active' }],
           onClick: () => { activeTab.value = 'active' }
         }, [
-          h('span', { class: 'tab-label' }, t('step4.activeMemories', { count: props.result.activeFacts.length }))
+          h('span', { class: 'tab-label' }, t('step4.tabActiveFacts', { count: props.result.activeFacts.length }))
         ]),
         h('button', {
           class: ['panorama-tab', { active: activeTab.value === 'historical' }],
           onClick: () => { activeTab.value = 'historical' }
         }, [
-          h('span', { class: 'tab-label' }, t('step4.historicalMemories', { count: props.result.historicalFacts.length }))
+          h('span', { class: 'tab-label' }, t('step4.tabHistoricalFacts', { count: props.result.historicalFacts.length }))
         ]),
         h('button', {
           class: ['panorama-tab', { active: activeTab.value === 'entities' }],
           onClick: () => { activeTab.value = 'entities' }
         }, [
-          h('span', { class: 'tab-label' }, t('step4.involvedEntitiesCount', { count: props.result.entities.length }))
+          h('span', { class: 'tab-label' }, t('step4.tabEntities', { count: props.result.entities.length }))
         ])
       ]),
       
@@ -1201,8 +1201,8 @@ const PanoramaDisplay = {
         // Active Facts Tab
         activeTab.value === 'active' && h('div', { class: 'facts-panel active-facts' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, t('step4.currentValidMemory')),
-            h('span', { class: 'panel-count' }, t('step4.totalFacts', { n: props.result.activeFacts.length }))
+            h('span', { class: 'panel-title' }, t('step4.panelActiveFacts')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.activeFacts.length }))
           ]),
           props.result.activeFacts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedActive.value ? props.result.activeFacts : props.result.activeFacts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1211,18 +1211,18 @@ const PanoramaDisplay = {
                 h('div', { class: 'fact-content' }, fact)
               ])
             )
-          ) : h('div', { class: 'empty-state' }, t('step4.noActiveMemories')),
+          ) : h('div', { class: 'empty-state' }, t('step4.emptyActiveFacts')),
           props.result.activeFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedActive.value = !expandedActive.value }
-          }, expandedActive.value ? t('step4.collapseBtn') : t('step4.expandAllBtn', { n: props.result.activeFacts.length }))
+          }, expandedActive.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.activeFacts.length }))
         ]),
         
         // Historical Facts Tab
         activeTab.value === 'historical' && h('div', { class: 'facts-panel historical-facts' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, t('step4.historicalMemory')),
-            h('span', { class: 'panel-count' }, t('step4.totalFacts', { n: props.result.historicalFacts.length }))
+            h('span', { class: 'panel-title' }, t('step4.panelHistoricalFacts')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.historicalFacts.length }))
           ]),
           props.result.historicalFacts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedHistorical.value ? props.result.historicalFacts : props.result.historicalFacts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1243,18 +1243,18 @@ const PanoramaDisplay = {
                 ])
               ])
             )
-          ) : h('div', { class: 'empty-state' }, t('step4.noHistoricalMemories')),
+          ) : h('div', { class: 'empty-state' }, t('step4.emptyHistoricalFacts')),
           props.result.historicalFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedHistorical.value = !expandedHistorical.value }
-          }, expandedHistorical.value ? t('step4.collapseBtn') : t('step4.expandAllBtn', { n: props.result.historicalFacts.length }))
+          }, expandedHistorical.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.historicalFacts.length }))
         ]),
         
         // Entities Tab
         activeTab.value === 'entities' && h('div', { class: 'entities-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, t('step4.involvedEntities')),
-            h('span', { class: 'panel-count' }, t('step4.totalEntities', { n: props.result.entities.length }))
+            h('span', { class: 'panel-title' }, t('step4.panelEntities')),
+            h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.entities.length }))
           ]),
           props.result.entities.length > 0 ? h('div', { class: 'entities-grid' },
             (expandedEntities.value ? props.result.entities : props.result.entities.slice(0, 8)).map((entity, i) => 
@@ -1263,11 +1263,11 @@ const PanoramaDisplay = {
                 entity.type && h('span', { class: 'entity-type' }, entity.type)
               ])
             )
-          ) : h('div', { class: 'empty-state' }, t('step4.noInvolvedEntitiesMsg')),
+          ) : h('div', { class: 'empty-state' }, t('step4.emptyEntities')),
           props.result.entities.length > 8 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? t('step4.collapseBtn') : t('step4.expandAllBtn', { n: props.result.entities.length }))
+          }, expandedEntities.value ? t('step4.collapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
         ])
       ])
     ])
@@ -1296,16 +1296,16 @@ const InterviewDisplay = {
     
     const activeIndex = ref(0)
     const expandedAnswers = ref(new Set())
-    // 为每个问题-回答对维护独立的平台选择状态
+    // 为每elementos问题-回答对维护独立的平台选择状态
     const platformTabs = reactive({}) // { 'agentIdx-qIdx': 'twitter' | 'reddit' }
     
-    // 获取某个问题的当前平台选择
+    // 获取某elementos问题的当前平台选择
     const getPlatformTab = (agentIdx, qIdx) => {
       const key = `${agentIdx}-${qIdx}`
       return platformTabs[key] || 'twitter'
     }
     
-    // 设置某个问题的平台选择
+    // 设置某elementos问题的平台选择
     const setPlatformTab = (agentIdx, qIdx, platform) => {
       const key = `${agentIdx}-${qIdx}`
       platformTabs[key] = platform
@@ -1331,7 +1331,7 @@ const InterviewDisplay = {
     const isPlaceholderText = (text) => {
       if (!text) return true
       const t = text.trim()
-      return t === '（该平台未获得回复）' || t === '(该平台未获得回复)' || t === '[无回复]'
+      return t === '（该平台未获得回复）' || t === '(该平台未获得回复)' || t === '[Ninguno回复]'
     }
 
     // 尝试按问题编号分割回答
@@ -1367,7 +1367,7 @@ const InterviewDisplay = {
         }
       }
 
-      // 如果没有找到编号或只找到一个，返回整体
+      // 如果没有找到编号或只找到一elementos，Volver整体
       if (matches.length <= 1) {
         const cleaned = answerText
           .replace(/^问题\d+[：:]\s*/, '')
@@ -1397,7 +1397,7 @@ const InterviewDisplay = {
       return [answerText]
     }
     
-    // 获取某个问题对应的回答
+    // 获取某elementos问题对应的回答
     const getAnswerForQuestion = (interview, qIdx, platform) => {
       const answer = platform === 'twitter' ? interview.twitterAnswer : (interview.redditAnswer || interview.twitterAnswer)
       if (!answer || isPlaceholderText(answer)) return answer || ''
@@ -1405,21 +1405,21 @@ const InterviewDisplay = {
       const questionCount = interview.questions?.length || 1
       const answers = splitAnswerByQuestions(answer, questionCount)
 
-      // 分割成功且索引有效
+      // 分割Éxito且索引有效
       if (answers.length > 1 && qIdx < answers.length) {
         return answers[qIdx] || ''
       }
 
-      // 分割失败：第一个问题返回完整回答，其余返回空
+      // 分割Fallido：第一elementos问题Volver完整回答，其余Volver空
       return qIdx === 0 ? answer : ''
     }
     
-    // 检查某个问题是否有双平台回答（过滤占位文本）
+    // 检查某elementos问题是否有双平台回答（过滤占位文本）
     const hasMultiplePlatforms = (interview, qIdx) => {
       if (!interview.twitterAnswer || !interview.redditAnswer) return false
       const twitterAnswer = getAnswerForQuestion(interview, qIdx, 'twitter')
       const redditAnswer = getAnswerForQuestion(interview, qIdx, 'reddit')
-      // 两个平台都有真实回答（非占位文本）且内容不同
+      // 两elementos平台都有真实回答（非占位文本）且内容不同
       return !isPlaceholderText(twitterAnswer) && !isPlaceholderText(redditAnswer) && twitterAnswer !== redditAnswer
     }
     
@@ -1431,7 +1431,7 @@ const InterviewDisplay = {
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.successCount || props.result.interviews.length),
-              h('span', { class: 'stat-label' }, t('step4.interviewed'))
+              h('span', { class: 'stat-label' }, 'Interviewed')
             ]),
             props.result.totalCount > 0 && h('span', { class: 'stat-divider' }, '/'),
             props.result.totalCount > 0 && h('span', { class: 'stat-item' }, [
@@ -1469,9 +1469,9 @@ const InterviewDisplay = {
           ])
         ]),
         
-        // Selection Reason
+        // Selection Reason - 选择理由
         props.result.interviews[activeIndex.value]?.selectionReason && h('div', { class: 'selection-reason' }, [
-          h('div', { class: 'reason-label' }, t('logs.selectionReason')),
+          h('div', { class: 'reason-label' }, '选择理由'),
           h('div', { class: 'reason-content' }, props.result.interviews[activeIndex.value].selectionReason)
         ]),
         
@@ -1516,7 +1516,7 @@ const InterviewDisplay = {
                           h('line', { x1: '2', y1: '12', x2: '22', y2: '12' }),
                           h('path', { d: 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z' })
                         ]),
-                        h('span', {}, 'Twitter')
+                        h('span', {}, t('step4.world1'))
                       ]),
                       h('button', {
                         class: ['platform-btn', { active: currentPlatform === 'reddit' }],
@@ -1525,7 +1525,7 @@ const InterviewDisplay = {
                         h('svg', { class: 'platform-icon', viewBox: '0 0 24 24', width: 12, height: 12, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
                           h('path', { d: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z' })
                         ]),
-                        h('span', {}, 'Reddit')
+                        h('span', {}, t('step4.world2'))
                       ])
                     ])
                   ]),
@@ -1541,7 +1541,7 @@ const InterviewDisplay = {
                   !isPlaceholder && answerText.length > 400 && h('button', {
                     class: 'expand-answer-btn',
                     onClick: () => toggleAnswer(expandKey)
-                  }, isExpanded ? t('common.showLess') : t('common.showMore'))
+                  }, isExpanded ? 'Show Less' : 'Show More')
                 ])
               ])
             ])
@@ -1581,6 +1581,7 @@ const InterviewDisplay = {
 const QuickSearchDisplay = {
   props: ['result', 'resultLength'],
   setup(props) {
+    const { t } = useI18n()
     const activeTab = ref('facts') // 'facts', 'edges', 'nodes'
     const expandedFacts = ref(false)
     const INITIAL_SHOW_COUNT = 5
@@ -1607,14 +1608,14 @@ const QuickSearchDisplay = {
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
               h('span', { class: 'stat-value' }, props.result.count || props.result.facts.length),
-              h('span', { class: 'stat-label' }, t('step4.results'))
+              h('span', { class: 'stat-label' }, 'Results')
             ]),
             props.resultLength && h('span', { class: 'stat-divider' }, '·'),
             props.resultLength && h('span', { class: 'stat-size' }, formatSize(props.resultLength))
           ])
         ]),
         props.result.query && h('div', { class: 'header-query' }, [
-          h('span', { class: 'query-label' }, t('logs.search') + ': '),
+          h('span', { class: 'query-label' }, t('step4.searchLabel')),
           h('span', { class: 'query-text' }, props.result.query)
         ])
       ]),
@@ -1625,19 +1626,19 @@ const QuickSearchDisplay = {
           class: ['quicksearch-tab', { active: activeTab.value === 'facts' }],
           onClick: () => { activeTab.value = 'facts' }
         }, [
-          h('span', { class: 'tab-label' }, `${t('logs.facts')} (${props.result.facts.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabFacts', { count: props.result.facts.length }))
         ]),
         hasEdges.value && h('button', {
           class: ['quicksearch-tab', { active: activeTab.value === 'edges' }],
           onClick: () => { activeTab.value = 'edges' }
         }, [
-          h('span', { class: 'tab-label' }, `${t('logs.relationships')} (${props.result.edges.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabEdges', { count: props.result.edges.length }))
         ]),
         hasNodes.value && h('button', {
           class: ['quicksearch-tab', { active: activeTab.value === 'nodes' }],
           onClick: () => { activeTab.value = 'nodes' }
         }, [
-          h('span', { class: 'tab-label' }, `${t('logs.nodes')} (${props.result.nodes.length})`)
+          h('span', { class: 'tab-label' }, t('step4.tabNodes', { count: props.result.nodes.length }))
         ])
       ]),
       
@@ -1646,8 +1647,8 @@ const QuickSearchDisplay = {
         // Facts (always show if no tabs, or when facts tab is active)
         ((!showTabs.value) || activeTab.value === 'facts') && h('div', { class: 'facts-panel' }, [
           !showTabs.value && h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, t('logs.searchResults')),
-            h('span', { class: 'panel-count' }, `${props.result.facts.length} ${t('logs.totalResults')}`)
+            h('span', { class: 'panel-title' }, t('step4.panelSearchResults')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.facts.length }))
           ]),
           props.result.facts.length > 0 ? h('div', { class: 'facts-list' },
             (expandedFacts.value ? props.result.facts : props.result.facts.slice(0, INITIAL_SHOW_COUNT)).map((fact, i) => 
@@ -1656,18 +1657,18 @@ const QuickSearchDisplay = {
                 h('div', { class: 'fact-content' }, fact)
               ])
             )
-          ) : h('div', { class: 'empty-state' }, t('logs.noResultsFound')),
+          ) : h('div', { class: 'empty-state' }, t('step4.emptySearchResults')),
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? `收起 ▲` : `展开全部 ${props.result.facts.length} 条 ▼`)
+          }, expandedFacts.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.facts.length }))
         ]),
         
         // Edges Tab
         activeTab.value === 'edges' && hasEdges.value && h('div', { class: 'edges-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, t('logs.relatedRelations')),
-            h('span', { class: 'panel-count' }, `${props.result.edges.length} ${t('logs.totalResults')}`)
+            h('span', { class: 'panel-title' }, t('step4.panelRelatedEdges')),
+            h('span', { class: 'panel-count' }, t('step4.totalCount', { count: props.result.edges.length }))
           ]),
           h('div', { class: 'edges-list' },
             props.result.edges.map((edge, i) => 
@@ -1687,8 +1688,8 @@ const QuickSearchDisplay = {
         // Nodes Tab
         activeTab.value === 'nodes' && hasNodes.value && h('div', { class: 'nodes-panel' }, [
           h('div', { class: 'panel-header' }, [
-            h('span', { class: 'panel-title' }, t('logs.relatedNodes')),
-            h('span', { class: 'panel-count' }, `${props.result.nodes.length} ${t('logs.totalResults')}`)
+            h('span', { class: 'panel-title' }, t('step4.panelRelatedNodes')),
+            h('span', { class: 'panel-count' }, t('step4.totalEntityCount', { count: props.result.nodes.length }))
           ]),
           h('div', { class: 'nodes-grid' },
             props.result.nodes.map((node, i) => 
@@ -1712,9 +1713,9 @@ const statusClass = computed(() => {
 })
 
 const statusText = computed(() => {
-  if (isComplete.value) return t('common.completed')
-  if (agentLogs.value.length > 0) return t('common.generating')
-  return t('common.waiting')
+  if (isComplete.value) return 'Completed'
+  if (agentLogs.value.length > 0) return 'Generating...'
+  return 'Waiting'
 })
 
 const totalSections = computed(() => {
@@ -1775,12 +1776,12 @@ const activeStep = computed(() => {
   const active = steps.find(s => s.status === 'active')
   if (active) return active
   
-  // 如果没有 active，返回最后一个 done 的步骤
+  // 如果没有 active，Volver最后一elementos done 的步骤
   const doneSteps = steps.filter(s => s.status === 'done')
   if (doneSteps.length > 0) return doneSteps[doneSteps.length - 1]
   
-  // 否则返回第一个步骤
-  return steps[0] || { noLabel: '--', title: t('logs.waitingStart'), status: 'todo', meta: '' }
+  // 否则Volver第一elementos步骤
+  return steps[0] || { noLabel: '--', title: 'Pendiente开始', status: 'todo', meta: '' }
 })
 
 const workflowSteps = computed(() => {
@@ -1818,7 +1819,7 @@ const workflowSteps = computed(() => {
   steps.push({
     key: 'complete',
     noLabel: 'OK',
-    title: t('common.completed'),
+    title: 'Complete',
     status: completeStatus,
     meta: completeStatus === 'active' ? 'FINALIZING' : ''
   })
@@ -1901,7 +1902,7 @@ const renderMarkdown = (content) => {
     return `<li class="md-oli" data-level="${level}">${text}</li>`
   })
 
-  // 包装无序列表
+  // 包装Ninguno序列表
   html = html.replace(/(<li class="md-li"[^>]*>.*?<\/li>\s*)+/g, '<ul class="md-ul">$&</ul>')
   // 包装有序列表
   html = html.replace(/(<li class="md-oli"[^>]*>.*?<\/li>\s*)+/g, '<ol class="md-ol">$&</ol>')
@@ -2004,13 +2005,13 @@ const getActionLabel = (action) => {
     'tool_call': 'Tool Call',
     'tool_result': 'Tool Result',
     'llm_response': 'LLM Response',
-    'report_complete': t('common.completed')
+    'report_complete': 'Complete'
   }
   return labels[action] || action
 }
 
 const getLogLevelClass = (log) => {
-  if (log.includes('ERROR') || log.includes('错误')) return 'error'
+  if (log.includes('ERROR') || log.includes('Error')) return 'error'
   if (log.includes('WARNING') || log.includes('警告')) return 'warning'
   // INFO 使用默认颜色，不标记为 success
   return ''
@@ -2068,7 +2069,7 @@ const fetchAgentLog = async () => {
         
         nextTick(() => {
           if (rightPanel.value) {
-            // 如果任务已完成，滚动到顶部；否则滚动到底部跟随最新日志
+            // 如果任务Completado，滚动到顶部；否则滚动到底部跟随最新日志
             if (isComplete.value) {
               rightPanel.value.scrollTop = 0
             } else {
@@ -2113,7 +2114,7 @@ const extractFinalContent = (response) => {
     return trimmedResponse
   }
   
-  // 如果内容较长且包含markdown格式，尝试移除思考过程后返回
+  // 如果内容较长且包含markdown格式，尝试移除思考过程后Volver
   if (response.length > 300 && (response.includes('**') || response.includes('>'))) {
     // 移除 Thought: 开头的思考过程
     const thoughtMatch = response.match(/^Thought:[\s\S]*?(?=\n\n[^T]|\n\n$)/i)
@@ -2177,7 +2178,7 @@ const stopPolling = () => {
 // Lifecycle
 onMounted(() => {
   if (props.reportId) {
-    addLog(`${t('logs.reportAgentInit')}: ${props.reportId}`)
+    addLog(`Report Agent initialized: ${props.reportId}`)
     startPolling()
   }
 })
@@ -5151,4 +5152,11 @@ watch(() => props.reportId, (newId) => {
 .log-msg.error { color: #EF5350; }
 .log-msg.warning { color: #FFA726; }
 .log-msg.success { color: #66BB6A; }
+</style>
+
+<style>
+/* English locale: smaller report title */
+html[lang="en"] .report-header-block .main-title {
+  font-size: 28px;
+}
 </style>

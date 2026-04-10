@@ -1,25 +1,25 @@
 <template>
   <div class="graph-panel">
     <div class="panel-header">
-      <span class="panel-title">{{ $t('graphPanel.title') }}</span>
-      <!-- 顶部工具栏 (Internal Top Right) -->
+      <span class="panel-title">{{ $t('graph.panelTitle') }}</span>
+      <!-- Barra de herramientas superior (interna arriba a la derecha) -->
       <div class="header-tools">
-        <button class="tool-btn" @click="$emit('refresh')" :disabled="loading" :title="t('graph.refreshTooltip')">
+        <button class="tool-btn" @click="$emit('refresh')" :disabled="loading" :title="$t('graph.refreshGraph')">
           <span class="icon-refresh" :class="{ 'spinning': loading }">↻</span>
-          <span class="btn-text">{{ $t('graphPanel.refresh') }}</span>
+          <span class="btn-text">Refresh</span>
         </button>
-        <button class="tool-btn" @click="$emit('toggle-maximize')" :title="t('graphPanel.maximizeTooltip')">
+        <button class="tool-btn" @click="$emit('toggle-maximize')" :title="$t('graph.toggleMaximize')">
           <span class="icon-maximize">⛶</span>
         </button>
       </div>
     </div>
     
     <div class="graph-container" ref="graphContainer">
-      <!-- 图谱可视化 -->
+      <!-- Visualización del grafo -->
       <div v-if="graphData" class="graph-view">
         <svg ref="graphSvg" class="graph-svg"></svg>
         
-        <!-- 构建中/模拟中提示 -->
+        <!-- Indicador de construcción/simulación en curso -->
         <div v-if="currentPhase === 1 || isSimulating" class="graph-building-hint">
           <div class="memory-icon-wrapper">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="memory-icon">
@@ -27,10 +27,10 @@
               <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-4.44-4.04z" />
             </svg>
           </div>
-          {{ isSimulating ? t('graphPanel.memoryUpdating') : t('graphPanel.realtimeUpdating') }}
+          {{ isSimulating ? $t('graph.graphMemoryRealtime') : $t('graph.realtimeUpdating') }}
         </div>
-
-        <!-- 模拟结束后的提示 -->
+        
+        <!-- Indicador después de que termina la simulación -->
         <div v-if="showSimulationFinishedHint" class="graph-building-hint finished-hint">
           <div class="hint-icon-wrapper">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="hint-icon">
@@ -39,8 +39,8 @@
               <line x1="12" y1="8" x2="12.01" y2="8"></line>
             </svg>
           </div>
-          <span class="hint-text">{{ t('graphPanel.processingHint') }}</span>
-          <button class="hint-close-btn" @click="dismissFinishedHint" :title="t('graphPanel.closeHint')">
+          <span class="hint-text">{{ $t('graph.pendingContentHint') }}</span>
+          <button class="hint-close-btn" @click="dismissFinishedHint" :title="$t('graph.closeHint')">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -48,34 +48,34 @@
           </button>
         </div>
         
-        <!-- 节点/边详情面板 -->
+        <!-- Panel de detalles de nodo/borde -->
         <div v-if="selectedItem" class="detail-panel">
           <div class="detail-panel-header">
-            <span class="detail-title">{{ selectedItem.type === 'node' ? $t('graphPanel.nodeDetails') : $t('graphPanel.relationship') }}</span>
+            <span class="detail-title">{{ selectedItem.type === 'node' ? $t('graph.nodeDetails') : $t('graph.relationship') }}</span>
             <span v-if="selectedItem.type === 'node'" class="detail-type-badge" :style="{ background: selectedItem.color, color: '#fff' }">
               {{ selectedItem.entityType }}
             </span>
             <button class="detail-close" @click="closeDetailPanel">×</button>
           </div>
           
-          <!-- 节点详情 -->
+          <!-- Detalles del nodo -->
           <div v-if="selectedItem.type === 'node'" class="detail-content">
             <div class="detail-row">
-              <span class="detail-label">{{ $t('graphPanel.name') }}:</span>
+              <span class="detail-label">Name:</span>
               <span class="detail-value">{{ selectedItem.data.name }}</span>
             </div>
             <div class="detail-row">
-              <span class="detail-label">{{ $t('graphPanel.uuid') }}:</span>
+              <span class="detail-label">UUID:</span>
               <span class="detail-value uuid-text">{{ selectedItem.data.uuid }}</span>
             </div>
             <div class="detail-row" v-if="selectedItem.data.created_at">
-              <span class="detail-label">{{ $t('graphPanel.created') }}:</span>
+              <span class="detail-label">Created:</span>
               <span class="detail-value">{{ formatDateTime(selectedItem.data.created_at) }}</span>
             </div>
             
             <!-- Properties -->
             <div class="detail-section" v-if="selectedItem.data.attributes && Object.keys(selectedItem.data.attributes).length > 0">
-              <div class="section-title">{{ $t('graphPanel.properties') }}:</div>
+              <div class="section-title">Properties:</div>
               <div class="properties-list">
                 <div v-for="(value, key) in selectedItem.data.attributes" :key="key" class="property-item">
                   <span class="property-key">{{ key }}:</span>
@@ -86,13 +86,13 @@
             
             <!-- Summary -->
             <div class="detail-section" v-if="selectedItem.data.summary">
-              <div class="section-title">{{ $t('graphPanel.summary') }}:</div>
+              <div class="section-title">Summary:</div>
               <div class="summary-text">{{ selectedItem.data.summary }}</div>
             </div>
             
             <!-- Labels -->
             <div class="detail-section" v-if="selectedItem.data.labels && selectedItem.data.labels.length > 0">
-              <div class="section-title">{{ $t('graphPanel.labels') }}:</div>
+              <div class="section-title">Labels:</div>
               <div class="labels-list">
                 <span v-for="label in selectedItem.data.labels" :key="label" class="label-tag">
                   {{ label }}
@@ -101,13 +101,13 @@
             </div>
           </div>
           
-          <!-- 边详情 -->
+          <!-- Detalles del borde -->
           <div v-else class="detail-content">
-            <!-- 自环组详情 -->
+            <!-- Detalles del grupo de auto-bucle -->
             <template v-if="selectedItem.data.isSelfLoopGroup">
               <div class="edge-relation-header self-loop-header">
-                {{ selectedItem.data.source_name }} - {{ t('graphPanel.selfRelations') }}
-                <span class="self-loop-count">{{ selectedItem.data.selfLoopCount }} {{ t('graphPanel.items') }}</span>
+                {{ selectedItem.data.source_name }} - Self Relations
+                <span class="self-loop-count">{{ selectedItem.data.selfLoopCount }} items</span>
               </div>
               
               <div class="self-loop-list">
@@ -122,29 +122,29 @@
                     @click="toggleSelfLoop(loop.uuid || idx)"
                   >
                     <span class="self-loop-index">#{{ idx + 1 }}</span>
-                    <span class="self-loop-name">{{ loop.name || loop.fact_type || t('graphPanel.related') }}</span>
+                    <span class="self-loop-name">{{ loop.name || loop.fact_type || 'RELATED' }}</span>
                     <span class="self-loop-toggle">{{ expandedSelfLoops.has(loop.uuid || idx) ? '−' : '+' }}</span>
                   </div>
                   
                   <div class="self-loop-item-content" v-show="expandedSelfLoops.has(loop.uuid || idx)">
                     <div class="detail-row" v-if="loop.uuid">
-                      <span class="detail-label">{{ $t('graphPanel.uuid') }}:</span>
+                      <span class="detail-label">UUID:</span>
                       <span class="detail-value uuid-text">{{ loop.uuid }}</span>
                     </div>
                     <div class="detail-row" v-if="loop.fact">
-                      <span class="detail-label">{{ $t('graphPanel.fact') }}:</span>
+                      <span class="detail-label">Fact:</span>
                       <span class="detail-value fact-text">{{ loop.fact }}</span>
                     </div>
                     <div class="detail-row" v-if="loop.fact_type">
-                      <span class="detail-label">{{ $t('graphPanel.type') }}:</span>
+                      <span class="detail-label">Type:</span>
                       <span class="detail-value">{{ loop.fact_type }}</span>
                     </div>
                     <div class="detail-row" v-if="loop.created_at">
-                      <span class="detail-label">{{ $t('graphPanel.created') }}:</span>
+                      <span class="detail-label">Created:</span>
                       <span class="detail-value">{{ formatDateTime(loop.created_at) }}</span>
                     </div>
                     <div v-if="loop.episodes && loop.episodes.length > 0" class="self-loop-episodes">
-                      <span class="detail-label">{{ $t('graphPanel.episodes') }}:</span>
+                      <span class="detail-label">Episodes:</span>
                       <div class="episodes-list compact">
                         <span v-for="ep in loop.episodes" :key="ep" class="episode-tag small">{{ ep }}</span>
                       </div>
@@ -154,23 +154,23 @@
               </div>
             </template>
             
-            <!-- 普通边详情 -->
+            <!-- Detalles de borde normales -->
             <template v-else>
               <div class="edge-relation-header">
-                {{ selectedItem.data.source_name }} → {{ selectedItem.data.name || t('graphPanel.relatedTo') }} → {{ selectedItem.data.target_name }}
+                {{ selectedItem.data.source_name }} → {{ selectedItem.data.name || 'RELATED_TO' }} → {{ selectedItem.data.target_name }}
               </div>
               
               <div class="detail-row">
-                <span class="detail-label">{{ $t('graphPanel.uuid') }}:</span>
+                <span class="detail-label">UUID:</span>
                 <span class="detail-value uuid-text">{{ selectedItem.data.uuid }}</span>
               </div>
               <div class="detail-row">
-                <span class="detail-label">{{ $t('graphPanel.labels') }}:</span>
-                <span class="detail-value">{{ selectedItem.data.name || t('graphPanel.relatedTo') }}</span>
+                <span class="detail-label">Label:</span>
+                <span class="detail-value">{{ selectedItem.data.name || 'RELATED_TO' }}</span>
               </div>
               <div class="detail-row">
                 <span class="detail-label">Type:</span>
-                <span class="detail-value">{{ selectedItem.data.fact_type || t('graphPanel.unknown') }}</span>
+                <span class="detail-value">{{ selectedItem.data.fact_type || 'Unknown' }}</span>
               </div>
               <div class="detail-row" v-if="selectedItem.data.fact">
                 <span class="detail-label">Fact:</span>
@@ -179,7 +179,7 @@
               
               <!-- Episodes -->
               <div class="detail-section" v-if="selectedItem.data.episodes && selectedItem.data.episodes.length > 0">
-                <div class="section-title">{{ t('graphPanel.episodes') }}:</div>
+                <div class="section-title">Episodes:</div>
                 <div class="episodes-list">
                   <span v-for="ep in selectedItem.data.episodes" :key="ep" class="episode-tag">
                     {{ ep }}
@@ -188,11 +188,11 @@
               </div>
               
               <div class="detail-row" v-if="selectedItem.data.created_at">
-                <span class="detail-label">{{ $t('graphPanel.created') }}:</span>
+                <span class="detail-label">Created:</span>
                 <span class="detail-value">{{ formatDateTime(selectedItem.data.created_at) }}</span>
               </div>
               <div class="detail-row" v-if="selectedItem.data.valid_at">
-                <span class="detail-label">{{ $t('graphPanel.validFrom') }}:</span>
+                <span class="detail-label">Valid From:</span>
                 <span class="detail-value">{{ formatDateTime(selectedItem.data.valid_at) }}</span>
               </div>
             </template>
@@ -200,22 +200,22 @@
         </div>
       </div>
       
-      <!-- 加载状态 -->
+      <!-- estado de carga -->
       <div v-else-if="loading" class="graph-state">
         <div class="loading-spinner"></div>
-        <p>{{ t('graphPanel.loadingGraph') }}</p>
+        <p>{{ $t('graph.graphDataLoading') }}</p>
       </div>
-
-      <!-- 等待/空状态 -->
+      
+      <!-- estado Pendiente/vacío -->
       <div v-else class="graph-state">
         <div class="empty-icon">❖</div>
-        <p class="empty-text">{{ t('graphPanel.waitingOntology') }}</p>
+        <p class="empty-text">{{ $t('graph.waitingOntology') }}</p>
       </div>
     </div>
 
-    <!-- 底部图例 (Bottom Left) -->
+    <!-- leyenda inferior (Bottom Left) -->
     <div v-if="graphData && entityTypes.length" class="graph-legend">
-      <span class="legend-title">{{ $t('graphPanel.entityTypes') }}</span>
+      <span class="legend-title">Entity Types</span>
       <div class="legend-items">
         <div class="legend-item" v-for="type in entityTypes" :key="type.name">
           <span class="legend-dot" :style="{ background: type.color }"></span>
@@ -224,23 +224,20 @@
       </div>
     </div>
     
-    <!-- 显示边标签开关 -->
+    <!-- interruptor para mostrar etiquetas de borde -->
     <div v-if="graphData" class="edge-labels-toggle">
       <label class="toggle-switch">
         <input type="checkbox" v-model="showEdgeLabels" />
         <span class="slider"></span>
       </label>
-      <span class="toggle-label">{{ $t('graphPanel.showEdgeLabels') }}</span>
+      <span class="toggle-label">Show Edge Labels</span>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import * as d3 from 'd3'
-
-const { t } = useI18n()
 
 const props = defineProps({
   graphData: Object,
@@ -256,10 +253,10 @@ const graphSvg = ref(null)
 const selectedItem = ref(null)
 const showEdgeLabels = ref(true) // 默认显示边标签
 const expandedSelfLoops = ref(new Set()) // 展开的自环项
-const showSimulationFinishedHint = ref(false) // 模拟结束后的提示
+const showSimulationFinishedHint = ref(false) // Indicador después de que termina la simulación
 const wasSimulating = ref(false) // 追踪之前是否在模拟中
 
-// 关闭模拟结束提示
+// Cerrar模拟结束提示
 const dismissFinishedHint = () => {
   showSimulationFinishedHint.value = false
 }
@@ -358,7 +355,7 @@ const renderGraph = () => {
   
   const nodes = nodesData.map(n => ({
     id: n.uuid,
-    name: n.name || t('graphPanel.unnamed'),
+    name: n.name || 'Unnamed',
     type: n.labels?.find(l => l !== 'Entity') || 'Entity',
     rawData: n
   }))
@@ -399,7 +396,7 @@ const renderGraph = () => {
     const isSelfLoop = e.source_node_uuid === e.target_node_uuid
     
     if (isSelfLoop) {
-      // 自环边 - 每个节点只添加一条合并的自环
+      // 自环边 - 每elementos节点只添加一条合并的自环
       if (processedSelfLoopNodes.has(e.source_node_uuid)) {
         return // 已处理过，跳过
       }
@@ -506,7 +503,7 @@ const renderGraph = () => {
     
     // 检测自环
     if (d.isSelfLoop) {
-      // 自环：绘制一个圆弧从节点出发再返回
+      // 自环：绘制一elementos圆弧从节点出发再Volver
       const loopRadius = 30
       // 从节点右侧出发，绕一圈回来
       const x1 = sx + 8  // 起点偏移
@@ -745,7 +742,7 @@ const renderGraph = () => {
     // 更新曲线路径
     link.attr('d', d => getLinkPath(d))
     
-    // 更新边标签位置（无旋转，水平显示更清晰）
+    // 更新边标签位置（Ninguno旋转，水平显示更清晰）
     linkLabels.each(function(d) {
       const mid = getLinkMidpoint(d)
       d3.select(this)
@@ -776,7 +773,7 @@ const renderGraph = () => {
       .attr('y', d => d.y)
   })
   
-  // 点击空白处关闭详情面板
+  // 点击空白处Cerrar详情面板
   svg.on('click', () => {
     selectedItem.value = null
     node.attr('stroke', '#fff').attr('stroke-width', 2.5)
@@ -1253,7 +1250,7 @@ input:checked + .slider:before {
   50% { opacity: 1; transform: scale(1.15); filter: drop-shadow(0 0 8px rgba(76, 175, 80, 0.6)); }
 }
 
-/* 模拟结束后的提示样式 */
+/* Indicador después de que termina la simulación样式 */
 .graph-building-hint.finished-hint {
   background: rgba(0, 0, 0, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.1);

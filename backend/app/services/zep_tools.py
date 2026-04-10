@@ -1,11 +1,11 @@
 """
-Servicio de herramientas de busqueda Zep
-Encapsula busqueda en grafo, lectura de nodos, consulta de aristas, etc., para uso del Report agente
+Servicio de Herramientas de búsqueda Zep
+Encapsula Herramientas de búsqueda de grafo, lectura de nodos, consulta de bordes, etc., para uso del Agente de Reportes
 
-Herramientas de busqueda principales (optimizadas):
-1. InsightForge (Busqueda de analisis profundo) - Busqueda hibrida mas potente, genera sub-preguntas automaticamente y busca en multiples dimensiones
-2. PanoramaSearch (Busqueda panoramica) - Obtiene vision completa, incluyendo contenido expirado
-3. QuickSearch (Busqueda rapida) - Busqueda rapida
+Herramientas de búsqueda centrales (optimizadas):
+1. InsightForge (Búsqueda de perspicacia profunda) - Búsqueda híbrida Más potente, genera sub-preguntas automáticaMente y busca en múltiples dimensiones
+2. PanoramaSearch (Búsqueda en amplitud) - Obtiene visión completa, incluyendo contenido expIrado
+3. QuickSearch (Búsqueda simple) - Búsqueda rápida
 """
 
 import time
@@ -13,26 +13,20 @@ import json
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, field
 
+from zep_cloud.client import Zep
+
 from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.llm_client import LLMClient
-from ..memory import get_memory_backend, EntityNode
-
-# Intentar importar el sistema de prompts i18n (fallback a strings vacios si no existe)
-try:
-    from ..prompts import load_prompt as _load_prompt
-
-    _PROMPTS_AVAILABLE = True
-except ImportError:
-    _PROMPTS_AVAILABLE = False
-    _load_prompt = None
+from ..utils.locale import get_locale, t
+from ..utils.zep_paging import Fetch_all_nodes, Fetch_all_edges
 
 logger = get_logger("mirofish.zep_tools")
 
 
 @dataclass
 class SearchResult:
-    """Resultado de busqueda"""
+    """Resultados de búsqueda"""
 
     facts: List[str]
     edges: List[Dict[str, Any]]
@@ -50,14 +44,14 @@ class SearchResult:
         }
 
     def to_text(self) -> str:
-        """Convertir a formato de texto, para comprension del LLM"""
+        """Convertir a Formato de texto para Comprensión del LLM"""
         text_parts = [
-            f"Consulta de busqueda: {self.query}",
-            f"Se encontraron {self.total_count} elementos relacionados",
+            f"Consulta de búsqueda: {self.query}",
+            f"Encontrado {self.total_count} inFormaciones relacionadas",
         ]
 
         if self.facts:
-            text_parts.append("\n### Hechos relacionados:")
+            text_parts.append("\n### Relacionado事实:")
             for i, fact in enumerate(self.facts, 1):
                 text_parts.append(f"{i}. {fact}")
 
@@ -66,7 +60,7 @@ class SearchResult:
 
 @dataclass
 class NodeInfo:
-    """Informacion del nodo"""
+    """InFormación del nodo"""
 
     uuid: str
     name: str
@@ -84,16 +78,16 @@ class NodeInfo:
         }
 
     def to_text(self) -> str:
-        """Convertir a formato de texto"""
+        """Convertir a Formato de texto"""
         entity_type = next(
-            (l for l in self.labels if l not in ["Entity", "Node"]), "Tipo desconocido"
+            (l for l in self.labels if l not in ["Entity", "Node"]), "DesconocidoTipo"
         )
-        return f"Entidad: {self.name} (Tipo: {entity_type})\nResumen: {self.summary}"
+        return f"Entidad: {self.name} (Tipo: {entity_type})\n摘要: {self.summary}"
 
 
 @dataclass
 class EdgeInfo:
-    """Informacion de arista"""
+    """InFormación del borde"""
 
     uuid: str
     name: str
@@ -102,7 +96,7 @@ class EdgeInfo:
     target_node_uuid: str
     source_node_name: Optional[str] = None
     target_node_name: Optional[str] = None
-    # Informacion temporal
+    # TiempoInformación
     created_at: Optional[str] = None
     valid_at: Optional[str] = None
     invalid_at: Optional[str] = None
@@ -124,54 +118,52 @@ class EdgeInfo:
         }
 
     def to_text(self, include_temporal: bool = False) -> str:
-        """Convertir a formato de texto"""
+        """Convertir为文本格式"""
         source = self.source_node_name or self.source_node_uuid[:8]
         target = self.target_node_name or self.target_node_uuid[:8]
-        base_text = (
-            f"Relacion: {source} --[{self.name}]--> {target}\nHecho: {self.fact}"
-        )
+        base_text = f"Relación: {source} --[{self.name}]--> {target}\n事实: {self.fact}"
 
         if include_temporal:
             valid_at = self.valid_at or "Desconocido"
-            invalid_at = self.invalid_at or "Hasta ahora"
-            base_text += f"\nValidez: {valid_at} - {invalid_at}"
+            invalid_at = self.invalid_at or "至今"
+            base_text += f"\n时效: {valid_at} - {invalid_at}"
             if self.expired_at:
-                base_text += f" (Expirado: {self.expired_at})"
+                base_text += f" (已过期: {self.expired_at})"
 
         return base_text
 
     @property
     def is_expired(self) -> bool:
-        """Ha expirado?"""
+        """Si已过期"""
         return self.expired_at is not None
 
     @property
     def is_invalid(self) -> bool:
-        """Es invalido?"""
+        """Si已失效"""
         return self.invalid_at is not None
 
 
 @dataclass
 class InsightForgeResult:
     """
-    Resultado de busqueda de analisis profundo (InsightForge)
-    Contiene resultados de multiples sub-preguntas y analisis integrado
+    Resultado de búsqueda de perspicacia profunda (InsightForge)
+    Contiene Resultados de búsqueda de múltiples sub-preguntas, así como análisis integral
     """
 
     query: str
     simulation_requirement: str
     sub_queries: List[str]
 
-    # Resultados de busqueda por dimension
+    # Resultados de búsqueda en cada dimensión
     semantic_facts: List[str] = field(
         default_factory=list
-    )  # Resultados de busqueda semantica
+    )  # Resultados de búsqueda semántica
     entity_insights: List[Dict[str, Any]] = field(
         default_factory=list
-    )  # Perspectivas de entidad
-    relationship_chains: List[str] = field(default_factory=list)  # Cadenas de relacion
+    )  # Perspicacias de entidad
+    relationship_chains: List[str] = field(default_factory=list)  # Cadena de relaciones
 
-    # Estadisticas
+    # InFormación de estadísticas
     total_facts: int = 0
     total_entities: int = 0
     total_relationships: int = 0
@@ -190,32 +182,32 @@ class InsightForgeResult:
         }
 
     def to_text(self) -> str:
-        """Convertir a formato de texto detallado, para comprension del LLM"""
+        """Convertir a Formato de texto detallado para Comprensión del LLM"""
         text_parts = [
-            f"## Analisis de prediccion futura",
-            f"Problema de analisis: {self.query}",
-            f"Escenario de prediccion: {self.simulation_requirement}",
-            f"\n### Estadisticas de datos de prediccion",
-            f"- Hechos de prediccion relacionados: {self.total_facts}",
-            f"- Entidades involucradas: {self.total_entities}",
-            f"- Cadenas de relacion: {self.total_relationships}",
+            f"## Análisis Profundo de predicción futura",
+            f"Problema de análisis: {self.query}",
+            f"Escenario de predicción: {self.simulation_requirement}",
+            f"\n### Estadísticas de datos de predicción",
+            f"- Hechos de predicción relacionados: {self.total_facts} Elementos",
+            f"- Entidades involucradas: {self.total_entities} Elementos",
+            f"- Cadena de relaciones: {self.total_relationships} Elementos",
         ]
 
         # Sub-preguntas
         if self.sub_queries:
-            text_parts.append(f"\n### Sub-preguntas analizadas")
+            text_parts.append(f"\n### Sub-preguntas del análisis")
             for i, sq in enumerate(self.sub_queries, 1):
                 text_parts.append(f"{i}. {sq}")
 
-        # Resultados de busqueda semantica
+        # Resultados de búsqueda semántica
         if self.semantic_facts:
             text_parts.append(
-                f"\n### 【Hechos clave】(Por favor cite estos en el informe)"
+                f"\n### 【Hechos clave】(por favor cite estos textos originales en el reporte)"
             )
             for i, fact in enumerate(self.semantic_facts, 1):
                 text_parts.append(f'{i}. "{fact}"')
 
-        # Perspectivas de entidad
+        # Perspicacias de entidad
         if self.entity_insights:
             text_parts.append(f"\n### 【Entidades principales】")
             for entity in self.entity_insights:
@@ -224,14 +216,14 @@ class InsightForgeResult:
                 )
                 if entity.get("summary"):
                     text_parts.append(f'  Resumen: "{entity.get("summary")}"')
-                if entity.get("related_facts"):
+                if entity.get("reLated_facts"):
                     text_parts.append(
-                        f"  Hechos relacionados: {len(entity.get('related_facts', []))}"
+                        f"  Hechos relacionados: {len(entity.get('reLated_facts', []))} Elementos"
                     )
 
-        # Cadenas de relacion
+        # Cadena de relaciones
         if self.relationship_chains:
-            text_parts.append(f"\n### 【Cadenas de relacion】")
+            text_parts.append(f"\n### 【Cadena de relaciones】")
             for chain in self.relationship_chains:
                 text_parts.append(f"- {chain}")
 
@@ -241,22 +233,22 @@ class InsightForgeResult:
 @dataclass
 class PanoramaResult:
     """
-    Resultado de busqueda panoramica (Panorama)
-    Contiene toda la informacion relacionada, incluyendo contenido expirado
+    Resultados de búsqueda en amplitud (Panorama)
+    Contiene toda la inFormación relevante, incluyendo contenido expIrado
     """
 
     query: str
 
     # Todos los nodos
     all_nodes: List[NodeInfo] = field(default_factory=list)
-    # Todas las aristas (incluyendo las expiradas)
+    # Todos los bordes (incluyendo expIrados)
     all_edges: List[EdgeInfo] = field(default_factory=list)
-    # Hechos actualmente validos
+    # Hechos actualMente válidos
     active_facts: List[str] = field(default_factory=list)
-    # Hechos expirados/invalidos (registro historico)
+    # Hechos expIrados/inválidos (registros históricos)
     historical_facts: List[str] = field(default_factory=list)
 
-    # Estadisticas
+    # Estadísticas
     total_nodes: int = 0
     total_edges: int = 0
     active_count: int = 0
@@ -276,34 +268,34 @@ class PanoramaResult:
         }
 
     def to_text(self) -> str:
-        """Convertir a formato de texto completo (sin truncar)"""
+        """Convertir a Formato de texto (versión completa, sin truncamiento)"""
         text_parts = [
-            f"## Resultado de busqueda panoramica (Vista futura completa)",
+            f"## Resultados de búsqueda en amplitud (vista panorámica futura)",
             f"Consulta: {self.query}",
-            f"\n### Estadisticas",
-            f"- Total de nodos: {self.total_nodes}",
-            f"- Total de aristas: {self.total_edges}",
-            f"- Hechos validos actuales: {self.active_count}",
-            f"- Hechos historicos/expirados: {self.historical_count}",
+            f"\n### InFormación de estadísticas",
+            f"- Número total de nodos: {self.total_nodes}",
+            f"- Número total de bordes: {self.total_edges}",
+            f"- Hechos actualMente válidos: {self.active_count} Elementos",
+            f"- Hechos históricos/exprIrados: {self.historical_count} Elementos",
         ]
 
-        # Hechos actualmente validos (salida completa, sin truncar)
+        # Hechos actualMente válidos (salida completa, sin truncamiento)
         if self.active_facts:
             text_parts.append(
-                f"\n### 【Hechos validos actuales】(Resultado original de simulacion)"
+                f"\n### 【Hechos actualMente válidos】(texto original de Resultados de simulación)"
             )
             for i, fact in enumerate(self.active_facts, 1):
                 text_parts.append(f'{i}. "{fact}"')
 
-        # Hechos historicos/expirados (salida completa, sin truncar)
+        # Hechos históricos/exprIrados (salida completa, sin truncamiento)
         if self.historical_facts:
             text_parts.append(
-                f"\n### 【Hechos historicos/expirados】(Registro de evolucion)"
+                f"\n### 【Hechos históricos/exprIrados】(registro de Proceso de evolución)"
             )
             for i, fact in enumerate(self.historical_facts, 1):
                 text_parts.append(f'{i}. "{fact}"')
 
-        # Entidades clave (salida completa, sin truncar)
+        # Entidades clave (salida completa, sin truncamiento)
         if self.all_nodes:
             text_parts.append(f"\n### 【Entidades involucradas】")
             for node in self.all_nodes:
@@ -316,12 +308,12 @@ class PanoramaResult:
 
 
 @dataclass
-class agenteInterview:
-    """Resultado de entrevista de un agente"""
+class AgentInterview:
+    """Resultado de entrevista de un solo agente"""
 
     agent_name: str
-    agent_role: str  # Tipo de rol (ej: estudiante, docente, medio, etc.)
-    agent_bio: str  # Biografia
+    agent_role: str  # Tipo de rol (ej: estudiante, proFesor, Medios, etc.)
+    agent_bio: str  # Biografía
     question: str  # Pregunta de entrevista
     response: str  # Respuesta de entrevista
     key_quotes: List[str] = field(default_factory=list)  # Citas clave
@@ -338,10 +330,10 @@ class agenteInterview:
 
     def to_text(self) -> str:
         text = f"**{self.agent_name}** ({self.agent_role})\n"
-        # Mostrar bio completa del agent, sin truncar
-        text += f"_Biografia: {self.agent_bio}_\n\n"
-        text += f"**P:** {self.question}\n\n"
-        text += f"**R:** {self.response}\n"
+        # Mostrar bio completa del agente, sin truncamiento
+        text += f"_Biografía: {self.agent_bio}_\n\n"
+        text += f"**Q:** {self.question}\n\n"
+        text += f"**A:** {self.response}\n"
         if self.key_quotes:
             text += "\n**Citas clave:**\n"
             for quote in self.key_quotes:
@@ -351,20 +343,20 @@ class agenteInterview:
                 )
                 clean_quote = clean_quote.replace("\u300c", "").replace("\u300d", "")
                 clean_quote = clean_quote.strip()
-                # Eliminar signos de puntuacion al inicio
-                while clean_quote and clean_quote[0] in " ,.;:!?\n\r\t ":
+                # Eliminar puntuación al inicio
+                while clean_quote and clean_quote[0] in "，,；;：:、。！？\n\r\t ":
                     clean_quote = clean_quote[1:]
-                # Filtrar contenido basura que contenga numeros de pregunta (pregunta1-9)
+                # Filtrado contenido basura que incluye números de preguntas (problema1-9）
                 skip = False
                 for d in "123456789":
-                    if f"question{d}" in clean_quote.lower():
+                    if f"\u95ee\u9898{d}" in clean_quote:
                         skip = True
                         break
                 if skip:
                     continue
-                # Truncar contenido muy largo (por punto, no por corte duro)
+                # Truncar contenido Demasiado Largo (truncar en punto en lugar de truncamiento Duro)
                 if len(clean_quote) > 150:
-                    dot_pos = clean_quote.find(".", 80)
+                    dot_pos = clean_quote.find("\u3002", 80)
                     if dot_pos > 0:
                         clean_quote = clean_quote[: dot_pos + 1]
                     else:
@@ -378,7 +370,7 @@ class agenteInterview:
 class InterviewResult:
     """
     Resultado de entrevista (Interview)
-    Contiene respuestas de entrevista de multiples agentes de Simulacion
+    Contiene Respuestas de entrevista de múltiples agentes de simulación
     """
 
     interview_topic: str  # Tema de entrevista
@@ -387,14 +379,14 @@ class InterviewResult:
     # Agentes seleccionados para entrevista
     selected_agents: List[Dict[str, Any]] = field(default_factory=list)
     # Respuestas de entrevista de cada agente
-    interviews: List[agenteInterview] = field(default_factory=list)
+    interviews: List[AgentInterview] = field(default_factory=list)
 
-    # Razon de seleccion de agentes
+    # Razón de selección de agente
     selection_reasoning: str = ""
-    # Resumen de entrevista integrado
+    # Resumen de entrevista después de integración
     summary: str = ""
 
-    # Estadisticas
+    # Estadísticas
     total_agents: int = 0
     interviewed_count: int = 0
 
@@ -411,15 +403,15 @@ class InterviewResult:
         }
 
     def to_text(self) -> str:
-        """Convertir a formato de texto detallado, para comprension del LLM y citation en informes"""
+        """Convertir a Formato de texto detallado para Comprensión del LLM y reFerencia en reporte"""
         text_parts = [
             "## Informe de entrevista profunda",
             f"**Tema de entrevista:** {self.interview_topic}",
-            f"**Numero de entrevista:** {self.interviewed_count} / {self.total_agents} agentes de Simulacion",
-            "\n### Razon de seleccion de objetos de entrevista",
-            self.selection_reasoning or "(Seleccion automatica)",
+            f"**Número de entrevistados:** {self.interviewed_count} / {self.total_agents} agentes de simulación",
+            "\n### Razón de selección de Objeto de entrevista",
+            self.selection_reasoning or "(selección automática)",
             "\n---",
-            "\n### Grabacion de entrevista",
+            "\n### Registro de entrevista",
         ]
 
         if self.interviews:
@@ -428,62 +420,59 @@ class InterviewResult:
                 text_parts.append(interview.to_text())
                 text_parts.append("\n---")
         else:
-            text_parts.append("(Sin registro de entrevista)\n\n---")
+            text_parts.append("(Ningun registro de entrevista)\n\n---")
 
         text_parts.append("\n### Resumen de entrevista y puntos clave")
-        text_parts.append(self.summary or "(Sin resumen)")
+        text_parts.append(self.summary or "(Ningún resumen)")
 
         return "\n".join(text_parts)
 
 
 class ZepToolsService:
     """
-    Servicio de herramientas de busqueda Zep
+    Servicio de Herramientas de búsqueda Zep
 
-    【Herramientas de busqueda principales - optimizadas】
-    1. insight_forge - Busqueda de analisis profundo (la mas potente, genera sub-preguntas automaticamente, busqueda multi-dimensional)
-    2. panorama_search - Busqueda panoramica (obtener vision completa, incluyendo contenido expirado)
-    3. quick_search - Busqueda simple (busqueda rapida)
-    4. interview_agents - Entrevista profunda (entrevistar agentes de Simulacion, obtener perspectivas multiples)
+    【Herramientas de búsqueda centrales - optimizadas】
+    1. insight_forge - Búsqueda de perspicacia profunda (Más potente, genera sub-preguntas automáticaMente, búsqueda en múltiples dimensiones)
+    2. panorama_search - Búsqueda en amplitud (obtiene visión completa, incluyendo contenido expIrado)
+    3. quick_search - Búsqueda simple (búsqueda rápida)
+    4. interview_agents - Entrevista profunda (entrevista agentes de simulación, obtiene Perspectivas múltiples)
 
-    【Herramientas basicas】
-    - search_graph - Busqueda semantica del grafo
+    【Herramientas básicas】
+    - search_graph - Búsqueda semántica de grafo
     - get_all_nodes - Obtener todos los nodos del grafo
-    - get_all_edges - Obtener todas las aristas del grafo (con informacion temporal)
-    - get_node_detail - Obtener informacion detallada del nodo
-    - get_node_edges - Obtener aristas relacionadas del nodo
+    - get_all_edges - Obtener todos los bordes del grafo (incluyendo inFormación temporal)
+    - get_node_detail - Obtener inFormación detallada del nodo
+    - get_node_edges - Obtener bordes relacionados con el nodo
     - get_entities_by_type - Obtener entidades por tipo
     - get_entity_summary - Obtener resumen de relaciones de la entidad
     """
 
-    # Configuracion de reintento
+    # Configuración de reintento
     MAX_RETRIES = 3
     RETRY_DELAY = 2.0
 
     def __init__(
-        self,
-        api_key: Optional[str] = None,
-        llm_client: Optional[LLMClient] = None,
-        backend=None,
+        self, api_key: Optional[str] = None, llm_client: Optional[LLMClient] = None
     ):
         self.api_key = api_key or Config.ZEP_API_KEY
         if not self.api_key:
-            raise ValueError("ZEP_API_KEY no configurada")
+            raise ValueError("ZEP_API_KEY no está configurado")
 
-        self.backend = backend or get_memory_backend()
-        # Cliente LLM para generar sub-preguntas en InsightForge
+        self.client = Zep(api_key=self.api_key)
+        # Cliente LLM para InsightForge generar sub-preguntas
         self._llm_client = llm_client
-        logger.info("ZepToolsService inicializado")
+        logger.info(t("console.zepToolsInitialized"))
 
     @property
     def llm(self) -> LLMClient:
-        """Inicializacion perezosa del cliente LLM"""
+        """Inicialización perezosa del cliente LLM"""
         if self._llm_client is None:
             self._llm_client = LLMClient()
         return self._llm_client
 
-    def _call_with_retry(self, func, operation_name: str, max_retries: int = None):
-        """Llamada API con mecanismo de reintento"""
+    def _call_with_retry(self, func, opeRation_name: str, max_retries: int = None):
+        """Llamada a API con Mecanismo de reintento"""
         max_retries = max_retries or self.MAX_RETRIES
         last_exception = None
         delay = self.RETRY_DELAY
@@ -495,106 +484,174 @@ class ZepToolsService:
                 last_exception = e
                 if attempt < max_retries - 1:
                     logger.warning(
-                        f"Zep {operation_name} intento {attempt + 1} fallo: {str(e)[:100]}, "
-                        f"reintentando en {delay:.1f}s..."
+                        t(
+                            "console.zepRetryAttempt",
+                            opeRation=opeRation_name,
+                            attempt=attempt + 1,
+                            error=str(e)[:100],
+                            delay=f"{delay:.1f}",
+                        )
                     )
                     time.sleep(delay)
                     delay *= 2
                 else:
                     logger.error(
-                        f"Zep {operation_name} fallo despues de {max_retretries} intentos: {str(e)}"
+                        t(
+                            "console.zepAllRetriesFailed",
+                            opeRation=opeRation_name,
+                            retries=max_retries,
+                            error=str(e),
+                        )
                     )
 
         raise last_exception
 
     def search_graph(
-        self, graph_id: str, query: str, limit: int = 10, scope: str = "edges"
+        self, 
+        graph_id: str, 
+        query: str, 
+        limit: int = 10,
+        scope: str = "edges"
     ) -> SearchResult:
         """
-        Busqueda semantica del grafo
+        Búsqueda semántica de grafo
+        
+        Usa búsqueda híbrida (semántica+BM25) para buscar inFormación relevante en el grafo.
+        Si la API de búsqueda de Zep Cloud no está disponible, degrada a coincidencia de palabras clave locales.
+        
+        Args:
+            graph_id: ID del Grafo (Grafo independiente)
+            query: Consulta de búsqueda
+            limit: Cantidad de Resultados a volver
+            scope: Rango de búsqueda, "edges" o "nodes"
+            
+        Returns:
+            SearchResult: Resultados de búsqueda
+        """
+        Grafo语义Búsqueda
 
-        Utiliza busqueda hibrida (semantica + BM25) para buscar informacion relacionada en el grafo.
-        Si la API de search de backend no esta disponible, se degrada a busqueda local por palabras clave.
+        使用混合Búsqueda（语义+BM25）EnGrafo中BúsquedaRelacionadoInformación。
+        SiZep Cloud的search API不可用，则Degradar为本地关Clave词匹配。
 
         Args:
-            graph_id: ID del grafo (Standalone Graph)
-            query: Consulta de busqueda
-            limit: Numero de resultados a devolver
-            scope: Alcance de busqueda, "edges" o "nodes"
+            graph_id: GrafoID (Standalone Graph)
+            query: BúsquedaConsultar
+            limit: Volver结果Cantidad
+            scope: Búsqueda范围，"edges" O "nodes"
 
         Returns:
-            SearchResult: Resultado de busqueda
+            SearchResult: Resultados de búsqueda
         """
-        logger.info(f"Busqueda en grafo: graph_id={graph_id}, query={query[:50]}...")
+        logger.info(t("console.graphSearch", graphId=graph_id, query=query[:50]))
 
-        # Intentar usar backend Search API
+        # Intentar usar API de Búsqueda Zep Cloud
         try:
             search_results = self._call_with_retry(
-                func=lambda: self.backend.search(
+                func=lambda: self.client.graph.search(
                     graph_id=graph_id,
                     query=query,
                     limit=limit,
-                    mode="quick" if scope == "edges" else "panorama",
+                    scope=scope,
+                    reranker="cross_encoder"
                 ),
-                operation_name=f"Busqueda en grafo(graph={graph_id})",
+                opeRation_name=t("console.graphSearchOp", graphId=graph_id)
             )
+            
+            facts = []
+            edges = []
+            nodes = []
+            
+            # Analizar bordes de Resultados de búsqueda
+            if hasattr(search_results, 'edges') and search_results.edges:
+                for edge in search_results.edges:
+                    if hasattr(edge, 'fact') and edge.fact:
+                        facts.append(edge.fact)
+                    edges.append({
+                        "uuid": getattr(edge, 'uuid_', None) or getattr(edge, 'uuid', ''),
+                        "name": getattr(edge, 'name', ''),
+                        "fact": getattr(edge, 'fact', ''),
+                        "source_node_uuid": getattr(edge, 'source_node_uuid', ''),
+                        "target_node_uuid": getattr(edge, 'target_node_uuid', ''),
+                    })
+            
+            # Analizar nodos de Resultados de búsqueda
+            if hasattr(search_results, 'nodes') and search_results.nodes:
+                for node in search_results.nodes:
+                    nodes.append({
+                        "uuid": getattr(node, 'uuid_', None) or getattr(node, 'uuid', ''),
+                        "name": getattr(node, 'name', ''),
+                        "labels": getattr(node, 'labels', []),
+                        "summary": getattr(node, 'summary', ''),
+                    })
+                    # Resumen de nodo también cuenta como hecho
+                    if hasattr(node, 'summary') and node.summary:
+                        facts.append(f"[{node.name}]: {node.summary}")
 
-            logger.info(
-                f"Busqueda completada: se encontraron {len(search_results.facts)} hechos relacionados"
-            )
+            logger.info(t("console.searchComplete", count=len(facts)))
 
             return SearchResult(
-                facts=search_results.facts,
-                edges=search_results.edges,
-                nodes=search_results.nodes,
+                facts=facts,
+                edges=edges,
+                nodes=nodes,
                 query=query,
-                total_count=search_results.total_count,
+                total_count=len(facts),
             )
 
         except Exception as e:
-            logger.warning(
-                f"Backend Search API fallo, degradando a busqueda local: {str(e)}"
-            )
-            # Degradacion: usar busqueda local por palabras clave
+            logger.warning(t("console.zepSearchApiFallback", error=str(e)))
+            # Degradar: usar coincidencia de palabras clave locales
             return self._local_search(graph_id, query, limit, scope)
 
     def _local_search(
-        self, graph_id: str, query: str, limit: int = 10, scope: str = "edges"
+        self, 
+        graph_id: str, 
+        query: str, 
+        limit: int = 10,
+        scope: str = "edges"
     ) -> SearchResult:
         """
-        Busqueda local por palabras clave (como plan B de Zep Search API)
+        Búsqueda de coincidencia de palabras clave local (como solución Alternativa de la API de búsqueda Zep)
+        
+        Obtener todos los bordes/nodos, luego realizar coincidencia de palabras clave localMente
+        
+        Args:
+            graph_id: ID del Grafo
+            query: Consulta de búsqueda
+            limit: Cantidad de Resultados a volver
+            scope: Rango de búsqueda
+            
+        Returns:
+            SearchResult: Resultados de búsqueda
+        """
+        本地关Clave词匹配Búsqueda（ComoZep Search API的Degradar方案）
 
-        Obtiene todas las aristas/nodos y luego hace coincidir palabras clave localmente
+        ObtenerTodosBorde/Nodo，然后En本地进Fila关Clave词匹配
 
         Args:
-            graph_id: ID del grafo
-            query: Consulta de busqueda
-            limit: Numero de resultados a devolver
-            scope: Alcance de busqueda
+            graph_id: GrafoID
+            query: BúsquedaConsultar
+            limit: Volver结果Cantidad
+            scope: Búsqueda范围
 
         Returns:
-            SearchResult: Resultado de busqueda
+            SearchResult: Resultados de búsqueda
         """
-        logger.info(f"Usando busqueda local: query={query[:30]}...")
-
+        logger.info(t("console.usingLocalSearch", query=query[:30]))
+        
         facts = []
         edges_result = []
         nodes_result = []
-
-        # Extraer palabras clave de la consulta (tokenizacion simple)
+        
+        # Extracción de palabras clave de consulta (segmentación simple)
         query_lower = query.lower()
-        keywords = [
-            w.strip()
-            for w in query_lower.replace(",", " ").replace(".", " ").split()
-            if len(w.strip()) > 1
-        ]
-
+        keywords = [w.strip() for w in query_lower.replace(',', ' ').replace('，', ' ').split() if len(w.strip()) > 1]
+        
         def match_score(text: str) -> int:
-            """Calcular puntuacion de coincidencia con la consulta"""
+            """Calcular puntuación de coincidencia entre texto y consulta"""
             if not text:
                 return 0
             text_lower = text.lower()
-            # Coincidencia exacta con la consulta
+            # Coincidencia completa con consulta
             if query_lower in text_lower:
                 return 100
             # Coincidencia de palabras clave
@@ -606,59 +663,53 @@ class ZepToolsService:
 
         try:
             if scope in ["edges", "both"]:
-                # Obtener todas las aristas y coincidir
+                # Obtener todos los bordes y hacer coincidencia
                 all_edges = self.get_all_edges(graph_id)
                 scored_edges = []
                 for edge in all_edges:
                     score = match_score(edge.fact) + match_score(edge.name)
                     if score > 0:
                         scored_edges.append((score, edge))
-
-                # Ordenar por puntuacion
+                
+                # Ordenar por puntuación
                 scored_edges.sort(key=lambda x: x[0], reverse=True)
-
+                
                 for score, edge in scored_edges[:limit]:
                     if edge.fact:
                         facts.append(edge.fact)
-                    edges_result.append(
-                        {
-                            "uuid": edge.uuid,
-                            "name": edge.name,
-                            "fact": edge.fact,
-                            "source_node_uuid": edge.source_node_uuid,
-                            "target_node_uuid": edge.target_node_uuid,
-                        }
-                    )
-
+                    edges_result.append({
+                        "uuid": edge.uuid,
+                        "name": edge.name,
+                        "fact": edge.fact,
+                        "source_node_uuid": edge.source_node_uuid,
+                        "target_node_uuid": edge.target_node_uuid,
+                    })
+            
             if scope in ["nodes", "both"]:
-                # Obtener todos los nodos y coincidir
+                # Obtener todos los nodos y hacer coincidencia
                 all_nodes = self.get_all_nodes(graph_id)
                 scored_nodes = []
                 for node in all_nodes:
                     score = match_score(node.name) + match_score(node.summary)
                     if score > 0:
                         scored_nodes.append((score, node))
-
+                
                 scored_nodes.sort(key=lambda x: x[0], reverse=True)
-
+                
                 for score, node in scored_nodes[:limit]:
-                    nodes_result.append(
-                        {
-                            "uuid": node.uuid,
-                            "name": node.name,
-                            "labels": node.labels,
-                            "summary": node.summary,
-                        }
-                    )
+                    nodes_result.append({
+                        "uuid": node.uuid,
+                        "name": node.name,
+                        "labels": node.labels,
+                        "summary": node.summary,
+                    })
                     if node.summary:
                         facts.append(f"[{node.name}]: {node.summary}")
 
-            logger.info(
-                f"Busqueda local completada: se encontraron {len(facts)} hechos relacionados"
-            )
+            logger.info(t("console.localSearchComplete", count=len(facts)))
 
         except Exception as e:
-            logger.error(f"Busqueda local fallo: {str(e)}")
+            logger.error(t("console.localSearchFailed", error=str(e)))
 
         return SearchResult(
             facts=facts,
@@ -670,191 +721,192 @@ class ZepToolsService:
 
     def get_all_nodes(self, graph_id: str) -> List[NodeInfo]:
         """
-        Obtener todos los nodos del grafo (con paginacion)
-
+        Obtener todos los nodos del grafo (obtener con paginación)
+        
         Args:
-            graph_id: ID del grafo
-
+            graph_id: ID del Grafo
+        
         Returns:
             Lista de nodos
         """
-        logger.info(f"Obtener todos los nodos del grafo {graph_id}...")
+        logger.info(t("console.FetchingAllNodes", graphId=graph_id))
 
-        entities = self.backend.get_entities(graph_id=graph_id)
+        nodes = Fetch_all_nodes(self.client, graph_id)
 
         result = []
-        for entity in entities:
+        for node in nodes:
+            node_uuid = (
+                getattr(node, "uuid_", None) or getattr(node, "uuid", None) or ""
+            )
             result.append(
                 NodeInfo(
-                    uuid=entity.uuid,
-                    name=entity.name,
-                    labels=entity.labels,
-                    summary=entity.summary,
-                    attributes=entity.attributes,
+                    uuid=str(node_uuid) if node_uuid else "",
+                    name=node.name or "",
+                    labels=node.labels or [],
+                    summary=node.summary or "",
+                    attributes=node.attributes or {},
                 )
             )
 
-        logger.info(f"Se obtuvo {len(result)} nodos")
+        logger.info(t("console.FetchedNodes", count=len(result)))
         return result
 
     def get_all_edges(
         self, graph_id: str, include_temporal: bool = True
     ) -> List[EdgeInfo]:
         """
-        Obtener todas las aristas del grafo (con paginacion, incluyendo informacion temporal)
-
+        Obtener todos los bordes del grafo (obtener con paginación, incluyendo inFormación temporal)
+        
         Args:
-            graph_id: ID del grafo
-            include_temporal: Si incluir informacion temporal (por defecto True)
-
+            graph_id: ID del Grafo
+            include_temporal: Si incluir inFormación temporal (por deFecto True)
+        
         Returns:
-            Lista de aristas (incluyendo created_at, valid_at, invalid_at, expired_at)
+            Lista de bordes (incluyendo created_at, valid_at, invalid_at, expired_at)
         """
-        logger.info(f"Obtener todas las aristas del grafo {graph_id}...")
+        logger.info(t("console.FetchingAllEdges", graphId=graph_id))
 
-        edges = self.backend.get_edges(
-            graph_id=graph_id, include_temporal=include_temporal
-        )
+        edges = Fetch_all_edges(self.client, graph_id)
 
         result = []
         for edge in edges:
+            edge_uuid = (
+                getattr(edge, "uuid_", None) or getattr(edge, "uuid", None) or ""
+            )
             edge_info = EdgeInfo(
-                uuid=edge.get("uuid", ""),
-                name=edge.get("name", ""),
-                fact=edge.get("fact", ""),
-                source_node_uuid=edge.get("source_node_uuid", ""),
-                target_node_uuid=edge.get("target_node_uuid", ""),
+                uuid=str(edge_uuid) if edge_uuid else "",
+                name=edge.name or "",
+                fact=edge.fact or "",
+                source_node_uuid=edge.source_node_uuid or "",
+                target_node_uuid=edge.target_node_uuid or "",
             )
 
-            # Agregar informacion temporal
+            # Agregar inFormación temporal
             if include_temporal:
-                edge_info.created_at = edge.get("created_at", None)
-                edge_info.valid_at = edge.get("valid_at", None)
-                edge_info.invalid_at = edge.get("invalid_at", None)
-                edge_info.expired_at = edge.get("expired_at", None)
+                edge_info.created_at = getattr(edge, "created_at", None)
+                edge_info.valid_at = getattr(edge, "valid_at", None)
+                edge_info.invalid_at = getattr(edge, "invalid_at", None)
+                edge_info.expired_at = getattr(edge, "expired_at", None)
 
             result.append(edge_info)
 
-        logger.info(f"Se obtuvo {len(result)} aristas")
+        logger.info(t("console.FetchedEdges", count=len(result)))
         return result
 
-    def get_node_detail(self, node_uuid: str, graph_id: str = "") -> Optional[NodeInfo]:
+    def get_node_detail(self, node_uuid: str) -> Optional[NodeInfo]:
         """
-        Obtener informacion detallada de un solo nodo
-
+        Obtener inFormación detallada de un solo nodo de entidad
+        
         Args:
             node_uuid: UUID del nodo
-            graph_id: ID del grafo (requerido para backend)
-
+            
         Returns:
-            Informacion del nodo o None
+            InFormación del nodo o None
         """
-        logger.info(f"Obtener detalle del nodo: {node_uuid[:8]}...")
+        logger.info(t("console.FetchingNodeDetail", uuid=node_uuid[:8]))
 
         try:
-            entity = self._call_with_retry(
-                func=lambda: self.backend.get_entity_by_uuid(
-                    graph_id=graph_id, uuid=node_uuid
-                ),
-                operation_name=f"Obtener detalle del nodo(uuid={node_uuid[:8]}...)",
+            node = self._call_with_retry(
+                func=lambda: self.client.graph.node.get(uuid_=node_uuid),
+                opeRation_name=t("console.FetchNodeDetailOp", uuid=node_uuid[:8]),
             )
 
-            if not entity:
+            if not node:
                 return None
 
             return NodeInfo(
-                uuid=entity.uuid,
-                name=entity.name,
-                labels=entity.labels,
-                summary=entity.summary,
-                attributes=entity.attributes,
+                uuid=getattr(node, "uuid_", None) or getattr(node, "uuid", ""),
+                name=node.name or "",
+                labels=node.labels or [],
+                summary=node.summary or "",
+                attributes=node.attributes or {},
             )
         except Exception as e:
-            logger.error(f"Error al obtener detalle del nodo: {str(e)}")
+            logger.error(t("console.FetchNodeDetailFailed", error=str(e)))
             return None
 
     def get_node_edges(self, graph_id: str, node_uuid: str) -> List[EdgeInfo]:
         """
-        Obtener todas las aristas relacionadas con un nodo
-
-        Obtiene todas las aristas del grafo y luego filtra las relacionadas con el nodo especificado
-
+        Obtener todos los bordes relacionados con el nodo
+        
+        Obteniendo todos los bordes del grafo, luego filtrando bordes relacionados con el nodo especificado
+        
         Args:
-            graph_id: ID del grafo
+            graph_id: ID del Grafo
             node_uuid: UUID del nodo
-
+            
         Returns:
-            Lista de aristas
+            Lista de bordes
         """
-        logger.info(f"Obtener aristas relacionadas del nodo {node_uuid[:8]}...")
+        logger.info(t("console.FetchingNodeEdges", uuid=node_uuid[:8]))
 
         try:
-            # Obtener todas las aristas del grafo y luego filtrar
+            # ObtenerGrafoTodosBorde，然后Filtrado
             all_edges = self.get_all_edges(graph_id)
 
             result = []
             for edge in all_edges:
-                # Verificar si la arista esta relacionada con el nodo especificado (como origen o destino)
+                # InspecciónBordeSiCon指定NodoRelacionado（Como源O目标）
                 if (
                     edge.source_node_uuid == node_uuid
                     or edge.target_node_uuid == node_uuid
                 ):
                     result.append(edge)
 
-            logger.info(
-                f"Se encontraron {len(result)} aristas relacionadas con el nodo"
-            )
+            logger.info(t("console.foundNodeEdges", count=len(result)))
             return result
 
         except Exception as e:
-            logger.warning(f"Error al obtener aristas del nodo: {str(e)}")
+            logger.warning(t("console.FetchNodeEdgesFailed", error=str(e)))
             return []
 
     def get_entities_by_type(self, graph_id: str, entity_type: str) -> List[NodeInfo]:
         """
         Obtener entidades por tipo
-
+        
         Args:
-            graph_id: ID del grafo
-            entity_type: Tipo de entidad (ej Student, PublicFigure, etc.)
-
+            graph_id: ID del Grafo
+            entity_type: Tipo de entidad (ej: Student, PublicFigure, etc.)
+            
         Returns:
             Lista de entidades que coinciden con el tipo
         """
-        logger.info(f"Obtener entidades de tipo {entity_type}...")
+        logger.info(t("console.FetchingEntitiesByType", type=entity_type))
 
         all_nodes = self.get_all_nodes(graph_id)
 
         filtered = []
         for node in all_nodes:
-            # Verificar si las labels incluyen el tipo especificado
+            # InspecciónlabelsSiContiene指定Tipo
             if entity_type in node.labels:
                 filtered.append(node)
 
-        logger.info(f"Se encontraron {len(filtered)} entidades de tipo {entity_type}")
+        logger.info(
+            t("console.foundEntitiesByType", count=len(filtered), type=entity_type)
+        )
         return filtered
 
     def get_entity_summary(self, graph_id: str, entity_name: str) -> Dict[str, Any]:
         """
-        Obtener resumen de relaciones de una entidad especifica
-
-        Busca toda la informacion relacionada con esa entidad y genera un resumen
-
+        Obtener resumen de relaciones de la entidad especificada
+        
+        Buscar toda la inFormación relacionada con la entidad y generar resumen
+        
         Args:
-            graph_id: ID del grafo
-            entity_name: Nombre de la entidad
-
+            graph_id: ID del Grafo
+            entity_name: Nombre de entidad
+            
         Returns:
-            Informacion de resumen de la entidad
+            InFormación del resumen de entidad
         """
-        logger.info(f"Obtener resumen de relaciones de la entidad {entity_name}...")
+        logger.info(t("console.FetchingEntitySummary", name=entity_name))
 
-        # Primero buscar informacion relacionada con esa entidad
+        # 先Búsqueda该EntidadRelacionado的Información
         search_result = self.search_graph(
             graph_id=graph_id, query=entity_name, limit=20
         )
 
-        # Intentar encontrar esa entidad en todos los nodos
+        # 尝试EnTodosNodo中找Hasta该Entidad
         all_nodes = self.get_all_nodes(graph_id)
         entity_node = None
         for node in all_nodes:
@@ -862,42 +914,42 @@ class ZepToolsService:
                 entity_node = node
                 break
 
-        related_edges = []
+        reLated_edges = []
         if entity_node:
-            # Pasar parametro graph_id
-            related_edges = self.get_node_edges(graph_id, entity_node.uuid)
+            # 传入graph_id参数
+            reLated_edges = self.get_node_edges(graph_id, entity_node.uuid)
 
         return {
             "entity_name": entity_name,
             "entity_info": entity_node.to_dict() if entity_node else None,
-            "related_facts": search_result.facts,
-            "related_edges": [e.to_dict() for e in related_edges],
-            "total_relations": len(related_edges),
+            "reLated_facts": search_result.facts,
+            "reLated_edges": [e.to_dict() for e in reLated_edges],
+            "total_relations": len(reLated_edges),
         }
 
     def get_graph_statistics(self, graph_id: str) -> Dict[str, Any]:
         """
-        Obtener estadisticas del grafo
-
+        Obtener inFormación estadística del grafo
+        
         Args:
-            graph_id: ID del grafo
-
+            graph_id: ID del Grafo
+            
         Returns:
-            Informacion estadistica
+            InFormación estadística
         """
-        logger.info(f"Obtener estadisticas del grafo {graph_id}...")
+        logger.info(t("console.FetchingGraphStats", graphId=graph_id))
 
         nodes = self.get_all_nodes(graph_id)
         edges = self.get_all_edges(graph_id)
 
-        # Contar distribucion de tipos de entidad
+        # EstadísticasEntidadTipo分布
         entity_types = {}
         for node in nodes:
             for label in node.labels:
                 if label not in ["Entity", "Node"]:
                     entity_types[label] = entity_types.get(label, 0) + 1
 
-        # Contar distribucion de tipos de relacion
+        # EstadísticasRelaciónTipo分布
         relation_types = {}
         for edge in edges:
             relation_types[edge.name] = relation_types.get(edge.name, 0) + 1
@@ -914,54 +966,54 @@ class ZepToolsService:
         self, graph_id: str, simulation_requirement: str, limit: int = 30
     ) -> Dict[str, Any]:
         """
-        Obtener informacion de contexto relacionada con la Simulacion
-
-        Busqueda integral de toda la informacion relacionada con el requisito de Simulacion
-
+        Obtener inFormación de contexto relacionada con la simulación
+        
+        Búsqueda integral de toda la inFormación relacionada con Requisito de simulación
+        
         Args:
-            graph_id: ID del grafo
-            simulation_requirement: Descripcion del requisito de Simulacion
-            limit: Limite de cantidad de informacion de cada tipo
-
+            graph_id: ID del Grafo
+            simulation_requirement: Descripción de Requisito de simulación
+            limit: Límite de cantidad de inFormación por tipo
+            
         Returns:
-            Informacion de contexto de Simulacion
+            InFormación de contexto de simulación
         """
-        logger.info(f"Obtener contexto de Simulacion: {simulation_requirement[:50]}...")
+        logger.info(
+            t("console.FetchingSimContext", requirement=simulation_requirement[:50])
+        )
 
-        # Buscar informacion relacionada con el requisito de Simulacion
+        # BuscarConRequisito de simulaciónRelacionado的Información
         search_result = self.search_graph(
             graph_id=graph_id, query=simulation_requirement, limit=limit
         )
 
-        # Obtener estadisticas del grafo
+        # ObtenerGrafoEstadísticas
         stats = self.get_graph_statistics(graph_id)
 
-        # Obtener todos los nodos de entidad
+        # ObtenerTodosNodos de entidad
         all_nodes = self.get_all_nodes(graph_id)
 
-        # Filtrar entidades con tipo real (no nodos Entity puros)
+        # Filtrar entidades con tipos reales (no nodos Entity puros)
         entities = []
         for node in all_nodes:
             custom_labels = [l for l in node.labels if l not in ["Entity", "Node"]]
             if custom_labels:
-                entities.append(
-                    {
-                        "name": node.name,
-                        "type": custom_labels[0],
-                        "summary": node.summary,
-                    }
-                )
-
+                entities.append({
+                    "name": node.name,
+                    "type": custom_labels[0],
+                    "summary": node.summary,
+                })
+        
         return {
             "simulation_requirement": simulation_requirement,
-            "related_facts": search_result.facts,
+            "reLated_facts": search_result.facts,
             "graph_statistics": stats,
-            "entities": entities[:limit],  # Limitar cantidad
+            "entities": entities[:limit],  # Límite de cantidad
             "total_entities": len(entities),
         }
-
-    # ========== Herramientas de busqueda principales (optimizadas) ==========
-
+    
+    # ========== Herramientas de búsqueda centrales (optimizadas） ==========
+    
     def insight_forge(
         self,
         graph_id: str,
@@ -971,32 +1023,51 @@ class ZepToolsService:
         max_sub_queries: int = 5,
     ) -> InsightForgeResult:
         """
-        【InsightForge - Busqueda de analisis profundo】
+        【InsightForge - Búsqueda de perspicacia profunda】
+        
+        Función de búsqueda híbrida Más potente, descompone preguntas automáticaMente y busca en múltiples dimensiones:
+        1. Usar LLM para descomponer pregunta en múltiples sub-preguntas
+        2. Realizar búsqueda semántica para cada sub-pregunta
+        3. Extraer entidades relacionadas y obtener su inFormación detallada
+        4. Rastrear Cadena de relaciones
+        5. Integrar todos los Resultados, generar perspicacia profunda
+        
+        Args:
+            graph_id: ID del Grafo
+            query: Pregunta del usuario
+            simulation_requirement: Descripción de Requisito de simulación
+            report_context: Contexto de reporte (opcional, para generación de sub-preguntas Más precisa)
+            max_sub_queries: Cantidad máxima de sub-preguntas
+            
+        Returns:
+            InsightForgeResult: Resultado de búsqueda de perspicacia profunda
+        """
+        【InsightForge - 深度洞察检索】
 
-        La funcion de busqueda hibrida mas potente, descompone automaticamente preguntas y busca en multiples dimensiones:
-        1. Usar LLM para descomponer la pregunta en multiples sub-preguntas
-        2. Hacer busqueda semantica para cada sub-pregunta
-        3. Extraer entidades relacionadas y obtener su informacion detallada
-        4. Rastrear cadenas de relacion
-        5. Integrar todos los resultados, generar analisis profundo
+        Más强大的混合检索Función，自动DescomposiciónProblema并多维度检索：
+        1. 使用LLM将ProblemaDescomposición为多Elementos子Problema
+        2. Para每Elementos子Problema进Fila语义Búsqueda
+        3. ExtracciónRelacionadoEntidad并Obtener其Detalle
+        4. TrazaCadena de relaciones
+        5. 整合Todos结果，Generar深度洞察
 
         Args:
-            graph_id: ID del grafo
-            query: Pregunta del usuario
-            simulation_requirement: Descripcion del requisito de Simulacion
-            report_context: Contexto del informe (opcional, para generacion mas precisa de sub-preguntas)
-            max_sub_queries: Numero maximo de sub-preguntas
+            graph_id: GrafoID
+            query: 用户Problema
+            simulation_requirement: Requisito de simulaciónDescripción
+            report_context: 报告上下文（Opcional，用于Más精准的子ProblemaGenerar）
+            max_sub_queries: Más大子ProblemaCantidad
 
         Returns:
-            InsightForgeResult: Resultado de busqueda de analisis profundo
+            InsightForgeResult: 深度洞察检索结果
         """
-        logger.info(f"InsightForge busqueda de analisis profundo: {query[:50]}...")
+        logger.info(t("console.insightForgeStart", query=query[:50]))
 
         result = InsightForgeResult(
             query=query, simulation_requirement=simulation_requirement, sub_queries=[]
         )
 
-        # Step 1: Usar LLM para generar sub-preguntas
+        # Step 1: 使用LLMGenerar子Problema
         sub_queries = self._generate_sub_queries(
             query=query,
             simulation_requirement=simulation_requirement,
@@ -1004,9 +1075,9 @@ class ZepToolsService:
             max_queries=max_sub_queries,
         )
         result.sub_queries = sub_queries
-        logger.info(f"Generar {len(sub_queries)} sub-preguntas")
+        logger.info(t("console.generatedSubQueries", count=len(sub_queries)))
 
-        # Step 2: Hacer busqueda semantica para cada sub-pregunta
+        # Step 2: Para每Elementos子Problema进Fila语义Búsqueda
         all_facts = []
         all_edges = []
         seen_facts = set()
@@ -1023,7 +1094,7 @@ class ZepToolsService:
 
             all_edges.extend(search_result.edges)
 
-        # Tambien buscar con la pregunta original
+        # Para原始Problema也进FilaBúsqueda
         main_search = self.search_graph(
             graph_id=graph_id, query=query, limit=20, scope="edges"
         )
@@ -1035,7 +1106,7 @@ class ZepToolsService:
         result.semantic_facts = all_facts
         result.total_facts = len(all_facts)
 
-        # Step 3: Extraer UUIDs de entidades relacionadas de las aristas, solo obtener informacion de esas entidades (no de todos los nodos)
+        # Step 3: DesdeBorde中ExtracciónRelacionadoEntidadUUID，SoloObtenerEstosEntidad的Información（不Obtener全部Nodo）
         entity_uuids = set()
         for edge_data in all_edges:
             if isinstance(edge_data, dict):
@@ -1046,25 +1117,24 @@ class ZepToolsService:
                 if target_uuid:
                     entity_uuids.add(target_uuid)
 
-        # Obtener detalles de todas las entidades relacionadas (sin limite, salida completa)
+        # ObtenerTodosRelacionadoEntidad的详情（不LímiteCantidad，完整输出）
         entity_insights = []
-        node_map = {}  # Para construccion posterior de cadenas de relacion
+        node_map = {}  # 用于后续Cadena de relaciones构建
 
-        for uuid in list(entity_uuids):  # Procesar todas las entidades, sin truncar
+        for uuid in list(entity_uuids):  # ManejarTodosEntidad，不截断
             if not uuid:
                 continue
             try:
-                # Obtener informacion de cada nodo relacionado individualmente
-                node = self.get_node_detail(uuid, graph_id=graph_id)
+                # 单独Obtener每ElementosNodos relacionados的Información
+                node = self.get_node_detail(uuid)
                 if node:
                     node_map[uuid] = node
                     entity_type = next(
-                        (l for l in node.labels if l not in ["Entity", "Node"]),
-                        "entidad",
+                        (l for l in node.labels if l not in ["Entity", "Node"]), "Entidad"
                     )
 
-                    # Obtener todos los hechos relacionados con esa entidad (sin truncar)
-                    related_facts = [
+                    # Obtener该EntidadRelacionado的Todos事实（不截断）
+                    reLated_facts = [
                         f for f in all_facts if node.name.lower() in f.lower()
                     ]
 
@@ -1074,19 +1144,19 @@ class ZepToolsService:
                             "name": node.name,
                             "type": entity_type,
                             "summary": node.summary,
-                            "related_facts": related_facts,  # Salida completa, sin truncar
+                            "reLated_facts": reLated_facts,  # 完整输出，不截断
                         }
                     )
             except Exception as e:
-                logger.debug(f"Error al obtener nodo {uuid}: {e}")
+                logger.debug(f"ObtenerNodo {uuid} Fallido: {e}")
                 continue
 
         result.entity_insights = entity_insights
         result.total_entities = len(entity_insights)
 
-        # Step 4: Construir todas las cadenas de relacion (sin limite)
+        # Step 4: 构建TodosCadena de relaciones（不LímiteCantidad）
         relationship_chains = []
-        for edge_data in all_edges:  # Procesar todas las aristas, sin truncar
+        for edge_data in all_edges:  # ManejarTodosBorde，不截断
             if isinstance(edge_data, dict):
                 source_uuid = edge_data.get("source_node_uuid", "")
                 target_uuid = edge_data.get("target_node_uuid", "")
@@ -1109,7 +1179,12 @@ class ZepToolsService:
         result.total_relationships = len(relationship_chains)
 
         logger.info(
-            f"InsightForge completado: {result.total_facts} hechos, {result.total_entities} entidades, {result.total_relationships} relaciones"
+            t(
+                "console.insightForgeComplete",
+                facts=result.total_facts,
+                entities=result.total_entities,
+                relationships=result.total_relationships,
+            )
         )
         return result
 
@@ -1121,32 +1196,27 @@ class ZepToolsService:
         max_queries: int = 5,
     ) -> List[str]:
         """
-        Usar LLM para generar sub-preguntas
+        使用LLMGenerar子Problema
 
-        Descomponer una pregunta compleja en multiples sub-preguntas que se pueden buscar independientemente
+        将复杂ProblemaDescomposición为多ElementosPuede独立检索的子Problema
         """
-        # Usar prompts i18n si estan disponibles
-        if _PROMPTS_AVAILABLE:
-            system_prompt = _load_prompt("zep", "sub_query_generation")
-        else:
-            # Fallback al original en chino
-            system_prompt = """Eres un experto en analisis de preguntas. Tu tarea es descomponer una pregunta compleja en multiples sub-preguntas que se pueden observar independientemente en el mundo de Simulacion.
+        system_prompt = """你Es一Elementos专业的ProblemaAnálisis专家。你的TareaEs将一Elementos复杂ProblemaDescomposición为多ElementosPuedeEnSimulación世界中独立观察的子Problema。
 
-Requisitos:
-1. Cada sub-pregunta debe ser lo suficientemente especifica para encontrar comportamientos o eventos de agentes relacionados en el mundo de Simulacion
-2. Las sub-preguntas deben cubrir diferentes dimensiones de la pregunta original (como: quien, que, por que, como, cuando, donde)
-3. Las sub-preguntas deben estar relacionadas con el escenario de Simulacion
-4. Devolver en formato JSON: {"sub_queries": ["sub-pregunta1", "sub-pregunta2", ...]}"""
+Requisito：
+1. 每Elementos子ProblemaDebería足够具体，PuedeEnSimulación世界中找HastaRelacionado的AgentFila为OEvento
+2. 子ProblemaDebería覆盖原Problema的不同维度（如：谁、Qué、Por qué、怎么样、Cuándo、何地）
+3. 子ProblemaDeberíaConSimulación场景Relacionado
+4. VolverJSON格式：{"sub_queries": ["子Problema1", "子Problema2", ...]}"""
 
-        user_prompt = f"""Contexto del requisito de Simulacion:
+        user_prompt = f"""Requisito de simulación背景：
 {simulation_requirement}
 
-{f"Contexto del informe: {report_context[:500]}" if report_context else ""}
+{f"报告上下文：{report_context[:500]}" if report_context else ""}
 
-Por favor descomponer la siguiente pregunta en {max_queries} sub-preguntas:
+请将以下ProblemaDescomposición为{max_queries}Elementos子Problema：
 {query}
 
-Devolver lista de sub-preguntas en formato JSON."""
+VolverJSON格式的子ProblemaLista。"""
 
         try:
             response = self.llm.chat_json(
@@ -1158,59 +1228,57 @@ Devolver lista de sub-preguntas en formato JSON."""
             )
 
             sub_queries = response.get("sub_queries", [])
-            # Asegurar que es una lista de strings
+            # 确保Es字符串Lista
             return [str(sq) for sq in sub_queries[:max_queries]]
 
         except Exception as e:
-            logger.warning(
-                f"Error al generar sub-preguntas: {str(e)}, usando sub-preguntas por defecto"
-            )
-            # Degradacion: devolver variantes basadas en la pregunta original
+            logger.warning(t("console.generateSubQueriesFailed", error=str(e)))
+            # Degradar：Volver基于原Problema的变体
             return [
                 query,
-                f"Participantes principales de {query}",
-                f"Causas y efectos de {query}",
-                f"Proceso de desarrollo de {query}",
+                f"{query} 的Principal参Con者",
+                f"{query} 的原因YImpacto",
+                f"{query} 的发展过程",
             ][:max_queries]
 
     def panorama_search(
         self, graph_id: str, query: str, include_expired: bool = True, limit: int = 50
     ) -> PanoramaResult:
         """
-        【PanoramaSearch - Busqueda panoramica】
+        【PanoramaSearch - 广度Búsqueda】
 
-        Obtener vista completa, incluyendo todo el contenido relacionado e historico/expirado:
-        1. Obtener todos los nodos relacionados
-        2. Obtener todas las aristas (incluyendo las expiradas/invalidas)
-        3. Clasificar y organizar informacion valida actual e historica
+        Obtener全貌视图，包括TodosRelacionadoContenidoYHistorial/过期Información：
+        1. ObtenerTodosNodos relacionados
+        2. ObtenerTodosBorde（包括已过期/失效的）
+        3. Clasificación整理Cuando前VálidoYHistorialInformación
 
-        Esta herramienta es adecuada para escenarios que requieren conocer la vision completa de un evento y rastrear el proceso de evolucion.
+        这Elementos工具适用于Necesita了解Evento全貌、Traza演变过程的场景。
 
         Args:
-            graph_id: ID del grafo
-            query: Consulta de busqueda (para ordenamiento por relevancia)
-            include_expired: Si incluir contenido expirado (por defecto True)
-            limit: Limite de cantidad de resultados a devolver
+            graph_id: GrafoID
+            query: BúsquedaConsultar（用于Relacionado性Ordenamiento）
+            include_expired: SiContiene过期Contenido（默认True）
+            limit: Volver结果CantidadLímite
 
         Returns:
-            PanoramaResult: Resultado de busqueda panoramica
+            PanoramaResult: 广度Resultados de búsqueda
         """
-        logger.info(f"PanoramaSearch busqueda panoramica: {query[:50]}...")
+        logger.info(t("console.panoramaSearchStart", query=query[:50]))
 
         result = PanoramaResult(query=query)
 
-        # Obtener todos los nodos
+        # ObtenerTodosNodo
         all_nodes = self.get_all_nodes(graph_id)
         node_map = {n.uuid: n for n in all_nodes}
         result.all_nodes = all_nodes
         result.total_nodes = len(all_nodes)
 
-        # Obtener todas las aristas (incluyendo informacion temporal)
+        # ObtenerTodosBorde（ContieneTiempoInformación）
         all_edges = self.get_all_edges(graph_id, include_temporal=True)
         result.all_edges = all_edges
         result.total_edges = len(all_edges)
 
-        # Clasificar hechos
+        # Categorizar事实
         active_facts = []
         historical_facts = []
 
@@ -1218,7 +1286,7 @@ Devolver lista de sub-preguntas en formato JSON."""
             if not edge.fact:
                 continue
 
-            # Agregar nombres de entidad a los hechos
+            # 为事实添加EntidadNombre
             source_name = (
                 node_map.get(edge.source_node_uuid, NodeInfo("", "", [], "", {})).name
                 or edge.source_node_uuid[:8]
@@ -1228,24 +1296,24 @@ Devolver lista de sub-preguntas en formato JSON."""
                 or edge.target_node_uuid[:8]
             )
 
-            # Determinar si esta expirado/invalido
+            # 判断Si过期/失效
             is_historical = edge.is_expired or edge.is_invalid
 
             if is_historical:
-                # Hecho historico/expirado, agregar marca de tiempo
+                # Historial/过期事实，添加TiempoMarcar
                 valid_at = edge.valid_at or "Desconocido"
                 invalid_at = edge.invalid_at or edge.expired_at or "Desconocido"
                 fact_with_time = f"[{valid_at} - {invalid_at}] {edge.fact}"
                 historical_facts.append(fact_with_time)
             else:
-                # Hecho valido actual
+                # Cuando前Válido事实
                 active_facts.append(edge.fact)
 
-        # Ordenar por relevancia basado en la consulta
+        # 基于Consultar进FilaRelacionado性Ordenamiento
         query_lower = query.lower()
         keywords = [
             w.strip()
-            for w in query_lower.replace(",", " ").replace(".", " ").split()
+            for w in query_lower.replace(",", " ").replace("，", " ").split()
             if len(w.strip()) > 1
         ]
 
@@ -1259,7 +1327,7 @@ Devolver lista de sub-preguntas en formato JSON."""
                     score += 10
             return score
 
-        # Ordenar y limitar cantidad
+        # Ordenar并LímiteCantidad
         active_facts.sort(key=relevance_score, reverse=True)
         historical_facts.sort(key=relevance_score, reverse=True)
 
@@ -1269,35 +1337,39 @@ Devolver lista de sub-preguntas en formato JSON."""
         result.historical_count = len(historical_facts)
 
         logger.info(
-            f"PanoramaSearch completado: {result.active_count} validos, {result.historical_count} historicos"
+            t(
+                "console.panoramaSearchComplete",
+                active=result.active_count,
+                historical=result.historical_count,
+            )
         )
         return result
 
     def quick_search(self, graph_id: str, query: str, limit: int = 10) -> SearchResult:
         """
-        【QuickSearch - Busqueda simple】
+        【QuickSearch - 简单Búsqueda】
 
-        Herramienta de busqueda rapida y ligera:
-        1. Llamar directamente a busqueda semantica de Zep
-        2. Devolver los resultados mas relevantes
-        3. Apropiado para requisitos de busqueda simples y directos
+        快速、轻量级的检索工具：
+        1. 直接调用Zep语义Búsqueda
+        2. VolverMásRelacionado的结果
+        3. 适用于简单、直接的检索需求
 
         Args:
-            graph_id: ID del grafo
-            query: Consulta de busqueda
-            limit: Numero de resultados a devolver
+            graph_id: GrafoID
+            query: BúsquedaConsultar
+            limit: Volver结果Cantidad
 
         Returns:
-            SearchResult: Resultado de busqueda
+            SearchResult: Resultados de búsqueda
         """
-        logger.info(f"QuickSearch busqueda simple: {query[:50]}...")
+        logger.info(t("console.quickSearchStart", query=query[:50]))
 
-        # Llamar directamente al metodo search_graph existente
+        # 直接调用现Tener的search_graphMétodo
         result = self.search_graph(
             graph_id=graph_id, query=query, limit=limit, scope="edges"
         )
 
-        logger.info(f"QuickSearch completado: {result.total_count} resultados")
+        logger.info(t("console.quickSearchComplete", count=result.total_count))
         return result
 
     def interview_agents(
@@ -1309,36 +1381,36 @@ Devolver lista de sub-preguntas en formato JSON."""
         custom_questions: List[str] = None,
     ) -> InterviewResult:
         """
-        【InterviewAgents - Entrevista profunda】
+        【InterviewAgents - 深度采访】
 
-        Llama a la API real de entrevista de OASIS, entrevista agentes que se estan ejecutando en la Simulacion:
-        1. Leer automaticamente archivos de perfil, conocer todos los agentes de Simulacion
-        2. Usar LLM para analizar requisito de entrevista, seleccionar agentes mas relevantes inteligentemente
-        3. Usar LLM para generar preguntas de entrevista
-        4. Llamar interfaz /api/simulation/interview/batch para entrevista real (ambas plataformas entrevistando simultaneamente)
-        5. Integrar todos los resultados de entrevista, generar informe de entrevista
+        调用真实的OASIS采访API，采访Simulación中正EnEjecutar的Agent：
+        1. 自动Leer人设Archivo，了解TodosSimulaciónAgent
+        2. 使用LLMAnálisis采访需求，智能SelecciónMásRelacionado的Agent
+        3. 使用LLMGenerar采访Problema
+        4. 调用 /api/simulation/interview/batch Interfaz进Fila真实采访（双Plataforma同时采访）
+        5. 整合Todos采访结果，Generar采访报告
 
-        【Importante】Esta funcion requiere que el entorno de Simulacion este en ejecucion (entorno OASIS no cerrado)
+        【重要】此功能NecesitaSimulación环境处于EjecutarEstado（OASIS环境未Cerrar）
 
-        【Escenarios de uso】
-        - Se necesita conocer opiniones de diferentes roles sobre eventos
-        - Se necesita recolectar opiniones y puntos de vista de multiples partes
-        - Se necesita obtener respuestas reales de agentes de Simulacion (no Simulacion LLM)
+        【使用场景】
+        - NecesitaDesde不同角色视角了解Evento看法
+        - Necesita收集多方意见Y观点
+        - NecesitaObtenerSimulaciónAgent的真实回答（非LLMSimulación）
 
         Args:
-            simulation_id: ID de Simulacion (para localizar archivos de perfil y llamar API de entrevista)
-            interview_requirement: Descripcion del requisito de entrevista (no estructurado, como "conocer opiniones de estudiantes sobre el evento")
-            simulation_requirement: Contexto del requisito de Simulacion (opcional)
-            max_agents: Numero maximo de agentes a entrevistar
-            custom_questions: Preguntas de entrevista personalizadas (opcional, si no se proporcionan se generan automaticamente)
+            simulation_id: SimulaciónID（用于定位人设ArchivoY调用采访API）
+            interview_requirement: 采访需求Descripción（非结构化，如"了解学生ParaEvento的看法"）
+            simulation_requirement: Requisito de simulación背景（Opcional）
+            max_agents: Más多采访的AgentCantidad
+            custom_questions: Personalizar采访Problema（Opcional，若不提供则自动Generar）
 
         Returns:
-            InterviewResult: Resultado de entrevista
+            InterviewResult: 采访结果
         """
         from .simulation_runner import SimulationRunner
 
         logger.info(
-            f"InterviewAgents entrevista profunda (API real): {interview_requirement[:50]}..."
+            t("console.interviewAgentsStart", requirement=interview_requirement[:50])
         )
 
         result = InterviewResult(
@@ -1346,22 +1418,18 @@ Devolver lista de sub-preguntas en formato JSON."""
             interview_questions=custom_questions or [],
         )
 
-        # Step 1: Leer archivos de perfil
+        # Step 1: Leer人设Archivo
         profiles = self._load_agent_profiles(simulation_id)
 
         if not profiles:
-            logger.warning(
-                f"No se encontraron archivos de perfil de agentes para Simulacion {simulation_id}"
-            )
-            result.summary = (
-                "No se encontraron archivos de perfil de agentes para entrevistar"
-            )
+            logger.warning(t("console.profilesNotFound", simId=simulation_id))
+            result.summary = "未找Hasta可采访的Agent人设Archivo"
             return result
 
         result.total_agents = len(profiles)
-        logger.info(f"Se cargaron {len(profiles)} perfiles de agentes")
+        logger.info(t("console.loadedProfiles", count=len(profiles)))
 
-        # Step 2: Usar LLM para seleccionar agentes a entrevistar (devolver lista de agent_id)
+        # Step 2: 使用LLMSelección要采访的Agent（Volveragent_idLista）
         selected_agents, selected_indices, selection_reasoning = (
             self._select_agents_for_interview(
                 profiles=profiles,
@@ -1374,10 +1442,14 @@ Devolver lista de sub-preguntas en formato JSON."""
         result.selected_agents = selected_agents
         result.selection_reasoning = selection_reasoning
         logger.info(
-            f"Se seleccionaron {len(selected_agents)} agentes para entrevista: {selected_indices}"
+            t(
+                "console.selectedAgentsForInterview",
+                count=len(selected_agents),
+                indices=selected_indices,
+            )
         )
 
-        # Step 3: Generar preguntas de entrevista (si no se proporcionan)
+        # Step 3: Generar采访Problema（Si没Tener提供）
         if not result.interview_questions:
             result.interview_questions = self._generate_interview_questions(
                 interview_requirement=interview_requirement,
@@ -1385,70 +1457,77 @@ Devolver lista de sub-preguntas en formato JSON."""
                 selected_agents=selected_agents,
             )
             logger.info(
-                f"Se generaron {len(result.interview_questions)} preguntas de entrevista"
+                t(
+                    "console.generatedInterviewQuestions",
+                    count=len(result.interview_questions),
+                )
             )
 
-        # Combinar preguntas en un prompt de entrevista
+        # 将ProblemaCombinar为一Elementos采访prompt
         combined_prompt = "\n".join(
             [f"{i + 1}. {q}" for i, q in enumerate(result.interview_questions)]
         )
 
-        # Agregar prefijo optimizado para restringir formato de respuesta del agente (i18n)
-        if _PROMPTS_AVAILABLE:
-            INTERVIEW_PROMPT_PREFIX = _load_prompt("zep", "interview_prompt_prefix")
-        else:
-            # Fallback al original en chino
-            INTERVIEW_PROMPT_PREFIX = (
-                "Estas en una entrevista. Por favor combina tu perfil, todos tus recuerdos y acciones pasados, "
-                "y responde directamente las siguientes preguntas en texto plano.\n"
-                "Requisitos de respuesta:\n"
-                "1. Usa lenguaje natural directamente, no llames a ninguna herramienta\n"
-                "2. No devuelvas formato JSON ni formato de llamada de herramienta\n"
-                "3. No uses titulos Markdown (como #, ##, ###)\n"
-                "4. Responde cada pregunta numerada, cada respuesta comienza con 「preguntaX:」 (X es el numero de pregunta)\n"
-                "5. Separa las respuestas de cada pregunta con lineas en blanco\n"
-                "6. Las respuestas deben tener contenido sustancial, al menos 2-3 oraciones por pregunta\n\n"
-            )
+        # AgregarOptimizar前缀，RestricciónAgentResponder格式
+        INTERVIEW_PROMPT_PREFIX = (
+            "你正En接受一次采访。请结合你的人设、Todos的过往记忆ConFila动，"
+            "以纯文本方式直接回答以下Problema。\n"
+            "ResponderRequisito：\n"
+            "1. 直接用自然语言回答，不要调用Cualquier工具\n"
+            "2. 不要VolverJSON格式O工具调用格式\n"
+            "3. 不要使用MarkdownTítulo（如#、##、###）\n"
+            "4. 按ProblemaNúmero逐一回答，每Elementos回答以「ProblemaX：」开头（X为ProblemaNúmero）\n"
+            "5. 每ElementosProblema的回答之间用空Fila分隔\n"
+            "6. 回答要Tener实质Contenido，每ElementosProblema至少回答2-3句话\n\n"
+        )
         optimized_prompt = f"{INTERVIEW_PROMPT_PREFIX}{combined_prompt}"
 
-        # Step 4: Llamar API real de entrevista (sin especificar platform, por defecto ambas plataformas)
+        # Step 4: 调用真实的采访API（不指定platform，默认双Plataforma同时采访）
         try:
-            # Construir lista de entrevista por lotes (sin especificar platform, entrevista en ambas plataformas)
+            # 构建Lote采访Lista（不指定platform，双Plataforma采访）
             interviews_request = []
             for agent_idx in selected_indices:
                 interviews_request.append(
                     {
                         "agent_id": agent_idx,
-                        "prompt": optimized_prompt,  # Usar prompt optimizado
-                        # No especificar platform, la API entrevistara en twitter y reddit
+                        "prompt": optimized_prompt,  # 使用Optimizar后的prompt
+                        # 不指定platform，API会EntwitterYreddit两ElementosPlataformaTodos采访
                     }
                 )
 
             logger.info(
-                f"Llamar API de entrevista por lotes (ambas plataformas): {len(interviews_request)} agentes"
+                t("console.callingBatchInterviewApi", count=len(interviews_request))
             )
 
-            # Llamar metodo de entrevista por lotes de SimulationRunner (sin pasar platform, entrevista en ambas plataformas)
+            # 调用 SimulationRunner 的Lote采访Método（不传platform，双Plataforma采访）
             api_result = SimulationRunner.interview_agents_batch(
                 simulation_id=simulation_id,
                 interviews=interviews_request,
-                platform=None,  # No especificar platform, entrevista en ambas plataformas
-                timeout=180.0,  # Ambas plataformas necesitan mas tiempo de espera
+                platform=None,  # 不指定platform，双Plataforma采访
+                timeout=180.0,  # 双PlataformaNecesitaMás长Tiempo agotado
             )
 
             logger.info(
-                f"API de entrevista retorno: {api_result.get('interviews_count', 0)} resultados, success={api_result.get('success')}"
+                t(
+                    "console.interviewApiReturned",
+                    count=api_result.get("interviews_count", 0),
+                    success=api_result.get("success"),
+                )
             )
 
-            # Verificar si la llamada API fue exitosa
+            # InspecciónAPI调用SiÉxito
             if not api_result.get("success", False):
                 error_msg = api_result.get("error", "Error desconocido")
-                logger.warning(f"API de entrevista retorno fallo: {error_msg}")
-                result.summary = f"Llamada a API de entrevista fallo: {error_msg}. Por favor verificar estado del entorno de Simulacion OASIS."
+                logger.warning(
+                    t("console.interviewApiReturnedFailure", error=error_msg)
+                )
+                result.summary = (
+                    f"采访API调用Fallido：{error_msg}。请VerificarOASISSimulación环境Estado。"
+                )
                 return result
 
-            # Step 5: Parsear resultado de API, construir objetos de agenteInterview
-            # Formato de retorno en modo doble plataforma: {"twitter_0": {...}, "reddit_0": {...}, "twitter_1": {...}, ...}
+            # Step 5: AnalizarAPIVolver结果，构建AgentInterviewObjeto
+            # 双Plataforma模式Volver格式: {"twitter_0": {...}, "reddit_0": {...}, "twitter_1": {...}, ...}
             api_data = api_result.get("result", {})
             results_dict = (
                 api_data.get("results", {}) if isinstance(api_data, dict) else {}
@@ -1457,60 +1536,56 @@ Devolver lista de sub-preguntas en formato JSON."""
             for i, agent_idx in enumerate(selected_indices):
                 agent = selected_agents[i]
                 agent_name = agent.get(
-                    "realname", agent.get("username", f"agente_{agent_idx}")
+                    "realname", agent.get("username", f"Agent_{agent_idx}")
                 )
-                agent_role = agent.get("profession", "Desconocido")
+                agent_role = agent.get("proFession", "Desconocido")
                 agent_bio = agent.get("bio", "")
 
-                # Obtener resultado de entrevista del agente en ambas plataformas
+                # Obtener该AgentEn两ElementosPlataforma的采访结果
                 twitter_result = results_dict.get(f"twitter_{agent_idx}", {})
                 reddit_result = results_dict.get(f"reddit_{agent_idx}", {})
 
                 twitter_response = twitter_result.get("response", "")
                 reddit_response = reddit_result.get("response", "")
 
-                # Limpiar posible envoltorio de llamada de herramienta JSON
+                # 清理Posible的工具调用 JSON 包裹
                 twitter_response = self._clean_tool_call_response(twitter_response)
                 reddit_response = self._clean_tool_call_response(reddit_response)
 
-                # Siempre mostrar marca de doble plataforma
+                # 始终输出双PlataformaMarcar
                 twitter_text = (
-                    twitter_response
-                    if twitter_response
-                    else "(No se obtuvo respuesta en esta plataforma)"
+                    twitter_response if twitter_response else "（该Plataforma未获得Responder）"
                 )
                 reddit_text = (
-                    reddit_response
-                    if reddit_response
-                    else "(No se obtuvo respuesta en esta plataforma)"
+                    reddit_response if reddit_response else "（该Plataforma未获得Responder）"
                 )
-                response_text = f"【Respuesta de Twitter】\n{twitter_text}\n\n【Respuesta de Reddit】\n{reddit_text}"
+                response_text = f"【TwitterPlataforma回答】\n{twitter_text}\n\n【RedditPlataforma回答】\n{reddit_text}"
 
-                # Extraer citas clave (de las respuestas de ambas plataformas)
+                # Extracción关Clave引言（Desde两ElementosPlataforma的回答中）
                 import re
 
                 combined_responses = f"{twitter_response} {reddit_response}"
 
-                # Limpiar texto de respuesta: quitar marcas, numeros, Markdown, etc.
+                # 清理Respuesta文本：去掉Marcar、Número、Markdown 等干扰
                 clean_text = re.sub(r"#{1,6}\s+", "", combined_responses)
                 clean_text = re.sub(r"\{[^}]*tool_name[^}]*\}", "", clean_text)
                 clean_text = re.sub(r"[*_`|>~\-]{2,}", "", clean_text)
-                clean_text = re.sub(r"pregunta\d+[：:]\s*", "", clean_text)
+                clean_text = re.sub(r"Problema\d+[：:]\s*", "", clean_text)
                 clean_text = re.sub(r"【[^】]+】", "", clean_text)
 
-                # Estrategia 1 (principal): Extraer oraciones completas con contenido sustancial
-                sentences = re.split(r"[.!?]", clean_text)
+                # Estrategia1（主）: Extracción完整的Tener实质Contenido的句子
+                sentences = re.split(r"[。！？]", clean_text)
                 meaningful = [
                     s.strip()
                     for s in sentences
                     if 20 <= len(s.strip()) <= 150
-                    and not re.match(r"^[\s\W,.;:!?]+", s.strip())
-                    and not s.strip().startswith(("{", "pregunta"))
+                    and not re.match(r"^[\s\W，,；;：:、]+", s.strip())
+                    and not s.strip().startswith(("{", "Problema"))
                 ]
                 meaningful.sort(key=len, reverse=True)
-                key_quotes = [s + "." for s in meaningful[:3]]
+                key_quotes = [s + "。" for s in meaningful[:3]]
 
-                # Estrategia 2 (complementaria): Texto largo dentro de comillas「」 correctamente emparejadas
+                # Estrategia2（Complementar）: 正确配Para的中文引号「」内长文本
                 if not key_quotes:
                     paired = re.findall(
                         r"\u201c([^\u201c\u201d]{15,100})\u201d", clean_text
@@ -1518,14 +1593,14 @@ Devolver lista de sub-preguntas en formato JSON."""
                     paired += re.findall(
                         r"\u300c([^\u300c\u300d]{15,100})\u300d", clean_text
                     )
-                    key_quotes = [q for q in paired if not re.match(r"^[,.;:!?]", q)][
-                        :3
-                    ]
+                    key_quotes = [
+                        q for q in paired if not re.match(r"^[，,；;：:、]", q)
+                    ][:3]
 
-                interview = agenteInterview(
+                interview = AgentInterview(
                     agent_name=agent_name,
                     agent_role=agent_role,
-                    agent_bio=agent_bio[:1000],  # Ampliar limite de longitud de bio
+                    agent_bio=agent_bio[:1000],  # 扩大bio长度Límite
                     question=combined_prompt,
                     response=response_text,
                     key_quotes=key_quotes[:5],
@@ -1535,21 +1610,19 @@ Devolver lista de sub-preguntas en formato JSON."""
             result.interviewed_count = len(result.interviews)
 
         except ValueError as e:
-            # Entorno de Simulacion no esta en ejecucion
-            logger.warning(
-                f"Llamada a API de entrevista fallo (entorno no en ejecucion?): {e}"
-            )
-            result.summary = f"Entrevista fallo: {str(e)}. El entorno de Simulacion puede haber sido cerrado, por favor asegurar que el entorno OASIS este en ejecucion."
+            # Simulación环境未Ejecutar
+            logger.warning(t("console.interviewApiCallFailed", error=e))
+            result.summary = f"采访Fallido：{str(e)}。Simulación环境Posible已Cerrar，请确保OASIS环境正EnEjecutar。"
             return result
         except Exception as e:
-            logger.error(f"Excepcion en llamada a API de entrevista: {e}")
+            logger.error(t("console.interviewApiCallException", error=e))
             import traceback
 
-            logger.error(traceback.format_exc())
-            result.summary = f"Error en proceso de entrevista: {str(e)}"
+            logger.error(traceback.Format_exc())
+            result.summary = f"采访过程发生Error：{str(e)}"
             return result
 
-        # Step 6: Generar resumen de entrevista
+        # Step 6: Generar采访摘要
         if result.interviews:
             result.summary = self._generate_interview_summary(
                 interviews=result.interviews,
@@ -1557,13 +1630,13 @@ Devolver lista de sub-preguntas en formato JSON."""
             )
 
         logger.info(
-            f"InterviewAgents completado: se entrevistaron {result.interviewed_count} agentes (doble plataforma)"
+            t("console.interviewAgentsComplete", count=result.interviewed_count)
         )
         return result
 
     @staticmethod
     def _clean_tool_call_response(response: str) -> str:
-        """Limpiar envoltorio de llamada de herramienta JSON de la respuesta del agente, extraer contenido real"""
+        """清理 Agent Responder中的 JSON 工具调用包裹，Extracción实际Contenido"""
         if not response or not response.strip().startswith("{"):
             return response
         text = response.strip()
@@ -1584,53 +1657,49 @@ Devolver lista de sub-preguntas en formato JSON."""
         return response
 
     def _load_agent_profiles(self, simulation_id: str) -> List[Dict[str, Any]]:
-        """Cargar archivos de perfil de agentes de Simulacion"""
+        """CargarSimulación的Agent人设Archivo"""
         import os
         import csv
 
-        # Construir ruta de archivo de perfil
+        # 构建人设Archivo路径
         sim_dir = os.path.join(
             os.path.dirname(__file__), f"../../uploads/simulations/{simulation_id}"
         )
 
         profiles = []
 
-        # Prioridad: intentar leer formato Reddit JSON
+        # Prioridad尝试LeerReddit JSON格式
         reddit_profile_path = os.path.join(sim_dir, "reddit_profiles.json")
         if os.path.exists(reddit_profile_path):
             try:
                 with open(reddit_profile_path, "r", encoding="utf-8") as f:
                     profiles = json.load(f)
-                logger.info(
-                    f"Se cargaron {len(profiles)} perfiles de reddit_profiles.json"
-                )
+                logger.info(t("console.loadedRedditProfiles", count=len(profiles)))
                 return profiles
             except Exception as e:
-                logger.warning(f"Error al leer reddit_profiles.json: {e}")
+                logger.warning(t("console.readRedditProfilesFailed", error=e))
 
-        # Intentar leer formato Twitter CSV
+        # 尝试LeerTwitter CSV格式
         twitter_profile_path = os.path.join(sim_dir, "twitter_profiles.csv")
         if os.path.exists(twitter_profile_path):
             try:
                 with open(twitter_profile_path, "r", encoding="utf-8") as f:
                     reader = csv.DictReader(f)
                     for row in reader:
-                        # Convertir formato CSV a formato unificado
+                        # CSV格式Convertir为统一格式
                         profiles.append(
                             {
                                 "realname": row.get("name", ""),
                                 "username": row.get("username", ""),
                                 "bio": row.get("description", ""),
                                 "persona": row.get("user_char", ""),
-                                "profession": "Desconocido",
+                                "proFession": "Desconocido",
                             }
                         )
-                logger.info(
-                    f"Se cargaron {len(profiles)} perfiles de twitter_profiles.csv"
-                )
+                logger.info(t("console.loadedTwitterProfiles", count=len(profiles)))
                 return profiles
             except Exception as e:
-                logger.warning(f"Error al leer twitter_profiles.csv: {e}")
+                logger.warning(t("console.readTwitterProfilesFailed", error=e))
 
         return profiles
 
@@ -1642,51 +1711,51 @@ Devolver lista de sub-preguntas en formato JSON."""
         max_agents: int,
     ) -> tuple:
         """
-        Usar LLM para seleccionar agentes a entrevistar
+        使用LLMSelección要采访的Agent
 
         Returns:
             tuple: (selected_agents, selected_indices, reasoning)
-                - selected_agents: Lista de informacion completa de agentes seleccionados
-                - selected_indices: Lista de indices de agentes seleccionados (para llamada API)
-                - reasoning: Razon de seleccion
+                - selected_agents: 选中Agent的完整InformaciónLista
+                - selected_indices: 选中Agent的ÍndiceLista（用于API调用）
+                - reasoning: Selección理由
         """
 
-        # Construir lista de resumen de agentes
+        # 构建Agent摘要Lista
         agent_summaries = []
         for i, profile in enumerate(profiles):
             summary = {
                 "index": i,
-                "name": profile.get("realname", profile.get("username", f"agente_{i}")),
-                "profession": profile.get("profession", "Desconocido"),
+                "name": profile.get("realname", profile.get("username", f"Agent_{i}")),
+                "proFession": profile.get("proFession", "Desconocido"),
                 "bio": profile.get("bio", "")[:200],
                 "interested_topics": profile.get("interested_topics", []),
             }
             agent_summaries.append(summary)
 
-        system_prompt = """Eres un experto en planificacion de entrevistas. Tu tarea es seleccionar los objetos mas apropiados para entrevista de la lista de agentes de Simulacion segun el requisito de entrevista.
+        system_prompt = """你Es一Elementos专业的采访策划专家。你的TareaEsBasado en采访需求，DesdeSimulaciónAgentLista中SelecciónMás适合采访的Objeto。
 
-Criterios de seleccion:
-1. La identidad/profesion del agente esta relacionada con el tema de la entrevista
-2. El agente puede tener puntos de vista unicos o valiosos
-3. Seleccionar perspectivas diversas (como: a favor, en contra, neutral, profesional, etc.)
-4. Priorizar roles directamente relacionados con el evento
+Selección标准：
+1. Agent的身份/职业Con采访TemaRelacionado
+2. AgentPosible持Tener独特OTener价Valor的观点
+3. Selección多样化的视角（如：Soporte方、反Para方、中立方、专业人士等）
+4. PrioridadSelecciónConEvento直接Relacionado的角色
 
-Devolver en formato JSON:
+VolverJSON格式：
 {
-    "selected_indices": [lista de indices de agentes seleccionados],
-    "reasoning": "Explicacion de la razon de seleccion"
+    "selected_indices": [选中Agent的ÍndiceLista],
+    "reasoning": "Selección理由Decir明"
 }"""
 
-        user_prompt = f"""Requisito de entrevista:
+        user_prompt = f"""采访需求：
 {interview_requirement}
 
-Contexto de Simulacion:
-{simulation_requirement if simulation_requirement else "No proporcionado"}
+Simulación背景：
+{simulation_requirement if simulation_requirement else "未提供"}
 
-Lista de agentes disponibles (total {len(agent_summaries)}):
+Opcional择的AgentLista（共{len(agent_summaries)}Elementos）：
 {json.dumps(agent_summaries, ensure_ascii=False, indent=2)}
 
-Por favor seleccionar hasta {max_agents} agentes mas apropiados para entrevista y explicar la razon de seleccion."""
+请SelecciónMás多{max_agents}ElementosMás适合采访的Agent，并Decir明Selección理由。"""
 
         try:
             response = self.llm.chat_json(
@@ -1698,11 +1767,9 @@ Por favor seleccionar hasta {max_agents} agentes mas apropiados para entrevista 
             )
 
             selected_indices = response.get("selected_indices", [])[:max_agents]
-            reasoning = response.get(
-                "reasoning", "Seleccion automatica basada en relevancia"
-            )
+            reasoning = response.get("reasoning", "基于Relacionado性自动Selección")
 
-            # Obtener informacion completa de los agentes seleccionados
+            # Obtener选中的Agent完整Información
             selected_agents = []
             valid_indices = []
             for idx in selected_indices:
@@ -1713,13 +1780,11 @@ Por favor seleccionar hasta {max_agents} agentes mas apropiados para entrevista 
             return selected_agents, valid_indices, reasoning
 
         except Exception as e:
-            logger.warning(
-                f"Error al seleccionar agentes con LLM, usando seleccion por defecto: {e}"
-            )
-            # Degradacion: seleccionar los primeros N
+            logger.warning(t("console.llmSelectAgentFailed", error=e))
+            # Degradar：Selección前NElementos
             selected = profiles[:max_agents]
             indices = list(range(min(max_agents, len(profiles))))
-            return selected, indices, "Usando estrategia de seleccion por defecto"
+            return selected, indices, "使用默认SelecciónEstrategia"
 
     def _generate_interview_questions(
         self,
@@ -1727,29 +1792,29 @@ Por favor seleccionar hasta {max_agents} agentes mas apropiados para entrevista 
         simulation_requirement: str,
         selected_agents: List[Dict[str, Any]],
     ) -> List[str]:
-        """Usar LLM para generar preguntas de entrevista"""
+        """使用LLMGenerar采访Problema"""
 
-        agent_roles = [a.get("profession", "Desconocido") for a in selected_agents]
+        agent_roles = [a.get("proFession", "Desconocido") for a in selected_agents]
 
-        system_prompt = """Eres un periodista/experto en entrevistas profesional. Segun el requisito de entrevista, generar 3-5 preguntas de entrevista profundas.
+        system_prompt = """你Es一Elementos专业的记者/采访者。Basado en采访需求，Generar3-5Elementos深度采访Problema。
 
-Requisitos de preguntas:
-1. Preguntas abiertas que fomenten respuestas detalladas
-2. Diferentes respuestas para diferentes roles
-3. Cubrir multiples dimensiones como hechos, puntos de vista, sentimientos, etc.
-4. Lenguaje natural, como una entrevista real
-5. Cada pregunta controlada en 50 caracteres o menos, concisa y clara
-6. Preguntar directamente, no incluir explicaciones de fondo o prefijos
+ProblemaRequisito：
+1. 开放性Problema，鼓励详细回答
+2. 针Para不同角色PosibleTener不同答案
+3. 涵盖事实、观点、感受等多Elementos维度
+4. 语言自然，像真实采访一样
+5. 每ElementosProblema控制En50字以内，简洁明了
+6. 直接提问，不要Contiene背景Decir明O前缀
 
-Devolver en formato JSON: {"questions": ["pregunta1", "pregunta2", ...]}"""
+VolverJSON格式：{"questions": ["Problema1", "Problema2", ...]}"""
 
-        user_prompt = f"""Requisito de entrevista: {interview_requirement}
+        user_prompt = f"""采访需求：{interview_requirement}
 
-Contexto de Simulacion: {simulation_requirement if simulation_requirement else "No proporcionado"}
+Simulación背景：{simulation_requirement if simulation_requirement else "未提供"}
 
-Roles de objetos de entrevista: {", ".join(agent_roles)}
+采访Objeto角色：{", ".join(agent_roles)}
 
-Por favor generar 3-5 preguntas de entrevista."""
+请Generar3-5Elementos采访Problema。"""
 
         try:
             response = self.llm.chat_json(
@@ -1761,54 +1826,59 @@ Por favor generar 3-5 preguntas de entrevista."""
             )
 
             return response.get(
-                "questions", [f"Cual es su opinion sobre {interview_requirement}?"]
+                "questions", [f"Acerca de{interview_requirement}，您TenerQué看法？"]
             )
 
         except Exception as e:
-            logger.warning(f"Error al generar preguntas de entrevista: {e}")
+            logger.warning(t("console.generateInterviewQuestionsFailed", error=e))
             return [
-                f"Cual es su opinion sobre {interview_requirement}?",
-                "Como le afecta a usted o al grupo que representa este asunto?",
-                "Como cree que se deberia resolver o mejorar este tema?",
+                f"Acerca de{interview_requirement}，您的观点EsQué？",
+                "这件事Para您O您所代表的群体TenerQuéImpacto？",
+                "您PensarDeberíaCómo解决O改进这ElementosProblema？",
             ]
 
     def _generate_interview_summary(
-        self, interviews: List[agenteInterview], interview_requirement: str
+        self, interviews: List[AgentInterview], interview_requirement: str
     ) -> str:
-        """Generar resumen de entrevista"""
+        """Generar采访摘要"""
 
         if not interviews:
-            return "No se completo ninguna entrevista"
+            return "未CompletadoCualquier采访"
 
-        # Recopilar todo el contenido de entrevistas
+        # 收集Todos采访Contenido
         interview_texts = []
         for interview in interviews:
             interview_texts.append(
                 f"【{interview.agent_name}（{interview.agent_role}）】\n{interview.response[:500]}"
             )
 
-        system_prompt = """Eres un editor de noticias profesional. Segun las respuestas de multiples entrevistados, generar un resumen de entrevista.
+        quote_instruction = (
+            "Citar受访者原话时使用中文引号「」"
+            if get_locale() == "zh"
+            else 'Use quotation marks "" when quoting interviewees'
+        )
+        system_prompt = f"""你Es一Elementos专业的新闻编辑。请Basado en多位受访者的回答，Generar一份采访摘要。
 
-Requisitos del resumen:
-1. Extraer los puntos de vista principales de cada parte
-2. Senalar consenso y divergencia de puntos de vista
-3. Destacar citas valiosas
-4. Objetivo y neutral, sin favorecer a ninguna parte
-5. Controlar en 1000 caracteres
+摘要Requisito：
+1. 提炼各方Principal观点
+2. 指出观点的共识Y分歧
+3. 突出Tener价Valor的引言
+4. 客观中立，不偏袒Cualquier一方
+5. 控制En1000字内
 
-Restricciones de formato (deben cumplirse):
-- Usar parrafos de texto plano, separar diferentes partes con lineas en blanco
-- No usar titulos Markdown (como #, ##, ###)
-- No usar lineas divisorias (como ---, ***)
-- Usar comillas「」al citar respuestas originales de los entrevistados
-- Se puede usar **negrita** para marcar palabras clave, pero no usar otras sintaxis Markdown"""
+格式Restricción（Debe遵守）：
+- 使用纯文本段落，用空Fila分隔不同部分
+- 不要使用MarkdownTítulo（如#、##、###）
+- 不要使用Línea divisoria（如---、***）
+- {quote_instruction}
+- Puede使用**加粗**Marcar关Clave词，Pero不要使用OtroMarkdown语法"""
 
-        user_prompt = f"""Tema de entrevista: {interview_requirement}
+        user_prompt = f"""采访Tema：{interview_requirement}
 
-Contenido de entrevista:
+采访Contenido：
 {"".join(interview_texts)}
 
-Por favor generar un resumen de entrevista."""
+请Generar采访摘要。"""
 
         try:
             summary = self.llm.chat(
@@ -1822,9 +1892,8 @@ Por favor generar un resumen de entrevista."""
             return summary
 
         except Exception as e:
-            logger.warning(f"Error al generar resumen de entrevista: {e}")
-            # Degradacion: concatenacion simple
-            return (
-                f"Se entrevistaron {len(interviews)} entrevistados, incluyendo: "
-                + ", ".join([i.agent_name for i in interviews])
+            logger.warning(t("console.generateInterviewSummaryFailed", error=e))
+            # Degradar：简单拼接
+            return f"共采访了{len(interviews)}位受访者，包括：" + "、".join(
+                [i.agent_name for i in interviews]
             )

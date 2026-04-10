@@ -4,20 +4,20 @@
     :class="{ 'no-projects': projects.length === 0 && !loading }"
     ref="historyContainer"
   >
-    <!-- 背景装饰：技术网格线（只在有项目时显示） -->
+    <!-- Decoración de fondo: cuadrícula técnica (solo se muestra cuando hay proyectos) -->
     <div v-if="projects.length > 0 || loading" class="tech-grid-bg">
       <div class="grid-pattern"></div>
       <div class="gradient-overlay"></div>
     </div>
 
-    <!-- 标题区域 -->
+    <!-- Área del título -->
     <div class="section-header">
       <div class="section-line"></div>
-      <span class="section-title">{{ t('history.title') }}</span>
+      <span class="section-title">{{ $t('history.title') }}</span>
       <div class="section-line"></div>
     </div>
 
-    <!-- 卡片容器（只在有项目时显示） -->
+    <!-- Contenedor de tarjetas (solo se muestra cuando hay proyectos) -->
     <div v-if="projects.length > 0" class="cards-container" :class="{ expanded: isExpanded }" :style="containerStyle">
       <div 
         v-for="(project, index) in projects" 
@@ -29,33 +29,33 @@
         @mouseleave="hoveringCard = null"
         @click="navigateToProject(project)"
       >
-        <!-- 卡片头部：simulation_id 和 功能可用状态 -->
+        <!-- Encabezado de tarjeta: simulation_id y estado de disponibilidad de funciones -->
         <div class="card-header">
           <span class="card-id">{{ formatSimulationId(project.simulation_id) }}</span>
           <div class="card-status-icons">
-            <span
-              class="status-icon"
+            <span 
+              class="status-icon" 
               :class="{ available: project.project_id, unavailable: !project.project_id }"
-              :title="t('history.graphBuild')"
+              :title="$t('history.graphBuild')"
             >◇</span>
-            <span
-              class="status-icon available"
-              :title="t('history.envSetup')"
+            <span 
+              class="status-icon available" 
+              :title="$t('history.envSetup')"
             >◈</span>
-            <span
-              class="status-icon"
+            <span 
+              class="status-icon" 
               :class="{ available: project.report_id, unavailable: !project.report_id }"
-              :title="t('history.report')"
+              :title="$t('history.analysisReport')"
             >◆</span>
           </div>
         </div>
 
-        <!-- 文件列表区域 -->
+        <!-- Área de lista de archivos -->
         <div class="card-files-wrapper">
-          <!-- 角落装饰 - 取景框风格 -->
+          <!-- Decoración de esquina - estilo de visor -->
           <div class="corner-mark top-left-only"></div>
           
-          <!-- 文件列表 -->
+          <!-- Lista de archivos -->
           <div class="files-list" v-if="project.files && project.files.length > 0">
             <div 
               v-for="(file, fileIndex) in project.files.slice(0, 3)" 
@@ -65,25 +65,25 @@
               <span class="file-tag" :class="getFileType(file.filename)">{{ getFileTypeLabel(file.filename) }}</span>
               <span class="file-name">{{ truncateFilename(file.filename, 20) }}</span>
             </div>
-            <!-- 如果有更多文件，显示提示 -->
+            <!-- Si hay más archivos, mostrar notificación -->
             <div v-if="project.files.length > 3" class="files-more">
-              +{{ project.files.length - 3 }} {{ t('history.moreFiles', { n: project.files.length - 3 }) }}
+              {{ $t('history.moreFiles', { count: project.files.length - 3 }) }}
             </div>
           </div>
-          <!-- 无文件时的占位 -->
+          <!-- Marcador cuando no hay archivos -->
           <div class="files-empty" v-else>
             <span class="empty-file-icon">◇</span>
-            <span class="empty-file-text">{{ t('history.noFiles') }}</span>
+            <span class="empty-file-text">{{ $t('history.noFiles') }}</span>
           </div>
         </div>
 
-        <!-- 卡片标题（使用模拟需求的前20字作为标题） -->
+        <!-- título de tarjeta (usa los primeros 20 caracteres del requisito de simulación como título) -->
         <h3 class="card-title">{{ getSimulationTitle(project.simulation_requirement) }}</h3>
 
-        <!-- 卡片描述（模拟需求完整展示） -->
+        <!-- descripción de tarjeta (mostrar requisito de simulación completo) -->
         <p class="card-desc">{{ truncateText(project.simulation_requirement, 55) }}</p>
 
-        <!-- 卡片底部 -->
+        <!-- fondo de tarjeta -->
         <div class="card-footer">
           <div class="card-datetime">
             <span class="card-date">{{ formatDate(project.created_at) }}</span>
@@ -94,23 +94,23 @@
           </span>
         </div>
         
-        <!-- 底部装饰线 (hover时展开) -->
+        <!-- línea decorativa inferior (se expande en hover) -->
         <div class="card-bottom-line"></div>
       </div>
     </div>
 
-    <!-- 加载状态 -->
+    <!-- estado de carga -->
     <div v-if="loading" class="loading-state">
       <span class="loading-spinner"></span>
-      <span class="loading-text">{{ t('history.loading') }}</span>
+      <span class="loading-text">{{ $t('history.loadingText') }}</span>
     </div>
 
-    <!-- 历史回放详情弹窗 -->
+    <!-- ventana emergente de detalles de reproducción histórica -->
     <Teleport to="body">
       <Transition name="modal">
         <div v-if="selectedProject" class="modal-overlay" @click.self="closeModal">
           <div class="modal-content">
-            <!-- 弹窗头部 -->
+            <!-- encabezado de ventana emergente -->
             <div class="modal-header">
               <div class="modal-title-section">
                 <span class="modal-id">{{ formatSimulationId(selectedProject.simulation_id) }}</span>
@@ -122,67 +122,67 @@
               <button class="modal-close" @click="closeModal">×</button>
             </div>
 
-            <!-- 弹窗内容 -->
+            <!-- contenido de ventana emergente -->
             <div class="modal-body">
-            <!-- 模拟需求 -->
-            <div class="modal-section">
-              <div class="modal-label">{{ t('history.simRequirement') }}</div>
-              <div class="modal-requirement">{{ selectedProject.simulation_requirement || t('history.none') }}</div>
-            </div>
-
-            <!-- 文件列表 -->
-            <div class="modal-section">
-              <div class="modal-label">{{ t('history.relatedFiles') }}</div>
-              <div class="modal-files" v-if="selectedProject.files && selectedProject.files.length > 0">
-                <div v-for="(file, index) in selectedProject.files" :key="index" class="modal-file-item">
-                  <span class="file-tag" :class="getFileType(file.filename)">{{ getFileTypeLabel(file.filename) }}</span>
-                  <span class="modal-file-name">{{ file.filename }}</span>
-                </div>
+              <!-- Requisito de simulación -->
+              <div class="modal-section">
+                <div class="modal-label">{{ $t('history.simRequirement') }}</div>
+                <div class="modal-requirement">{{ selectedProject.simulation_requirement || $t('common.none') }}</div>
               </div>
-              <div class="modal-empty" v-else>{{ t('history.noRelatedFiles') }}</div>
+
+              <!-- Lista de archivos -->
+              <div class="modal-section">
+                <div class="modal-label">{{ $t('history.relatedFiles') }}</div>
+                <div class="modal-files" v-if="selectedProject.files && selectedProject.files.length > 0">
+                  <div v-for="(file, index) in selectedProject.files" :key="index" class="modal-file-item">
+                    <span class="file-tag" :class="getFileType(file.filename)">{{ getFileTypeLabel(file.filename) }}</span>
+                    <span class="modal-file-name">{{ file.filename }}</span>
+                  </div>
+                </div>
+                <div class="modal-empty" v-else>{{ $t('history.noRelatedFiles') }}</div>
+              </div>
             </div>
-          </div>
 
-          <!-- 推演回放分割线 -->
-          <div class="modal-divider">
-            <span class="divider-line"></span>
-            <span class="divider-text">{{ t('history.playback') }}</span>
-            <span class="divider-line"></span>
-          </div>
+            <!-- Reproducción de simulaciónLínea divisoria -->
+            <div class="modal-divider">
+              <span class="divider-line"></span>
+              <span class="divider-text">{{ $t('history.replayTitle') }}</span>
+              <span class="divider-line"></span>
+            </div>
 
-          <!-- 导航按钮 -->
-          <div class="modal-actions">
-            <button
-              class="modal-btn btn-project"
-              @click="goToProject"
-              :disabled="!selectedProject.project_id"
-            >
-              <span class="btn-step">{{ $t('history.step1') }}</span>
-              <span class="btn-icon">◇</span>
-              <span class="btn-text">{{ t('history.graphBuild') }}</span>
-            </button>
-            <button
-              class="modal-btn btn-simulation"
-              @click="goToSimulation"
-            >
-              <span class="btn-step">{{ $t('history.step2') }}</span>
-              <span class="btn-icon">◈</span>
-              <span class="btn-text">{{ t('history.envSetup') }}</span>
-            </button>
-            <button
-              class="modal-btn btn-report"
-              @click="goToReport"
-              :disabled="!selectedProject.report_id"
-            >
-              <span class="btn-step">{{ $t('history.step4') }}</span>
-              <span class="btn-icon">◆</span>
-              <span class="btn-text">{{ t('history.report') }}</span>
-            </button>
-          </div>
-          <!-- 不可回放提示 -->
-          <div class="modal-playback-hint">
-            <span class="hint-text">{{ t('history.playbackHint') }}</span>
-          </div>
+            <!-- botónes de navegación -->
+            <div class="modal-actions">
+              <button 
+                class="modal-btn btn-project" 
+                @click="goToProject"
+                :disabled="!selectedProject.project_id"
+              >
+                <span class="btn-step">Step1</span>
+                <span class="btn-icon">◇</span>
+                <span class="btn-text">{{ $t('history.step1Button') }}</span>
+              </button>
+              <button 
+                class="modal-btn btn-simulation" 
+                @click="goToSimulation"
+              >
+                <span class="btn-step">Step2</span>
+                <span class="btn-icon">◈</span>
+                <span class="btn-text">{{ $t('history.step2Button') }}</span>
+              </button>
+              <button 
+                class="modal-btn btn-report" 
+                @click="goToReport"
+                :disabled="!selectedProject.report_id"
+              >
+                <span class="btn-step">Step4</span>
+                <span class="btn-icon">◆</span>
+                <span class="btn-text">{{ $t('history.step4Button') }}</span>
+              </button>
+            </div>
+            <!-- indicación de no reproducción -->
+            <div class="modal-playback-hint">
+              <span class="hint-text">{{ $t('history.replayHint') }}</span>
+            </div>
           </div>
         </div>
       </Transition>
@@ -290,19 +290,19 @@ const getCardStyle = (index) => {
   }
 }
 
-// 根据轮数进度获取样式类
+// 根据rondas数进度获取样式类
 const getProgressClass = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
   
   if (total === 0 || current === 0) {
-    // 未开始
+    // Sin iniciar
     return 'not-started'
   } else if (current >= total) {
-    // 已完成
+    // Completado
     return 'completed'
   } else {
-    // 进行中
+    // En progreso
     return 'in-progress'
   }
 }
@@ -337,9 +337,9 @@ const truncateText = (text, maxLength) => {
   return text.length > maxLength ? text.slice(0, maxLength) + '...' : text
 }
 
-// 从模拟需求生成标题（取前20字）
+// 从Requisito de simulación生成标题（取前20字）
 const getSimulationTitle = (requirement) => {
-  if (!requirement) return t('history.unnamedSimulation')
+  if (!requirement) return t('history.untitledSimulation')
   const title = requirement.slice(0, 20)
   return requirement.length > 20 ? title + '...' : title
 }
@@ -351,12 +351,12 @@ const formatSimulationId = (simulationId) => {
   return `SIM_${prefix.toUpperCase()}`
 }
 
-// 格式化轮数显示（当前轮/总轮数）
+// 格式化rondas数显示（当前rondas/总rondas数）
 const formatRounds = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
   if (total === 0) return t('history.notStarted')
-  return `${current}/${total} ${t('history.rounds')}`
+  return t('history.roundsProgress', { current, total })
 }
 
 // 获取文件类型（用于样式）
@@ -398,12 +398,12 @@ const navigateToProject = (simulation) => {
   selectedProject.value = simulation
 }
 
-// 关闭弹窗
+// Cerrar弹窗
 const closeModal = () => {
   selectedProject.value = null
 }
 
-// 导航到图谱构建页面（Project）
+// 导航到Construcción de grafo页面（Project）
 const goToProject = () => {
   if (selectedProject.value?.project_id) {
     router.push({
@@ -425,7 +425,7 @@ const goToSimulation = () => {
   }
 }
 
-// 导航到分析报告页面（Report）
+// 导航到Informe de análisis页面（Report）
 const goToReport = () => {
   if (selectedProject.value?.report_id) {
     router.push({
@@ -445,14 +445,14 @@ const loadHistory = async () => {
       projects.value = response.data || []
     }
   } catch (error) {
-    console.error(t('history.loadHistoryFailed'), error)
+    console.error('加载历史项目Fallido:', error)
     projects.value = []
   } finally {
     loading.value = false
   }
 }
 
-// 初始化 IntersectionObserver
+// Inicializando IntersectionObserver
 const initObserver = () => {
   if (observer) {
     observer.disconnect()
@@ -463,7 +463,7 @@ const initObserver = () => {
       entries.forEach((entry) => {
         const shouldExpand = entry.isIntersecting
         
-        // 更新待执行的目标状态（无论是否在动画中都要记录最新的目标状态）
+        // 更新待执行的目标状态（Ninguno论是否在动画中都要记录最新的目标状态）
         pendingState = shouldExpand
         
         // 清除之前的防抖定时器（新的滚动意图会覆盖旧的）
@@ -520,7 +520,7 @@ const initObserver = () => {
       })
     },
     {
-      // 使用多个阈值，使检测更平滑
+      // 使用多elementos阈值，使检测更平滑
       threshold: [0.4, 0.6, 0.8],
       // 调整 rootMargin，视口底部向上收缩，需要滚动更多才触发展开
       rootMargin: '0px 0px -150px 0px'
@@ -533,7 +533,7 @@ const initObserver = () => {
   }
 }
 
-// 监听路由变化，当返回首页时重新加载数据
+// 监听路由变化，当Volver首页时重新加载数据
 watch(() => route.path, (newPath) => {
   if (newPath === '/') {
     loadHistory()
@@ -545,7 +545,7 @@ onMounted(async () => {
   await nextTick()
   await loadHistory()
   
-  // 等待 DOM 渲染后初始化观察器
+  // Pendiente DOM 渲染后Inicializando观察器
   setTimeout(() => {
     initObserver()
   }, 100)
@@ -581,7 +581,7 @@ onUnmounted(() => {
   overflow: visible;
 }
 
-/* 无项目时简化显示 */
+/* Ninguno项目时简化显示 */
 .history-database.no-projects {
   min-height: auto;
   padding: 40px 0 20px;
@@ -625,7 +625,7 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-/* 标题区域 */
+/* Área del título */
 .section-header {
   position: relative;
   z-index: 100;
@@ -687,7 +687,7 @@ onUnmounted(() => {
   z-index: 1000 !important;
 }
 
-/* 卡片头部 */
+/* encabezado de tarjeta */
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -723,16 +723,16 @@ onUnmounted(() => {
 }
 
 /* 不同功能的颜色 */
-.status-icon:nth-child(1).available { color: #3B82F6; } /* 图谱构建 - 蓝色 */
-.status-icon:nth-child(2).available { color: #F59E0B; } /* 环境搭建 - 橙色 */
-.status-icon:nth-child(3).available { color: #10B981; } /* 分析报告 - 绿色 */
+.status-icon:nth-child(1).available { color: #3B82F6; } /* Construcción de grafo - 蓝色 */
+.status-icon:nth-child(2).available { color: #F59E0B; } /* Configuración del entorno - 橙色 */
+.status-icon:nth-child(3).available { color: #10B981; } /* Informe de análisis - 绿色 */
 
 .status-icon.unavailable {
   color: #D1D5DB;
   opacity: 0.5;
 }
 
-/* 轮数进度显示 */
+/* rondas数进度显示 */
 .card-progress {
   display: flex;
   align-items: center;
@@ -747,12 +747,12 @@ onUnmounted(() => {
 }
 
 /* 进度状态颜色 */
-.card-progress.completed { color: #10B981; }    /* 已完成 - 绿色 */
-.card-progress.in-progress { color: #F59E0B; }  /* 进行中 - 橙色 */
-.card-progress.not-started { color: #9CA3AF; }  /* 未开始 - 灰色 */
+.card-progress.completed { color: #10B981; }    /* Completado - 绿色 */
+.card-progress.in-progress { color: #F59E0B; }  /* En progreso - 橙色 */
+.card-progress.not-started { color: #9CA3AF; }  /* Sin iniciar - 灰色 */
 .card-status.pending { color: #9CA3AF; }
 
-/* 文件列表区域 */
+/* Área de lista de archivos */
 .card-files-wrapper {
   position: relative;
   width: 100%;
@@ -841,7 +841,7 @@ onUnmounted(() => {
   letter-spacing: 0.1px;
 }
 
-/* 无文件时的占位 */
+/* Marcador cuando no hay archivos */
 .files-empty {
   display: flex;
   align-items: center;
@@ -913,7 +913,7 @@ onUnmounted(() => {
   -webkit-box-orient: vertical;
 }
 
-/* 卡片底部 */
+/* fondo de tarjeta */
 .card-footer {
   position: relative;
   display: flex;
@@ -934,7 +934,7 @@ onUnmounted(() => {
   gap: 8px;
 }
 
-/* 底部轮数进度显示 */
+/* 底部rondas数进度显示 */
 .card-footer .card-progress {
   display: flex;
   align-items: center;
@@ -1013,7 +1013,7 @@ onUnmounted(() => {
   }
 }
 
-/* ===== 历史回放详情弹窗样式 ===== */
+/* ===== ventana emergente de detalles de reproducción histórica样式 ===== */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1068,7 +1068,7 @@ onUnmounted(() => {
   opacity: 0;
 }
 
-/* 弹窗头部 */
+/* encabezado de ventana emergente */
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -1135,7 +1135,7 @@ onUnmounted(() => {
   color: #111827;
 }
 
-/* 弹窗内容 */
+/* contenido de ventana emergente */
 .modal-body {
   padding: 24px 32px;
 }
@@ -1177,7 +1177,7 @@ onUnmounted(() => {
   padding-right: 4px;
 }
 
-/* 自定义滚动条样式 */
+/* Personalizar滚动条样式 */
 .modal-files::-webkit-scrollbar {
   width: 4px;
 }
@@ -1231,7 +1231,7 @@ onUnmounted(() => {
   text-align: center;
 }
 
-/* 推演回放分割线 */
+/* Reproducción de simulaciónLínea divisoria */
 .modal-divider {
   display: flex;
   align-items: center;
@@ -1255,7 +1255,7 @@ onUnmounted(() => {
   white-space: nowrap;
 }
 
-/* 导航按钮 */
+/* botónes de navegación */
 .modal-actions {
   display: flex;
   gap: 16px;
@@ -1322,7 +1322,7 @@ onUnmounted(() => {
   color: #111827;
 }
 
-/* 不可回放提示 */
+/* indicación de no reproducción */
 .modal-playback-hint {
   display: flex;
   align-items: center;

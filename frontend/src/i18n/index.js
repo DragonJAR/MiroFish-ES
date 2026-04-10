@@ -1,13 +1,27 @@
 import { createI18n } from 'vue-i18n'
-import es from './es.json'
-// zh.json removed - Spanish is the only language
-// import zh from './zh.json'
+import languages from '../../../locales/languages.json'
+
+const localeFiles = import.meta.glob('../../../locales/!(languages).json', { eager: true })
+
+const messages = {}
+const availableLocales = []
+
+for (const path in localeFiles) {
+  const key = path.match(/\/([^/]+)\.json$/)[1]
+  if (languages[key]) {
+    messages[key] = localeFiles[path].default
+    availableLocales.push({ key, label: languages[key].label })
+  }
+}
+
+const savedLocale = localStorage.getItem('locale') || 'es'
 
 const i18n = createI18n({
   legacy: false,
-  locale: 'es',
-  fallbackLocale: 'es',  // Fallback to Spanish, not Chinese
-  messages: { es }  // Only Spanish messages
+  locale: savedLocale,
+  fallbackLocale: 'es',
+  messages
 })
 
+export { availableLocales }
 export default i18n

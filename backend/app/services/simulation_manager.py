@@ -1,7 +1,7 @@
 """
-Gestor de Simulación OASIS
-Gestiona la simulación paralela de doble plataforma Twitter y Reddit
-Utiliza scripts predefinidos + generación inteligente de parámetros de configuración con LLM
+Gestor de simulación OASIS
+Gestiona simulación paralela de doble plataforma Twitter y Reddit
+Utiliza scripts preestablecidos + generación inteligente de parámetros de configuración LLM
 """
 
 import os
@@ -18,6 +18,7 @@ from ..utils.logger import get_logger
 from ..memory import get_memory_backend, EntityNode, FilteredEntities
 from .oasis_profile_generator import OasisProfileGenerator, OasisAgentProfile
 from .simulation_config_generator import SimulationConfigGenerator, SimulationParameters
+from ..utils.locale import t
 
 logger = get_logger("mirofish.simulation")
 
@@ -30,8 +31,8 @@ class SimulationStatus(str, Enum):
     READY = "ready"
     RUNNING = "running"
     PAUSED = "paused"
-    STOPPED = "stopped"  # simulaciónpordetener
-    COMPLETED = "completed"  # simulacióncompletado
+    STOPPED = "stopped"  # Simulación detenida manualmente
+    COMPLETED = "completed"  # Simulación completada naturalmente
     FAILED = "failed"
 
 
@@ -50,36 +51,36 @@ class SimulationState:
     project_id: str
     graph_id: str
 
-    # estado
+    # Estado de habilitación de plataforma
     enable_twitter: bool = True
     enable_reddit: bool = True
 
-    # estado
+    # Estado
     status: SimulationStatus = SimulationStatus.CREATED
 
-    # datos
+    # Datos de fase de preparación
     entities_count: int = 0
     profiles_count: int = 0
     entity_types: List[str] = field(default_factory=list)
 
-    # configuracióngenerarinformación
+    # Información de generación de configuración
     config_generated: bool = False
     config_reasoning: str = ""
 
-    # ejecutardatos
+    # Datos de tiempo de ejecución
     current_round: int = 0
     twitter_status: str = "not_started"
     reddit_status: str = "not_started"
 
-    # tiempo
+    # Marca de tiempo
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
 
-    # errorinformación
+    # Información de error
     error: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
-        """estado（hacer）"""
+        """Diccionario de estado completo (uso interno)"""
         return {
             "simulation_id": self.simulation_id,
             "project_id": self.project_id,
@@ -101,7 +102,7 @@ class SimulationState:
         }
 
     def to_simple_dict(self) -> Dict[str, Any]:
-        """estado（APIretornarhacer）"""
+        """Diccionario de estado simplificado (para respuesta API)"""
         return {
             "simulation_id": self.simulation_id,
             "project_id": self.project_id,
@@ -117,13 +118,13 @@ class SimulationState:
 
 class SimulationManager:
     """
-    simulación
+    Gestor de simulación
 
     Funciones principales:
-    1. Leer entidades del grafo Zep y filtrar
-    2. Generar Perfil de Agent OASIS
-    3. Usar LLM para generar parámetros de configuración de simulación
-    4. Preparar todos los archivos necesarios para scripts predefinidos
+    1. Leer y filtrar entidades del grafo Zep
+    2. Generar Perfiles de Agente OASIS
+    3. Generar inteligentemente parámetros de configuración de simulación con LLM
+    4. Preparar todos los archivos necesarios para scripts preestablecidos
     """
 
     # Directorio de almacenamiento de datos de simulación
@@ -132,12 +133,11 @@ class SimulationManager:
     )
 
     def __init__(self):
-        # directorioen
+        # Asegurar que el directorio existe
         os.makedirs(self.SIMULATION_DATA_DIR, exist_ok=True)
 
-        # simulaciónestadocache
+        # Caché de estados de simulación en memoria
         self._simulations: Dict[str, SimulationState] = {}
-        self._lock = threading.Lock()
 
     def _get_simulation_dir(self, simulation_id: str) -> str:
         """Obtener directorio de datos de simulación"""
@@ -155,14 +155,12 @@ class SimulationManager:
         with open(state_file, "w", encoding="utf-8") as f:
             json.dump(state.to_dict(), f, ensure_ascii=False, indent=2)
 
-        with self._lock:
-            self._simulations[state.simulation_id] = state
+        self._simulations[state.simulation_id] = state
 
     def _load_simulation_state(self, simulation_id: str) -> Optional[SimulationState]:
         """Cargar estado de simulación desde archivo"""
-        with self._lock:
-            if simulation_id in self._simulations:
-                return self._simulations[simulation_id]
+        if simulation_id in self._simulations:
+            return self._simulations[simulation_id]
 
         sim_dir = self._get_simulation_dir(simulation_id)
         state_file = os.path.join(sim_dir, "state.json")
@@ -193,8 +191,7 @@ class SimulationManager:
             error=data.get("error"),
         )
 
-        with self._lock:
-            self._simulations[simulation_id] = state
+        self._simulations[simulation_id] = state
         return state
 
     def create_simulation(
@@ -205,13 +202,13 @@ class SimulationManager:
         enable_reddit: bool = True,
     ) -> SimulationState:
         """
-        crearsimulación
+        Crear nueva simulación
 
         Args:
-            project_id: ID
-            graph_id: ZepgrafoID
-            enable_twitter: esTwittersimulación
-            enable_reddit: esRedditsimulación
+            project_id: ID del proyecto
+            graph_id: ID del grafo Zep
+            enable_twitter: Habilitar simulación de Twitter
+            enable_reddit: Habilitar simulación de Reddit
 
         Returns:
             SimulationState
@@ -231,7 +228,7 @@ class SimulationManager:
 
         self._save_simulation_state(state)
         logger.info(
-            f"crearsimulación: {simulation_id}, project={project_id}, graph={graph_id}"
+            f"Crear simulación: {simulation_id}, project={project_id}, graph={graph_id}"
         )
 
         return state
@@ -247,30 +244,30 @@ class SimulationManager:
         parallel_profile_count: int = 3,
     ) -> SimulationState:
         """
-        simulación（）
+        Preparar entorno de simulación (completamente automatizado)
 
-        ：
-        1. desdeZepgrafoleeryfiltrarentidad
-        2. paraentidadgenerarOASIS Agent Profile（LLM，soportaryejecutar）
-        3. Usar LLM para generar parámetros de configuración de simulación（tiempo、、frecuencia）
-        4. guardarconfiguraciónarchivoyProfilearchivo
-        5. hastasimulacióndirectorio
+        Pasos:
+        1. Leer y filtrar entidades del grafo Zep
+        2. Generar Perfil de Agente OASIS para cada entidad (mejora LLM opcional, soporte paralelo)
+        3. Generar inteligentemente parámetros de configuración de simulación con LLM (tiempo, actividad, frecuencia de publicación, etc.)
+        4. Guardar archivos de configuración y archivos de Perfil
+        5. Copiar scripts preestablecidos al directorio de simulación
 
         Args:
-            simulation_id: simulaciónID
-            simulation_requirement: simulacióndescripción（enLLMgenerarconfiguración）
-            document_text: （enLLM）
-            defined_entity_types: entidadtipo（）
-            use_llm_for_profiles: eshacerLLMgenerar
-            progress_callback: función (stage, progress, message)
-            parallel_profile_count: yejecutargenerar，por defecto3
+            simulation_id: ID de simulación
+            simulation_requirement: Descripción de requisitos de simulación (para generación de configuración LLM)
+            document_text: Contenido de documento original (para que LLM entienda el contexto)
+            defined_entity_types: Tipos de entidades predefinidos (opcional)
+            use_llm_for_profiles: Usar LLM para generar personas detalladas
+            progress_callback: Función de retorno de progreso (stage, progress, message)
+            parallel_profile_count: Número de personas generadas en paralelo, por defecto 3
 
         Returns:
             SimulationState
         """
         state = self._load_simulation_state(simulation_id)
         if not state:
-            raise ValueError(f"simulaciónnoen: {simulation_id}")
+            raise ValueError(f"Simulación no existe: {simulation_id}")
 
         try:
             state.status = SimulationStatus.PREPARING
@@ -278,54 +275,52 @@ class SimulationManager:
 
             sim_dir = self._get_simulation_dir(simulation_id)
 
-            # ========== 1: leeryfiltrarentidad ==========
+            # ========== Fase 1: Leer y filtrar entidades ==========
             if progress_callback:
-                progress_callback("reading", 0, "Conectando al grafo Zep...")
+                progress_callback("reading", 0, t("progress.connectingZepGraph"))
 
             backend = get_memory_backend()
 
             if progress_callback:
-                progress_callback("reading", 30, "Leyendo datos de nodos...")
+                progress_callback("reading", 30, t("progress.readingNodeData"))
 
-            filtered = backend.get_entities(
+            filtered = backend.filter_defined_entities(
                 graph_id=state.graph_id,
-                entity_types=defined_entity_types,
+                defined_entity_types=defined_entity_types,
                 enrich_with_edges=True,
             )
 
-            state.entities_count = len(filtered)
-            state.entity_types = list(
-                set(e.get_entity_type() for e in filtered if e.get_entity_type())
-            )
+            state.entities_count = filtered.filtered_count
+            state.entity_types = list(filtered.entity_types)
 
             if progress_callback:
                 progress_callback(
                     "reading",
                     100,
-                    f"Completado, {len(filtered)} entidades en total",
-                    current=len(filtered),
-                    total=len(filtered),
+                    t("progress.readingComplete", count=filtered.filtered_count),
+                    current=filtered.filtered_count,
+                    total=filtered.filtered_count,
                 )
 
-            if len(filtered) == 0:
+            if filtered.filtered_count == 0:
                 state.status = SimulationStatus.FAILED
-                state.error = "No se encontraron entidades que cumplan los criterios, por favor verifique que el grafo esté correctamente construido"
+                state.error = "No se encontraron entidades que cumplan los criterios, verifique si el grafo está construido correctamente"
                 self._save_simulation_state(state)
                 return state
 
-            # ========== 2: generarAgent Profile ==========
-            total_entities = len(filtered)
+            # ========== Fase 2: Generar Perfil de Agente ==========
+            total_entities = len(filtered.entities)
 
             if progress_callback:
                 progress_callback(
                     "generating_profiles",
                     0,
-                    "Iniciando generación...",
+                    t("progress.startGenerating"),
                     current=0,
                     total=total_entities,
                 )
 
-            # graph_idconZeppuede，obtener
+            # Pasar graph_id para habilitar función de recuperación Zep, obtener contexto más rico
             generator = OasisProfileGenerator(graph_id=state.graph_id)
 
             def profile_progress(current, total, msg):
@@ -339,7 +334,7 @@ class SimulationManager:
                         item_name=msg,
                     )
 
-            # configurartiempo realguardararchivo（hacer Reddit JSON ）
+            # Establecer ruta de archivo para guardado en tiempo real (priorizar formato Reddit JSON)
             realtime_output_path = None
             realtime_platform = "reddit"
             if state.enable_reddit:
@@ -350,24 +345,24 @@ class SimulationManager:
                 realtime_platform = "twitter"
 
             profiles = generator.generate_profiles_from_entities(
-                entities=filtered,
+                entities=filtered.entities,
                 use_llm=use_llm_for_profiles,
                 progress_callback=profile_progress,
-                graph_id=state.graph_id,  # graph_idenZep
-                parallel_count=parallel_profile_count,  # yejecutargenerar
-                realtime_output_path=realtime_output_path,  # tiempo realguardar
-                output_platform=realtime_platform,  #
+                graph_id=state.graph_id,  # Pasar graph_id para recuperación Zep
+                parallel_count=parallel_profile_count,  # Cantidad generada en paralelo
+                realtime_output_path=realtime_output_path,  # Ruta de guardado en tiempo real
+                output_platform=realtime_platform,  # Formato de salida
             )
 
             state.profiles_count = len(profiles)
 
-            # guardarProfilearchivo（：TwitterhacerCSV，ReddithacerJSON）
-            # Reddit engenerartiempo realguardar，estoguardar
+            # Guardar archivos de Perfil (nota: Twitter usa formato CSV, Reddit usa formato JSON)
+            # Reddit ya se guardó en tiempo real durante la generación, guardar una vez más para asegurar integridad
             if progress_callback:
                 progress_callback(
                     "generating_profiles",
                     95,
-                    "Guardando archivos de Profile...",
+                    t("progress.savingProfiles"),
                     current=total_entities,
                     total=total_entities,
                 )
@@ -380,7 +375,7 @@ class SimulationManager:
                 )
 
             if state.enable_twitter:
-                # TwitterhacerCSV！estoesOASISdebe
+                # Twitter usa formato CSV ¡Esto es un requisito de OASIS
                 generator.save_profiles(
                     profiles=profiles,
                     file_path=os.path.join(sim_dir, "twitter_profiles.csv"),
@@ -391,17 +386,17 @@ class SimulationManager:
                 progress_callback(
                     "generating_profiles",
                     100,
-                    f"Completado, {len(profiles)} Profiles en total",
+                    t("progress.profilesComplete", count=len(profiles)),
                     current=len(profiles),
                     total=len(profiles),
                 )
 
-            # ========== 3: LLMpuedegenerarsimulaciónconfiguración ==========
+            # ========== Fase 3: Generar inteligentemente configuración de simulación con LLM ==========
             if progress_callback:
                 progress_callback(
                     "generating_config",
                     0,
-                    "Analizando requisitos de simulación...",
+                    t("progress.analyzingRequirements"),
                     current=0,
                     total=3,
                 )
@@ -412,7 +407,7 @@ class SimulationManager:
                 progress_callback(
                     "generating_config",
                     30,
-                    "Llamando LLM para generar configuración...",
+                    t("progress.callingLLMConfig"),
                     current=1,
                     total=3,
                 )
@@ -423,7 +418,7 @@ class SimulationManager:
                 graph_id=state.graph_id,
                 simulation_requirement=simulation_requirement,
                 document_text=document_text,
-                entities=filtered,
+                entities=filtered.entities,
                 enable_twitter=state.enable_twitter,
                 enable_reddit=state.enable_reddit,
             )
@@ -432,12 +427,12 @@ class SimulationManager:
                 progress_callback(
                     "generating_config",
                     70,
-                    "Guardando archivo de configuración...",
+                    t("progress.savingConfigFiles"),
                     current=2,
                     total=3,
                 )
 
-            # guardarconfiguraciónarchivo
+            # Guardar archivo de configuración
             config_path = os.path.join(sim_dir, "simulation_config.json")
             with open(config_path, "w", encoding="utf-8") as f:
                 f.write(sim_params.to_json())
@@ -449,27 +444,29 @@ class SimulationManager:
                 progress_callback(
                     "generating_config",
                     100,
-                    "Generación de configuración completada",
+                    t("progress.configComplete"),
                     current=3,
                     total=3,
                 )
 
-            # ：ejecutaren backend/scripts/ directorio，nohastasimulacióndirectorio
-            # simulación，simulation_runner desde scripts/ directorioejecutar
+            # Nota: Los scripts de ejecución se mantienen en el directorio backend/scripts/, ya no se copian al directorio de simulación
+            # Al iniciar la simulación, simulation_runner ejecutará scripts desde el directorio scripts/
 
-            # actualizarestado
+            # Actualizar estado
             state.status = SimulationStatus.READY
             self._save_simulation_state(state)
 
             logger.info(
-                f"simulacióncompletado: {simulation_id}, "
+                f"Preparación de simulación completada: {simulation_id}, "
                 f"entities={state.entities_count}, profiles={state.profiles_count}"
             )
 
             return state
 
         except Exception as e:
-            logger.error(f"simulaciónfallido: {simulation_id}, error={str(e)}")
+            logger.error(
+                f"Fallo en preparación de simulación: {simulation_id}, error={str(e)}"
+            )
             import traceback
 
             logger.error(traceback.format_exc())
@@ -479,18 +476,18 @@ class SimulationManager:
             raise
 
     def get_simulation(self, simulation_id: str) -> Optional[SimulationState]:
-        """obtenersimulaciónestado"""
+        """Obtener estado de simulación"""
         return self._load_simulation_state(simulation_id)
 
     def list_simulations(
         self, project_id: Optional[str] = None
     ) -> List[SimulationState]:
-        """quetienesimulación"""
+        """Listar todas las simulaciones"""
         simulations = []
 
         if os.path.exists(self.SIMULATION_DATA_DIR):
             for sim_id in os.listdir(self.SIMULATION_DATA_DIR):
-                # archivo（ .DS_Store）ydirectorioarchivo
+                # Saltar archivos ocultos (como .DS_Store) y archivos que no sean directorios
                 sim_path = os.path.join(self.SIMULATION_DATA_DIR, sim_id)
                 if sim_id.startswith(".") or not os.path.isdir(sim_path):
                     continue
@@ -505,10 +502,10 @@ class SimulationManager:
     def get_profiles(
         self, simulation_id: str, platform: str = "reddit"
     ) -> List[Dict[str, Any]]:
-        """obtenersimulaciónAgent Profile"""
+        """Obtener Perfil de Agente de la simulación"""
         state = self._load_simulation_state(simulation_id)
         if not state:
-            raise ValueError(f"simulaciónnoen: {simulation_id}")
+            raise ValueError(f"Simulación no existe: {simulation_id}")
 
         sim_dir = self._get_simulation_dir(simulation_id)
         profile_path = os.path.join(sim_dir, f"{platform}_profiles.json")
@@ -520,7 +517,7 @@ class SimulationManager:
             return json.load(f)
 
     def get_simulation_config(self, simulation_id: str) -> Optional[Dict[str, Any]]:
-        """obtenersimulaciónconfiguración"""
+        """Obtener configuración de simulación"""
         sim_dir = self._get_simulation_dir(simulation_id)
         config_path = os.path.join(sim_dir, "simulation_config.json")
 
@@ -548,10 +545,10 @@ class SimulationManager:
                 "parallel": f"python {scripts_dir}/run_parallel_simulation.py --config {config_path}",
             },
             "instructions": (
-                f"1. conda: conda activate MiroFish\n"
+                f"1. Activar entorno conda: conda activate MiroFish\n"
                 f"2. Ejecutar simulación (scripts ubicados en {scripts_dir}):\n"
-                f"   - ejecutarTwitter: python {scripts_dir}/run_twitter_simulation.py --config {config_path}\n"
-                f"   - ejecutarReddit: python {scripts_dir}/run_reddit_simulation.py --config {config_path}\n"
-                f"   - yejecutarejecutar: python {scripts_dir}/run_parallel_simulation.py --config {config_path}"
+                f"   - Ejecutar Twitter solo: python {scripts_dir}/run_twitter_simulation.py --config {config_path}\n"
+                f"   - Ejecutar Reddit solo: python {scripts_dir}/run_reddit_simulation.py --config {config_path}\n"
+                f"   - Ejecutar doble plataforma en paralelo: python {scripts_dir}/run_parallel_simulation.py --config {config_path}"
             ),
         }
