@@ -10,11 +10,11 @@ A simple and universal swarm intelligence engine, predicting everything
 
 <a href="https://www.shanda.com/" target="_blank"><img src="./static/image/shanda_logo.png" alt="666ghj%2MiroFish | Shanda" height="40"/></a>
 
-[![GitHub Stars](https://img.shields.io/github/stars/666ghj/MiroFish?style=flat-square&color=DAA520)](https://github.com/666ghj/MiroFish/stargazers)
-[![GitHub Watchers](https://img.shields.io/github/watchers/666ghj/MiroFish?style=flat-square)](https://github.com/666ghj/MiroFish/watchers)
-[![GitHub Forks](https://img.shields.io/github/forks/666ghj/MiroFish?style=flat-square)](https://github.com/666ghj/MiroFish/network)
+[![GitHub Stars](https://img.shields.io/github/stars/DragonJAR/MiroFish-ES?style=flat-square&color=DAA520)](https://github.com/DragonJAR/MiroFish-ES/stargazers)
+[![GitHub Watchers](https://img.shields.io/github/watchers/DragonJAR/MiroFish-ES?style=flat-square)](https://github.com/DragonJAR/MiroFish-ES/watchers)
+[![GitHub Forks](https://img.shields.io/github/forks/DragonJAR/MiroFish-ES?style=flat-square)](https://github.com/DragonJAR/MiroFish-ES/network)
 [![Docker](https://img.shields.io/badge/Docker-Build-2496ED?style=flat-square&logo=docker&logoColor=white)](https://hub.docker.com/)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/666ghj/MiroFish)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/DragonJAR/MiroFish-ES)
 
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2?style=flat-square&logo=discord&logoColor=white)](http://discord.gg/ePf5aPaHnA)
 [![X](https://img.shields.io/badge/X-Follow-000000?style=flat-square&logo=x&logoColor=white)](https://x.com/mirofish_ai)
@@ -272,10 +272,10 @@ MiroFish's simulation engine is powered by **[OASIS (Open Agent Social Interacti
 
 ## 📈 Project Statistics
 
-<a href="https://www.star-history.com/#666ghj/MiroFish&type=date&legend=top-left">
+<a href="https://www.star-history.com/#DragonJAR/MiroFish-ES&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=666ghj/MiroFish&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=666ghj/MiroFish&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=666ghj/MiroFish&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=DragonJAR/MiroFish-ES&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=DragonJAR/MiroFish-ES&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=DragonJAR/MiroFish-ES&type=date&legend=top-left" />
  </picture>
 </a>

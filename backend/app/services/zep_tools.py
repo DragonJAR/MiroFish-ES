@@ -19,7 +19,7 @@ from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.llm_client import LLMClient
 from ..utils.locale import get_locale, t
-from ..utils.zep_paging import Fetch_all_nodes, Fetch_all_edges
+from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
 
 logger = get_logger("mirofish.zep_tools")
 
@@ -710,7 +710,7 @@ class ZepToolsService:
         """
         logger.info(t("console.FetchingAllNodes", graphId=graph_id))
 
-        nodes = Fetch_all_nodes(self.client, graph_id)
+        nodes = fetch_all_nodes(self.client, graph_id)
 
         result = []
         for node in nodes:
@@ -745,7 +745,7 @@ class ZepToolsService:
         """
         logger.info(t("console.FetchingAllEdges", graphId=graph_id))
 
-        edges = Fetch_all_edges(self.client, graph_id)
+        edges = fetch_all_edges(self.client, graph_id)
 
         result = []
         for edge in edges:
@@ -1859,6 +1859,7 @@ por favorgenerarentrevistaresumen。"""
         except Exception as e:
             logger.warning(t("console.generateInterviewSummaryFailed", error=e))
             # Degradar：únicocombinaraceptar
-            return f"juntosentrevista{len(interviews)}posiciónrecibir，incluir：" + "、".join(
-                [i.agent_name for i in interviews]
+            return (
+                f"juntosentrevista{len(interviews)}posiciónrecibir，incluir："
+                + "、".join([i.agent_name for i in interviews])
             )

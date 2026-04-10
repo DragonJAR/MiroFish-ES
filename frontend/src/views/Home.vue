@@ -5,7 +5,7 @@
       <div class="nav-brand">MIROFISH</div>
       <div class="nav-links">
         <LanguageSwitcher />
-        <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
+        <a href="https://github.com/DragonJAR/MiroFish-ES" target="_blank" class="github-link">
           {{ $t('nav.visitGithub') }} <span class="arrow">↗</span>
         </a>
       </div>
@@ -425,7 +425,7 @@ const startSimulation = () => {
 }
 
 .main-title {
-  font-size: 4.5rem;
+  font-size: 2.25rem;
   line-height: 1.2;
   font-weight: 500;
   margin: 0 0 40px 0;

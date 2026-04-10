@@ -34,7 +34,7 @@
   },
   "home": {
     "tagline": "Motor de inteligencia colectiva simple y universal",
-    "version": "/ v0.1-vista previa",
+    "version": "/ v0.1-ESP",
     "heroTitle1": "Sube cualquier informe",
     "heroTitle2": "Predice el futuro al instante",
     "heroDesc": "Incluso con solo un fragmento de texto, {brand} puede generar automáticamente un mundo paralelo con hasta {agentScale} basándose en las semillas de la realidad. Inyectando variables desde una perspectiva omnisciente, encuentra la {optimalSolution} en un entorno dinámico de interacciones grupales complejas",
