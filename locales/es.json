@@ -75,7 +75,13 @@
     "layoutGraph": "Grafo",
     "layoutSplit": "Doble columna",
     "layoutWorkbench": "Área de trabajo",
-    "stepNames": ["Construcción del grafo", "Configuración del entorno", "Iniciar simulación", "Generación de informes", "Interacción profunda"]
+    "stepNames": [
+      "Construcción del grafo",
+      "Configuración del entorno",
+      "Iniciar simulación",
+      "Generación de informes",
+      "Interacción profunda"
+    ]
   },
   "step1": {
     "ontologyGeneration": "Generación de ontología",
@@ -788,5 +794,37 @@
     "trend": "Tendencias",
     "refresh": "Actualizar",
     "checkStatusFailed": "Error al verificar estado de simulación"
+  },
+  "mainView": {
+    "projectViewInitialized": "Vista de proyecto inicializada.",
+    "startingOntology": "Iniciando generación de ontología: Subiendo archivos...",
+    "ontologyGenerated": "Ontología generada exitosamente para el proyecto {projectId}",
+    "initiatingGraphBuild": "Iniciando construcción del grafo...",
+    "graphBuildStarted": "Tarea de construcción del grafo iniciada. ID de tarea: {taskId}",
+    "startedPolling": "Iniciando polling de datos del grafo...",
+    "noPendingFiles": "No se encontraron archivos pendientes.",
+    "errorNoPendingFiles": "Error: No se encontraron archivos pendientes para nuevo proyecto.",
+    "uploadingAnalyzing": "Subiendo y analizando documentos...",
+    "ontologyGenerationFailed": "Error en la generación de ontología: {error}",
+    "errorGeneratingOntology": "Error generando ontología: {error}",
+    "exceptionInHandleNewProject": "Excepción en handleNewProject: {error}",
+    "loadingProject": "Cargando proyecto {projectId}...",
+    "projectLoaded": "Proyecto cargado. Estado: {status}",
+    "errorLoadingProject": "Error cargando proyecto: {error}",
+    "exceptionInLoadProject": "Excepción en loadProject: {error}",
+    "projectFailed": "Proyecto fallido",
+    "startingBuild": "Iniciando construcción...",
+    "errorStartingBuild": "Error iniciando construcción: {error}",
+    "exceptionInStartBuild": "Excepción en startBuildGraph: {error}",
+    "graphDataRefreshed": "Datos del grafo actualizados. Nodos: {nodes}, Bordes: {edges}",
+    "graphBuildFailed": "Tarea de construcción del grafo fallida: {error}",
+    "loadingFullGraph": "Cargando datos completos del grafo: {graphId}",
+    "failedToLoadGraph": "Error al cargar datos del grafo: {error}",
+    "exceptionLoadingGraph": "Excepción cargando grafo: {error}",
+    "statusError": "Error",
+    "statusReady": "Listo",
+    "statusBuildingGraph": "Construyendo grafo",
+    "statusGeneratingOntology": "Generando ontología",
+    "statusInitializing": "Inicializando"
   }
 }
