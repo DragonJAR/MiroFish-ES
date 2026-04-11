@@ -264,7 +264,7 @@
 
         <div v-if="allActions.length === 0" class="waiting-state">
           <div class="pulse-ring"></div>
-          <span>Waiting for agent actions...</span>
+          <span>{{ $t('step3.waitingForAgentActions') }}</span>
         </div>
       </div>
     </div>
@@ -272,13 +272,13 @@
     <!-- Bottom Info / Logs -->
     <div class="system-logs">
       <div class="log-header">
-        <span class="log-title">SIMULATION MONITOR</span>
+        <span class="log-title">{{ $t('mainView.simulationMonitor') }}</span>
         <span class="log-id">{{ simulationId || 'NO_SIMULATION' }}</span>
       </div>
       <div class="log-content" ref="logContent">
         <div class="log-line" v-for="(log, idx) in systemLogs" :key="idx">
           <span class="log-time">{{ log.time }}</span>
-          <span class="log-msg">{{ log.msg }}</span>
+          <span class="log-msg">{{ translateLog(log.msg) }}</span>
         </div>
       </div>
     </div>
@@ -296,8 +296,10 @@ import {
   getRunStatusDetail
 } from '../api/simulation'
 import { generateReport } from '../api/report'
+import { useTranslateLog } from '../composables/useTranslateLog'
 
 const { t } = useI18n()
+const { translateLog } = useTranslateLog()
 
 const props = defineProps({
   simulationId: String,

@@ -182,16 +182,16 @@ class AgentActivity:
         return "hizo downvote a un comentario"
 
     def _describe_search(self) -> str:
-        """搜索帖子 - 包含搜索关键词"""
+        """Buscar publicaciones - incluye palabras clave de búsqueda"""
         query = self.action_args.get("query", "") or self.action_args.get("keyword", "")
-        return f"搜索了「{query}」" if query else "进行了搜索"
+        return f"buscó「{query}」" if query else "realizó una búsqueda"
 
     def _describe_search_user(self) -> str:
-        """搜索用户 - 包含搜索关键词"""
+        """Buscar usuarios - incluye palabras clave de búsqueda"""
         query = self.action_args.get("query", "") or self.action_args.get(
             "username", ""
         )
-        return f"搜索了用户「{query}」" if query else "搜索了用户"
+        return f"buscó al usuario「{query}」" if query else "buscó usuarios"
 
     def _describe_mute(self) -> str:
         """Bloquear usuario - contiene nombre del usuario bloqueado"""
@@ -232,9 +232,9 @@ class ZepGraphMemoryUpdater:
     # Intervalo de envío (segundos), evitar solicitudes demasiado rápidas
     SEND_INTERVAL = 0.5
 
-    # Reintentar配置
+    # Configuración de reintento
     MAX_RETRIES = 3
-    RETRY_DELAY = 2  # 秒
+    RETRY_DELAY = 2  # segundos
 
     def __init__(self, graph_id: str, api_key: Optional[str] = None):
         """

@@ -276,26 +276,26 @@ const updatePhaseByStatus = (status) => {
 const startBuildGraph = async () => {
   try {
     currentPhase.value = 1
-    buildProgress.value = { progress: 0, message: 'Starting build...' }
-    addLog('Initiating graph build...')
+    buildProgress.value = { progress: 0, message: 'Iniciando construcción...' }
+    addLog('Iniciando construcción de grafo...')
     
     const res = await buildGraph({ project_id: currentProjectId.value })
     if (res.success) {
-      addLog(`Graph build task started. Task ID: ${res.data.task_id}`)
+      addLog(`Tarea de construcción de grafo iniciada. Task ID: ${res.data.task_id}`)
       startGraphPolling()
       startPollingTask(res.data.task_id)
     } else {
       error.value = res.error
-      addLog(`Error starting build: ${res.error}`)
+      addLog(`Error al iniciar construcción: ${res.error}`)
     }
   } catch (err) {
     error.value = err.message
-    addLog(`Exception in startBuildGraph: ${err.message}`)
+    addLog(`Excepción en startBuildGraph: ${err.message}`)
   }
 }
 
 const startGraphPolling = () => {
-  addLog('Started polling for graph data...')
+  addLog('Iniciando polling de datos del grafo...')
   fetchGraphData()
   graphPollTimer = setInterval(fetchGraphData, 10000)
 }
@@ -310,7 +310,7 @@ const fetchGraphData = async () => {
         graphData.value = gRes.data
         const nodeCount = gRes.data.node_count || gRes.data.nodes?.length || 0
         const edgeCount = gRes.data.edge_count || gRes.data.edges?.length || 0
-        addLog(`Graph data refreshed. Nodes: ${nodeCount}, Edges: ${edgeCount}`)
+        addLog(`Datos del grafo actualizados. Nodos: ${nodeCount}, Bordes: ${edgeCount}`)
       }
     }
   } catch (err) {
@@ -337,7 +337,7 @@ const pollTaskStatus = async (taskId) => {
       buildProgress.value = { progress: task.progress || 0, message: task.message }
       
       if (task.status === 'completed') {
-        addLog('Graph build task completed.')
+        addLog('Tarea de construcción de grafo completada.')
         stopPolling()
         stopGraphPolling() // Stop polling, do final load
         currentPhase.value = 2
@@ -351,7 +351,7 @@ const pollTaskStatus = async (taskId) => {
       } else if (task.status === 'failed') {
         stopPolling()
         error.value = task.error
-        addLog(`Graph build task failed: ${task.error}`)
+        addLog(`Tarea de construcción de grafo fallida: ${task.error}`)
       }
     }
   } catch (e) {
@@ -361,17 +361,17 @@ const pollTaskStatus = async (taskId) => {
 
 const loadGraph = async (graphId) => {
   graphLoading.value = true
-  addLog(`Loading full graph data: ${graphId}`)
+  addLog(`Cargando datos completos del grafo: ${graphId}`)
   try {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog('Graph data loaded successfully.')
+      addLog('Datos del grafo cargados exitosamente.')
     } else {
-      addLog(`Failed to load graph data: ${res.error}`)
+      addLog(`Error al cargar datos del grafo: ${res.error}`)
     }
   } catch (e) {
-    addLog(`Exception loading graph: ${e.message}`)
+    addLog(`Excepción cargando grafo: ${e.message}`)
   } finally {
     graphLoading.value = false
   }
@@ -379,7 +379,7 @@ const loadGraph = async (graphId) => {
 
 const refreshGraph = () => {
   if (projectData.value?.graph_id) {
-    addLog('Manual graph refresh triggered.')
+    addLog('Actualización manual del grafo iniciada.')
     loadGraph(projectData.value.graph_id)
   }
 }
@@ -395,7 +395,7 @@ const stopGraphPolling = () => {
   if (graphPollTimer) {
     clearInterval(graphPollTimer)
     graphPollTimer = null
-    addLog('Graph polling stopped.')
+    addLog('Polling del grafo detenido.')
   }
 }
 

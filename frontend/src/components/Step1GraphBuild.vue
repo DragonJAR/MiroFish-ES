@@ -31,7 +31,7 @@
           <div v-if="selectedOntologyItem" class="ontology-detail-overlay">
             <div class="detail-header">
                <div class="detail-title-group">
-                  <span class="detail-type-badge">{{ selectedOntologyItem.itemType === 'entity' ? 'ENTITY' : 'RELATION' }}</span>
+                  <span class="detail-type-badge">{{ selectedOntologyItem.itemType === 'entity' ? $t('step1.entity') : $t('step1.relation') }}</span>
                   <span class="detail-name">{{ selectedOntologyItem.name }}</span>
                </div>
                <button class="close-btn" @click="selectedOntologyItem = null">×</button>
@@ -75,7 +75,7 @@
 
           <!-- Generated Entity Tags -->
           <div v-if="projectData?.ontology?.entity_types" class="tags-container" :class="{ 'dimmed': selectedOntologyItem }">
-            <span class="tag-label">GENERATED ENTITY TYPES</span>
+            <span class="tag-label">{{ $t('step1.generatedEntityTypes') }}</span>
             <div class="tags-list">
               <span 
                 v-for="entity in projectData.ontology.entity_types" 
@@ -90,7 +90,7 @@
 
           <!-- Generated Relation Tags -->
           <div v-if="projectData?.ontology?.edge_types" class="tags-container" :class="{ 'dimmed': selectedOntologyItem }">
-            <span class="tag-label">GENERATED RELATION TYPES</span>
+            <span class="tag-label">{{ $t('step1.generatedRelationTypes') }}</span>
             <div class="tags-list">
               <span 
                 v-for="rel in projectData.ontology.edge_types" 
@@ -173,13 +173,13 @@
     <!-- Bottom Info / Logs -->
     <div class="system-logs">
       <div class="log-header">
-        <span class="log-title">SYSTEM DASHBOARD</span>
+        <span class="log-title">{{ $t('mainView.systemDashboard') }}</span>
         <span class="log-id">{{ projectData?.project_id || 'NO_PROJECT' }}</span>
       </div>
       <div class="log-content" ref="logContent">
         <div class="log-line" v-for="(log, idx) in systemLogs" :key="idx">
           <span class="log-time">{{ log.time }}</span>
-          <span class="log-msg">{{ log.msg }}</span>
+          <span class="log-msg">{{ translateLog(log.msg) }}</span>
         </div>
       </div>
     </div>
@@ -191,9 +191,11 @@ import { computed, ref, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { createSimulation } from '../api/simulation'
+import { useTranslateLog } from '../composables/useTranslateLog'
 
 const router = useRouter()
 const { t } = useI18n()
+const { translateLog } = useTranslateLog()
 
 const props = defineProps({
   currentPhase: { type: Number, default: 0 },

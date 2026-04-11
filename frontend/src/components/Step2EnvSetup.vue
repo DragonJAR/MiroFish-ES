@@ -22,19 +22,19 @@
 
           <div v-if="simulationId" class="info-card">
             <div class="info-row">
-              <span class="info-label">Project ID</span>
+              <span class="info-label">{{ $t('step2.projectId') }}</span>
               <span class="info-value mono">{{ projectData?.project_id }}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Graph ID</span>
+              <span class="info-label">{{ $t('step2.graphId') }}</span>
               <span class="info-value mono">{{ projectData?.graph_id }}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Simulation ID</span>
+              <span class="info-label">{{ $t('step2.simulationId') }}</span>
               <span class="info-value mono">{{ simulationId }}</span>
             </div>
             <div class="info-row">
-              <span class="info-label">Task ID</span>
+              <span class="info-label">{{ $t('step2.taskId') }}</span>
               <span class="info-value mono">{{ taskId || $t('step2.asyncTaskDone') }}</span>
             </div>
           </div>
@@ -90,7 +90,7 @@
                 @click="selectProfile(profile)"
               >
                 <div class="profile-header">
-                  <span class="profile-realname">{{ profile.username || 'Unknown' }}</span>
+                  <span class="profile-realname">{{ profile.username || $t('common.unknown') }}</span>
                   <span class="profile-username">@{{ profile.name || `agent_${idx}` }}</span>
                 </div>
                 <div class="profile-meta">
@@ -618,13 +618,13 @@
     <!-- Bottom Info / Logs -->
     <div class="system-logs">
       <div class="log-header">
-        <span class="log-title">SYSTEM DASHBOARD</span>
+        <span class="log-title">{{ $t('mainView.systemDashboard') }}</span>
         <span class="log-id">{{ simulationId || 'NO_SIMULATION' }}</span>
       </div>
       <div class="log-content" ref="logContent">
         <div class="log-line" v-for="(log, idx) in systemLogs" :key="idx">
           <span class="log-time">{{ log.time }}</span>
-          <span class="log-msg">{{ log.msg }}</span>
+          <span class="log-msg">{{ translateLog(log.msg) }}</span>
         </div>
       </div>
     </div>
@@ -641,8 +641,10 @@ import {
   getSimulationConfig,
   getSimulationConfigRealtime
 } from '../api/simulation'
+import { useTranslateLog } from '../composables/useTranslateLog'
 
 const { t } = useI18n()
+const { translateLog } = useTranslateLog()
 
 const props = defineProps({
   simulationId: String,  // Pasado desde componente padre

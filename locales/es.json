@@ -180,7 +180,11 @@
     "genderOther": "Otro",
     "yearsOld": "años",
     "initializing": "Inicializando",
-    "generating": "Generando"
+    "generating": "Generando",
+    "projectId": "ID del proyecto",
+    "graphId": "ID del grafo",
+    "simulationId": "ID de simulación",
+    "taskId": "ID de tarea"
   },
   "step3": {
     "startGenerateReport": "Comenzar a generar informe de resultados",
@@ -211,7 +215,8 @@
     "forceStopSuccess": "Simulación forzada detenida",
     "forceStopFailed": "Fallo al forzar detención: {error}",
     "startGenerateReportBtn": "Generar informe",
-    "generatingReportBtn": "Iniciando..."
+    "generatingReportBtn": "Iniciando...",
+    "waitingForAgentActions": "Esperando acciones del agente..."
   },
   "step4": {
     "generatingSection": "Generando {title}...",
@@ -288,7 +293,8 @@
     "errorOccurred": "Ocurrió un error: {error}",
     "noResponse": "Sin respuesta",
     "requestFailed": "Solicitud fallida",
-    "selectAgentFirst": "Por favor selecciona un individuo simulado primero"
+    "selectAgentFirst": "Por favor selecciona un individuo simulado primero",
+    "waitingForReportAgent": "Esperando al Report Agent..."
   },
   "graph": {
     "panelTitle": "Visualización de relaciones del grafo",
@@ -301,7 +307,22 @@
     "graphDataLoading": "Cargando datos del grafo...",
     "waitingOntology": "Esperando generación de ontología...",
     "toggleMaximize": "Maximizar/Restaurar",
-    "closeHint": "Cerrar aviso"
+    "closeHint": "Cerrar aviso",
+    "name": "Nombre",
+    "uuid": "UUID",
+    "created": "Creado",
+    "properties": "Propiedades",
+    "summary": "Resumen",
+    "labels": "Etiquetas",
+    "fact": "Hecho",
+    "type": "Tipo",
+    "validFrom": "Válido desde",
+    "unknown": "Desconocido",
+    "relatedTo": "RELACIONADO_CON",
+    "episodes": "Episodios",
+    "label": "Etiqueta",
+    "showEdgeLabels": "Mostrar etiquetas de relaciones",
+    "selfRelations": "Autorelaciones"
   },
   "history": {
     "title": "Registros de simulación",
@@ -742,6 +763,8 @@
     "generatingProgress": "Progreso de generación",
     "generatedEntityTypes": "Tipos de entidad generados",
     "generatedRelationTypes": "Tipos de relación generados",
+    "entity": "Entidad",
+    "relation": "Relación",
     "moreRelations": "más relaciones...",
     "waitingOntology": "Esperando generación de ontología...",
     "graphBuildTitle": "Construcción de grafo",
@@ -825,6 +848,8 @@
     "statusReady": "Listo",
     "statusBuildingGraph": "Construyendo grafo",
     "statusGeneratingOntology": "Generando ontología",
-    "statusInitializing": "Inicializando"
+    "statusInitializing": "Inicializando",
+    "systemDashboard": "PANEL DEL SISTEMA",
+    "simulationMonitor": "MONITOR DE SIMULACIÓN"
   }
 }

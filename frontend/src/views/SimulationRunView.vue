@@ -24,7 +24,7 @@
         <LanguageSwitcher />
         <div class="step-divider"></div>
         <div class="workflow-step">
-          <span class="step-num">Step 3/5</span>
+          <span class="step-num">Paso 3/5</span>
           <span class="step-name">{{ $tm('main.stepNames')[2] }}</span>
         </div>
         <div class="step-divider"></div>

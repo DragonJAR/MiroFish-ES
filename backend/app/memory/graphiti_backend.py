@@ -17,7 +17,14 @@ import threading
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 
-from .base import MemoryBackend, SearchResult, EntityNode, GraphInfo, EpisodeResult
+from .base import (
+    MemoryBackend,
+    SearchResult,
+    EntityNode,
+    GraphInfo,
+    EpisodeResult,
+    FilteredEntities,
+)
 
 
 def _sanitize_neo4j_value(v):
@@ -534,6 +541,75 @@ class GraphitiBackend(MemoryBackend):
         except Exception as e:
             logger.error(f"Error al obtener entidades: {str(e)}")
             return []
+
+    def filter_defined_entities(
+        self,
+        graph_id: str,
+        defined_entity_types: Optional[List[str]] = None,
+        enrich_with_edges: bool = True,
+    ) -> FilteredEntities:
+        """
+        Filtrar nodos que coincidan con tipos de entidad predefinidos.
+
+        Logica de filtrado:
+        - Si defined_entity_types esta proporcionado: mantener solo entidades
+          cuyas labels intersecten con la lista
+        - Si defined_entity_types es None/vacio: mantener entidades cuyas labels
+          contengan algo DISTINTO de solo "Entity" y "Node"
+
+        Args:
+            graph_id: ID del grafo
+            defined_entity_types: Lista de tipos de entidad predefinidos (opcional)
+            enrich_with_edges: Si incluir informacion de bordes relacionados
+
+        Returns:
+            FilteredEntities: Conjunto de entidades filtradas
+        """
+        logger.info(f"Iniciar filtrado de entidades del grafo {graph_id}...")
+
+        # Obtener todas las entidades (ya viene con related_edges y related_nodes)
+        all_entities = self.get_entities(graph_id=graph_id)
+        total_count = len(all_entities)
+
+        # Filtrar entidades segun logica de defined_entity_types
+        filtered_entities = []
+        entity_types_found = set()
+
+        for entity in all_entities:
+            labels = entity.labels or []
+
+            # Obtener custom labels (excluir "Entity" y "Node")
+            custom_labels = [l for l in labels if l not in ["Entity", "Node"]]
+
+            if not custom_labels:
+                # Solo tiene etiquetas predeterminadas, omitir
+                continue
+
+            # Si se especificaron tipos predefinidos, verificar interseccion
+            if defined_entity_types:
+                matching_labels = [
+                    l for l in custom_labels if l in defined_entity_types
+                ]
+                if not matching_labels:
+                    continue
+                entity_type = matching_labels[0]
+            else:
+                entity_type = custom_labels[0]
+
+            entity_types_found.add(entity_type)
+            filtered_entities.append(entity)
+
+        logger.info(
+            f"Filtrado completado: Total {total_count}, filtradas {len(filtered_entities)}, "
+            f"tipos encontrados: {entity_types_found}"
+        )
+
+        return FilteredEntities(
+            entities=filtered_entities,
+            entity_types=entity_types_found,
+            total_count=total_count,
+            filtered_count=len(filtered_entities),
+        )
 
     def get_entity_by_uuid(
         self,

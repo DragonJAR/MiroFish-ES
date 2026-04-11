@@ -223,6 +223,43 @@ class OasisProfileGenerator:
         zep_api_key: Optional[str] = None,
         graph_id: Optional[str] = None,
     ):
+        self.api_key = api_key or Config.LLM_API_KEY
+        self.base_url = base_url or Config.LLM_BASE_URL
+        self.model_name = model_name or Config.LLM_MODEL_NAME
+        self.zep_api_key = zep_api_key or Config.ZEP_API_KEY
+        self.graph_id = graph_id
+
+        if not self.api_key:
+            raise ValueError("LLM_API_KEY no configurada")
+
+        self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        logger.info(f"OasisProfileGenerator inicializado con modelo {self.model_name}")
+
+    def generate_profile_from_entity(
+        self,
+        entity: "EntityNode",
+        user_id: int,
+        use_llm: bool = True,
+    ) -> OasisAgentProfile:
+        """
+        Generar un solo Agent Profile desde una entidad.
+
+        Args:
+            entity: EntityNode con los datos de la entidad
+            user_id: ID de usuario para el profile
+            use_llm: Si usar LLM para generación (sino usar reglas)
+
+        Returns:
+            OasisAgentProfile
+        """
+        entity_name = entity.name
+        entity_type = entity.get_entity_type() or "Entity"
+        entity_summary = entity.summary or ""
+        entity_attributes = entity.attributes or {}
+
+        # Determinar si es tipo individual o grupal
+        entity_type_lower = entity_type.lower()
+        is_individual = entity_type_lower not in self.GROUP_ENTITY_TYPES
 
         # Intentar generar múltiples veces hasta éxito o alcanzar máximo de reintentos
         max_attempts = 3
@@ -230,6 +267,24 @@ class OasisProfileGenerator:
 
         for attempt in range(max_attempts):
             try:
+                # Construir prompt según tipo de entidad
+                if is_individual:
+                    prompt = self._build_individual_persona_prompt(
+                        entity_name=entity_name,
+                        entity_type=entity_type,
+                        entity_summary=entity_summary,
+                        entity_attributes=entity_attributes,
+                        context="",
+                    )
+                else:
+                    prompt = self._build_group_persona_prompt(
+                        entity_name=entity_name,
+                        entity_type=entity_type,
+                        entity_summary=entity_summary,
+                        entity_attributes=entity_attributes,
+                        context="",
+                    )
+
                 response = self.client.chat.completions.create(
                     model=self.model_name,
                     messages=[
@@ -240,14 +295,12 @@ class OasisProfileGenerator:
                         {"role": "user", "content": prompt},
                     ],
                     response_format={"type": "json_object"},
-                    temperature=0.7
-                    - (attempt * 0.1),  # Reducir temperatura en cada reintento
-                    # No configurar max_tokens, dejar LLM libre
+                    temperature=0.7 - (attempt * 0.1),
                 )
 
                 content = response.choices[0].message.content
 
-                # Inspección si está truncado (finish_reason no es 'stop')
+                # Verificación si fue truncado
                 finish_reason = response.choices[0].finish_reason
                 if finish_reason == "length":
                     logger.warning(
@@ -272,7 +325,23 @@ class OasisProfileGenerator:
                             or f"{entity_name} es un elemento de {entity_type}."
                         )
 
-                    return result
+                    # Construir OasisAgentProfile
+                    profile = OasisAgentProfile(
+                        user_id=user_id,
+                        user_name=self._generate_username(entity_name),
+                        name=entity_name,
+                        bio=result.get("bio", ""),
+                        persona=result.get("persona", ""),
+                        age=result.get("age"),
+                        gender=result.get("gender"),
+                        mbti=result.get("mbti"),
+                        country=result.get("country"),
+                        proFession=result.get("proFession"),
+                        interested_topics=result.get("interested_topics", []),
+                        source_entity_uuid=entity.uuid,
+                        source_entity_type=entity_type,
+                    )
+                    return profile
 
                 except json.JSONDecodeError as je:
                     logger.warning(
@@ -280,12 +349,27 @@ class OasisProfileGenerator:
                     )
 
                     # Intentar corrección JSON
-                    result = self._try_fix_json(
+                    fixed = self._try_fix_json(
                         content, entity_name, entity_type, entity_summary
                     )
-                    if result.get("_fixed"):
-                        del result["_fixed"]
-                        return result
+                    if fixed and fixed.get("_fixed"):
+                        del fixed["_fixed"]
+                        profile = OasisAgentProfile(
+                            user_id=user_id,
+                            user_name=self._generate_username(entity_name),
+                            name=entity_name,
+                            bio=fixed.get("bio", ""),
+                            persona=fixed.get("persona", ""),
+                            age=fixed.get("age"),
+                            gender=fixed.get("gender"),
+                            mbti=fixed.get("mbti"),
+                            country=fixed.get("country"),
+                            proFession=fixed.get("proFession"),
+                            interested_topics=fixed.get("interested_topics", []),
+                            source_entity_uuid=entity.uuid,
+                            source_entity_type=entity_type,
+                        )
+                        return profile
 
                     last_error = je
 
@@ -296,13 +380,29 @@ class OasisProfileGenerator:
                 last_error = e
                 import time
 
-                time.sleep(1 * (attempt + 1))  # retroceso exponencial
+                time.sleep(1 * (attempt + 1))
 
+        # Fallback a generación por reglas
         logger.warning(
             f"LLM generación de personificación fallida ({max_attempts} intentos): {last_error}, usando reglas"
         )
-        return self._generate_profile_rule_based(
+        rule_result = self._generate_profile_rule_based(
             entity_name, entity_type, entity_summary, entity_attributes
+        )
+        return OasisAgentProfile(
+            user_id=user_id,
+            user_name=self._generate_username(entity_name),
+            name=entity_name,
+            bio=rule_result.get("bio", ""),
+            persona=rule_result.get("persona", ""),
+            age=rule_result.get("age"),
+            gender=rule_result.get("gender"),
+            mbti=rule_result.get("mbti"),
+            country=rule_result.get("country"),
+            proFession=rule_result.get("proFession"),
+            interested_topics=rule_result.get("interested_topics", []),
+            source_entity_uuid=entity.uuid,
+            source_entity_type=entity_type,
         )
 
     def _fix_truncated_json(self, content: str) -> str:
