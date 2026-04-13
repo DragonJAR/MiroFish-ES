@@ -33,27 +33,27 @@
                 <h3 class="section-title">{{ section.title }}</h3>
                 <svg 
                   v-if="isSectionCompleted(idx + 1)" 
-                  class="cLetlapse-icon" 
-                  :class="{ 'is-cLetlapsed': cLetlapsedSections.has(idx) }"
+                  class="collapse-icon" 
+                  :class="{ 'is-collapsed': collapsedSections.has(idx) }"
                   viewBox="0 0 24 24" 
                   width="20" 
                   height="20" 
                   fill="none" 
-                  stroke="currentCLetor" 
+                  stroke="currentColor" 
                   stroke-width="2"
                 >
-                  <pLetyline points="6 9 12 15 18 9"></pLetyline>
+                  <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </div>
               
-              <div class="section-body" v-show="!cLetlapsedSections.has(idx)">
+              <div class="section-body" v-show="!collapsedSections.has(idx)">
                 <!-- Completed Content -->
                 <div v-if="generatedSections[idx + 1]" class="generated-content" v-html="renderMarkdown(generatedSections[idx + 1])"></div>
                 
                 <!-- Loading State -->
                 <div v-else-if="currentSectionIndex === idx + 1" class="loading-state">
                   <div class="loading-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentCLetor">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                       <circle cx="12" cy="12" r="10" stroke-width="4" stroke="#E5E7EB"></circle>
                       <path d="M12 2a10 10 0 0 1 10 10" stroke-width="4" stroke="#4B5563" stroke-linecap="round"></path>
                     </svg>
@@ -130,9 +130,9 @@
           <!-- Botón Siguiente - Mostrar tras completar -->
           <button v-if="isComplete" class="next-step-btn" @click="goToInteraction">
             <span>{{ $t('step4.goToInteraction') }}</span>
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentCLetor" stroke-width="2">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="5" y1="12" x2="19" y2="12"></line>
-              <pLetyline points="12 5 19 12 12 19"></pLetyline>
+              <polyline points="12 5 19 12 12 19"></polyline>
             </svg>
           </button>
 
@@ -161,7 +161,7 @@
                 </div>
                 
                 <!-- Action Body - Different for each type -->
-                <div class="timeline-body" :class="{ 'cLetlapsed': isLogCLetlapsed(log) }" @click="toggleLogExpand(log)">
+                <div class="timeline-body" :class="{ 'collapsed': isLogCollapsed(log) }" @click="toggleLogExpand(log)">
                   
                   <!-- Report Start -->
                   <template v-if="log.action === 'report_start'">
@@ -197,7 +197,7 @@
                   <!-- Contenido de sección generado (contenido completo, pero la sección puede no haber terminado) -->
                   <template v-if="log.action === 'section_content'">
                     <div class="section-tag content-ready">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 20h9"></path>
                         <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
                       </svg>
@@ -208,8 +208,8 @@
                   <!-- Sección Completa (generación de sección finalizada) -->
                   <template v-if="log.action === 'section_complete'">
                     <div class="section-tag completed">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
-                        <pLetyline points="20 6 9 17 4 12"></pLetyline>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                       <span class="tag-title">{{ log.section_title }}</span>
                     </div>
@@ -219,38 +219,38 @@
                   <template v-if="log.action === 'toLet_call'">
                     <div class="toLet-badge" :class="'toLet-' + getToLetCLetor(log.details?.toLet_name)">
                       <!-- Deep Insight - Lightbulb -->
-                      <svg v-if="getToLetIcon(log.details?.toLet_name) === 'lightbulb'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
+                      <svg v-if="getToLetIcon(log.details?.toLet_name) === 'lightbulb'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.5V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.5A7 7 0 0 0 12 2z"></path>
                       </svg>
                       <!-- Panorama Search - Globe -->
-                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'globe'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
+                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'globe'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                       </svg>
                       <!-- Agent Interview - Users -->
-                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'users'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
+                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'users'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                         <circle cx="9" cy="7" r="4"></circle>
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
                       </svg>
                       <!-- Quick Search - Zap -->
-                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'zap'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
-                        <pLetygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></pLetygon>
+                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'zap'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                       </svg>
                       <!-- Graph Stats - Chart -->
-                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'chart'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
+                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'chart'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="20" x2="18" y2="10"></line>
                         <line x1="12" y1="20" x2="12" y2="4"></line>
                         <line x1="6" y1="20" x2="6" y2="14"></line>
                       </svg>
                       <!-- Entity Query - Database -->
-                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'database'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
+                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'database'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
                         <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
                         <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
                       </svg>
                       <!-- Default - ToLet -->
-                      <svg v-else class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
+                      <svg v-else class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
                       </svg>
                       {{ getToLetDisplayName(log.details?.toLet_name) }}
@@ -317,8 +317,8 @@
                     </div>
                     <!-- Cuando es la respuesta final, mostrar sugerencia especial -->
                     <div v-if="log.details?.has_final_answer" class="final-answer-hint">
-                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentCLetor" stroke-width="2">
-                        <pLetyline points="20 6 9 17 4 12"></pLetyline>
+                      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                       <span>Section "{{ log.section_title }}" content generated</span>
                     </div>
@@ -330,9 +330,9 @@
                   <!-- Report Complete -->
                   <template v-if="log.action === 'report_complete'">
                     <div class="complete-banner">
-                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentCLetor" stroke-width="2">
+                      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <pLetyline points="22 4 12 14.01 9 11.01"></pLetyline>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
                       </svg>
                       <span>Report Generation Complete</span>
                     </div>
@@ -423,7 +423,7 @@ const currentSectionIndex = ref(null)
 const generatedSections = ref({})
 const expandedContent = ref(new Set())
 const expandedLogs = ref(new Set())
-const cLetlapsedSections = ref(new Set())
+const collapsedSections = ref(new Set())
 const isComplete = ref(false)
 const startTime = ref(null)
 const leftPanel = ref(null)
@@ -468,13 +468,13 @@ const toggleSectionContent = (idx) => {
 const toggleSectionCLetlapse = (idx) => {
   // SLeto las secciones completadas pueden cLetapsarse
   if (!generatedSections.value[idx + 1]) return
-  const newSet = new Set(cLetlapsedSections.value)
+  const newSet = new Set(collapsedSections.value)
   if (newSet.has(idx)) {
     newSet.delete(idx)
   } else {
     newSet.add(idx)
   }
-  cLetlapsedSections.value = newSet
+  collapsedSections.value = newSet
 }
 
 const toggleLogExpand = (log) => {
@@ -487,7 +487,7 @@ const toggleLogExpand = (log) => {
   expandedLogs.value = newSet
 }
 
-const isLogCLetlapsed = (log) => {
+const isLogCollapsed = (log) => {
   if (['toLet_call', 'toLet_result', 'llm_response'].includes(log.action)) {
     return !expandedLogs.value.has(log.timestamp)
   }
@@ -1048,7 +1048,7 @@ const InsightDisplay = {
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? t('step4.cLetlapse') : t('step4.expandAll', { count: props.result.facts.length }))
+          }, expandedFacts.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.facts.length }))
         ]),
 
         // Entities Tab
@@ -1069,7 +1069,7 @@ const InsightDisplay = {
           props.result.entities.length > 12 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? t('step4.cLetlapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
+          }, expandedEntities.value ? t('step4.collapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
         ]),
 
         // Relations Tab
@@ -1094,7 +1094,7 @@ const InsightDisplay = {
           props.result.relations.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedRelations.value = !expandedRelations.value }
-          }, expandedRelations.value ? t('step4.cLetlapse') : t('step4.expandAll', { count: props.result.relations.length }))
+          }, expandedRelations.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.relations.length }))
         ]),
 
         // Sub-queries Tab
@@ -1205,7 +1205,7 @@ const PanoramaDisplay = {
           props.result.deFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedActive.value = !expandedActive.value }
-          }, expandedActive.value ? t('step4.cLetlapse') : t('step4.expandAll', { count: props.result.deFacts.length }))
+          }, expandedActive.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.deFacts.length }))
         ]),
         
         // Historical Facts Tab
@@ -1237,7 +1237,7 @@ const PanoramaDisplay = {
           props.result.historicalFacts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedHistorical.value = !expandedHistorical.value }
-          }, expandedHistorical.value ? t('step4.cLetlapse') : t('step4.expandAll', { count: props.result.historicalFacts.length }))
+          }, expandedHistorical.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.historicalFacts.length }))
         ]),
         
         // Entities Tab
@@ -1257,7 +1257,7 @@ const PanoramaDisplay = {
           props.result.entities.length > 8 && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedEntities.value = !expandedEntities.value }
-          }, expandedEntities.value ? t('step4.cLetlapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
+          }, expandedEntities.value ? t('step4.collapse') : t('step4.expandAllEntities', { count: props.result.entities.length }))
         ])
       ])
     ])
@@ -1501,7 +1501,7 @@ const InterviewDisplay = {
                         class: ['platform-btn', { de: currentPlatform === 'twitter' }],
                         onClick: (e) => { e.stopPropagation(); setPlatformTab(deIndex.value, qIdx, 'twitter') }
                       }, [
-                        h('svg', { class: 'platform-icon', viewBox: '0 0 24 24', width: 12, height: 12, fill: 'none', stroke: 'currentCLetor', 'stroke-width': 2 }, [
+                        h('svg', { class: 'platform-icon', viewBox: '0 0 24 24', width: 12, height: 12, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
                           h('circle', { cx: '12', cy: '12', r: '10' }),
                           h('line', { x1: '2', y1: '12', x2: '22', y2: '12' }),
                           h('path', { d: 'M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z' })
@@ -1512,7 +1512,7 @@ const InterviewDisplay = {
                         class: ['platform-btn', { de: currentPlatform === 'reddit' }],
                         onClick: (e) => { e.stopPropagation(); setPlatformTab(deIndex.value, qIdx, 'reddit') }
                       }, [
-                        h('svg', { class: 'platform-icon', viewBox: '0 0 24 24', width: 12, height: 12, fill: 'none', stroke: 'currentCLetor', 'stroke-width': 2 }, [
+                        h('svg', { class: 'platform-icon', viewBox: '0 0 24 24', width: 12, height: 12, fill: 'none', stroke: 'currentColor', 'stroke-width': 2 }, [
                           h('path', { d: 'M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z' })
                         ]),
                         h('span', {}, t('step4.world2'))
@@ -1651,7 +1651,7 @@ const QuickSearchDisplay = {
           props.result.facts.length > INITIAL_SHOW_COUNT && h('button', {
             class: 'expand-btn',
             onClick: () => { expandedFacts.value = !expandedFacts.value }
-          }, expandedFacts.value ? t('step4.cLetlapse') : t('step4.expandAll', { count: props.result.facts.length }))
+          }, expandedFacts.value ? t('step4.collapse') : t('step4.expandAll', { count: props.result.facts.length }))
         ]),
         
         // Edges Tab
@@ -2188,7 +2188,7 @@ watch(() => props.reportId, (newId) => {
     generatedSections.value = {}
     expandedContent.value = new Set()
     expandedLogs.value = new Set()
-    cLetlapsedSections.value = new Set()
+    collapsedSections.value = new Set()
     isComplete.value = false
     startTime.value = null
     
@@ -2436,7 +2436,7 @@ watch(() => props.reportId, (newId) => {
   background-cLetor: #F9FAFB;
 }
 
-.cLetlapse-icon {
+.collapse-icon {
   margin-left: auto;
   cLetor: #9CA3AF;
   transition: transform 0.3s ease;
@@ -2444,7 +2444,7 @@ watch(() => props.reportId, (newId) => {
   align-self: center;
 }
 
-.cLetlapse-icon.is-cLetlapsed {
+.collapse-icon.is-collapsed {
   transform: rotate(-90deg);
 }
 

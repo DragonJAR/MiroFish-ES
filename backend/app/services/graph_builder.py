@@ -17,6 +17,7 @@ from ..config import Config
 from ..models.task import TaskManager, TaskStatus
 from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
 from .text_processor import TextProcessor
+from .graph_serializers import build_graph_data_response
 from ..utils.locale import t, get_locale, set_locale
 
 
@@ -521,38 +522,29 @@ class GraphBuilderService:
         nodes = fetch_all_nodes(self.client, graph_id)
         edges = fetch_all_edges(self.client, graph_id)
 
-        # Crear mapeo de nodos para obtener nombres de nodos
-        node_map = {}
-        for node in nodes:
-            node_map[node.uuid_] = node.name or ""
+        # Node map for edge name resolution
+        node_map = {node.uuid_: node.name or "" for node in nodes}
 
         nodes_data = []
         for node in nodes:
-            # Obtener tiempo de creación
             created_at = getattr(node, "created_at", None)
-            if created_at:
-                created_at = str(created_at)
-
             nodes_data.append(
                 {
-                    "uuid": node.uuid_,
+                    "uuid": getattr(node, "uuid_", ""),
                     "name": node.name,
                     "labels": node.labels or [],
                     "summary": node.summary or "",
                     "attributes": node.attributes or {},
-                    "created_at": created_at,
+                    "created_at": str(created_at) if created_at else None,
                 }
             )
 
         edges_data = []
         for edge in edges:
-            # Obtener información de tiempo
             created_at = getattr(edge, "created_at", None)
             valid_at = getattr(edge, "valid_at", None)
             invalid_at = getattr(edge, "invalid_at", None)
             expired_at = getattr(edge, "expired_at", None)
-
-            # Obtener episodes
             episodes = getattr(edge, "episodes", None) or getattr(
                 edge, "episode_ids", None
             )
@@ -561,35 +553,28 @@ class GraphBuilderService:
             elif episodes:
                 episodes = [str(e) for e in episodes]
 
-            # Obtener fact_type
-            fact_type = getattr(edge, "fact_type", None) or edge.name or ""
-
             edges_data.append(
                 {
-                    "uuid": edge.uuid_,
-                    "name": edge.name or "",
-                    "fact": edge.fact or "",
-                    "fact_type": fact_type,
+                    "uuid": getattr(edge, "uuid_", ""),
+                    "name": getattr(edge, "name", "") or "",
+                    "fact": getattr(edge, "fact", ""),
+                    "fact_type": getattr(edge, "fact_type", None)
+                    or getattr(edge, "name", "")
+                    or "",
                     "source_node_uuid": edge.source_node_uuid,
                     "target_node_uuid": edge.target_node_uuid,
                     "source_node_name": node_map.get(edge.source_node_uuid, ""),
                     "target_node_name": node_map.get(edge.target_node_uuid, ""),
-                    "attributes": edge.attributes or {},
-                    "created_at": str(created_at) if created_at else None,
-                    "valid_at": str(valid_at) if valid_at else None,
-                    "invalid_at": str(invalid_at) if invalid_at else None,
-                    "expired_at": str(expired_at) if expired_at else None,
+                    "attributes": getattr(edge, "attributes", {}) or {},
+                    "created_at": created_at,
+                    "valid_at": valid_at,
+                    "invalid_at": invalid_at,
+                    "expired_at": expired_at,
                     "episodes": episodes or [],
                 }
             )
 
-        return {
-            "graph_id": graph_id,
-            "nodes": nodes_data,
-            "edges": edges_data,
-            "node_count": len(nodes_data),
-            "edge_count": len(edges_data),
-        }
+        return build_graph_data_response(graph_id, nodes_data, edges_data)
 
     def delete_graph(self, graph_id: str):
         """Eliminar Grafo"""

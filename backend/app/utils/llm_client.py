@@ -225,26 +225,42 @@ class LLMClient:
         cleaned_response = re.sub(r"\n?```\s*$", "", cleaned_response)
         cleaned_response = cleaned_response.strip()
 
+        # First attempt: standard JSON parse with type validation
         try:
-            return json.loads(cleaned_response)
-        except json.JSONDecodeError:
-            try:
-                # First attempt: strict mode — only fix syntax errors
-                repaired = json_repair.loads(cleaned_response, strict=True)
-                return repaired
-            except Exception:
-                try:
-                    # Second attempt: lenient mode — may restructure
-                    # Use with caution as it can change JSON semantics
-                    import logging as _log
+            result = json.loads(cleaned_response)
+            if not isinstance(result, dict):
+                raise ValueError(
+                    f"LLM JSON parse returned non-dict type {type(result).__name__}: "
+                    f"first 200 chars: {cleaned_response[:200]}"
+                )
+            return result
+        except (json.JSONDecodeError, ValueError):
+            pass
 
-                    _log.getLogger(__name__).warning(
-                        f"JSON repair strict mode failed, trying lenient. "
-                        f"First 200 chars: {cleaned_response[:200]}"
-                    )
-                    repaired = json_repair.loads(cleaned_response, strict=False)
-                    return repaired
-                except Exception:
-                    raise ValueError(
-                        f"El JSON devuelto por el LLM es invalido (tampoco se pudo reparar): {cleaned_response}"
-                    )
+        # Second attempt: strict mode repair (syntax errors only)
+        try:
+            repaired = json_repair.loads(cleaned_response, strict=True)
+            if isinstance(repaired, dict):
+                return repaired
+        except Exception:
+            pass
+
+        # Third attempt: lenient mode repair (may restructure)
+        try:
+            import logging as _log
+
+            _log.getLogger(__name__).warning(
+                f"JSON repair strict mode failed, trying lenient. "
+                f"First 200 chars: {cleaned_response[:200]}"
+            )
+            repaired = json_repair.loads(cleaned_response, strict=False)
+            # Guard: json_repair may return non-dict (e.g. empty string) if input is not parseable
+            if isinstance(repaired, dict):
+                return repaired
+        except Exception:
+            pass
+
+        # All attempts failed
+        raise ValueError(
+            f"El JSON devuelto por el LLM es invalido (tampoco se pudo reparar): {cleaned_response[:200]}"
+        )

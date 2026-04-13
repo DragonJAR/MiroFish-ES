@@ -19,6 +19,8 @@
     "next": "Siguiente",
     "retry": "Reintentar",
     "noData": "No hay datos disponibles",
+    "serverError": "Error del servidor",
+    "networkError": "Error de conexión",
     "hours": "horas",
     "minutes": "minutos",
     "rounds": "rondas",
@@ -322,7 +324,8 @@
     "episodes": "Episodios",
     "label": "Etiqueta",
     "showEdgeLabels": "Mostrar etiquetas de relaciones",
-    "selfRelations": "Autorelaciones"
+    "selfRelations": "Autorelaciones",
+    "entityTypes": "Tipos de entidad"
   },
   "history": {
     "title": "Registros de simulación",

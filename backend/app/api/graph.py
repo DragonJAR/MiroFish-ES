@@ -11,7 +11,6 @@ from flask import request, jsonify
 from . import graph_bp
 from ..config import Config
 from ..services.ontology_generator import OntologyGenerator
-from ..services.graph_builder import GraphBuilderService
 from ..services.text_processor import TextProcessor
 from ..utils.file_parser import FileParser
 from ..utils.logger import get_logger
@@ -22,6 +21,18 @@ from ..models.project import ProjectManager, ProjectStatus
 
 # �# �Obtener el logger
 logger = get_logger("mirofish.api")
+
+
+def _get_graph_builder():
+    """Get graph builder instance based on MEMORY_BACKEND config."""
+    if Config.MEMORY_BACKEND == "graphiti":
+        from ..services.graphiti_graph_builder import GraphitiGraphBuilder
+
+        return GraphitiGraphBuilder()
+    else:
+        from ..services.graph_builder import GraphBuilderService
+
+        return GraphBuilderService(api_key=Config.ZEP_API_KEY)
 
 
 def allowed_file(filename: str) -> bool:
@@ -275,10 +286,13 @@ def build_graph():
     try:
         logger.info("=== Comenzando construcción de grafo ===")
 
-        # Verificar configuración
+        # Verificar configuración según el backend
         errors = []
-        if not Config.ZEP_API_KEY:
-            errors.append(t("api.zepApiKeyMissing"))
+        if Config.MEMORY_BACKEND == "zep":
+            if not Config.ZEP_API_KEY:
+                errors.append(t("api.zepApiKeyMissing"))
+        # Para graphiti se usa Neo4j (verificado en Config.validate)
+
         if errors:
             logger.error(f"Error de configuración: {errors}")
             return jsonify(
@@ -383,8 +397,13 @@ def build_graph():
                     message=t("progress.initGraphService"),
                 )
 
-                # Crear servicio de construcción de grafo
-                builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+                # Crear servicio de construcción de grafo según backend
+                builder = _get_graph_builder()
+                creating_msg = (
+                    t("progress.creatingGraphitiGraph")
+                    if Config.MEMORY_BACKEND == "graphiti"
+                    else t("progress.creatingZepGraph")
+                )
 
                 # Dividir en chunks
                 task_manager.update_task(
@@ -396,9 +415,7 @@ def build_graph():
                 total_chunks = len(chunks)
 
                 # Crear grafo
-                task_manager.update_task(
-                    task_id, message=t("progress.creatingZepGraph"), progress=10
-                )
+                task_manager.update_task(task_id, message=creating_msg, progress=10)
                 graph_id = builder.create_graph(name=graph_name)
 
                 # Actualizar el graph_id del proyecto
@@ -429,7 +446,7 @@ def build_graph():
                     progress_callback=add_progress_callback,
                 )
 
-                # Esperar que Zep termine de procesar
+                # Esperar que Zep termine de procesar (no-op para Graphiti)
                 task_manager.update_task(
                     task_id, message=t("progress.waitingZepProcess"), progress=55
                 )
@@ -544,10 +561,10 @@ def get_graph_data(graph_id: str):
     Obtener datos del grafo (nodos y bordes)
     """
     try:
-        if not Config.ZEP_API_KEY:
+        if Config.MEMORY_BACKEND == "zep" and not Config.ZEP_API_KEY:
             return jsonify({"success": False, "error": t("api.zepApiKeyMissing")}), 500
 
-        builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+        builder = _get_graph_builder()
         graph_data = builder.get_graph_data(graph_id)
 
         return jsonify({"success": True, "data": graph_data})
@@ -561,13 +578,13 @@ def get_graph_data(graph_id: str):
 @graph_bp.route("/delete/<graph_id>", methods=["DELETE"])
 def delete_graph(graph_id: str):
     """
-    Borrar grafo Zep
+    Borrar grafo (Zep o Graphiti según MEMORY_BACKEND)
     """
     try:
-        if not Config.ZEP_API_KEY:
+        if Config.MEMORY_BACKEND == "zep" and not Config.ZEP_API_KEY:
             return jsonify({"success": False, "error": t("api.zepApiKeyMissing")}), 500
 
-        builder = GraphBuilderService(api_key=Config.ZEP_API_KEY)
+        builder = _get_graph_builder()
         builder.delete_graph(graph_id)
 
         return jsonify({"success": True, "message": t("api.graphDeleted", id=graph_id)})
