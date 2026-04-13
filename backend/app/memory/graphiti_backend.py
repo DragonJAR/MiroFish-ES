@@ -91,7 +91,7 @@ def _get_shared_loop():
     return _loop
 
 
-def _run_async(coro, timeout: float = 600.0):
+def _run_async(coro, timeout: float = 3600.0):
     """
     Ejecutar coroutine async en contexto sync.
 
@@ -102,7 +102,7 @@ def _run_async(coro, timeout: float = 600.0):
 
     Args:
         coro: La coroutine a ejecutar
-        timeout: Tiempo máximo en segundos para esperar el resultado (default: 60)
+        timeout: Tiempo máximo en segundos para esperar el resultado (default: 3600)
 
     Raises:
         TimeoutError: Si la coroutine no completa en el tiempo especificado
@@ -582,11 +582,27 @@ class GraphitiBackend(MemoryBackend):
             custom_labels = [l for l in labels if l not in ["Entity", "Node"]]
 
             if not custom_labels:
-                # Solo tiene etiquetas predeterminadas, omitir
-                continue
-
-            # Si se especificaron tipos predefinidos, verificar interseccion
-            if defined_entity_types:
+                # No tiene etiquetas custom — derivar tipo del nombre
+                # Patrones conocidos: "Expert", "Leader", "Analyst", "Manager", "Specialist"
+                name_lower = entity.name.lower()
+                if "leader" in name_lower:
+                    entity_type = "OpinionLeader"
+                elif "expert" in name_lower:
+                    entity_type = "Expert"
+                elif "analyst" in name_lower:
+                    entity_type = "Analyst"
+                elif "manager" in name_lower:
+                    entity_type = "Manager"
+                elif "specialist" in name_lower:
+                    entity_type = "Specialist"
+                elif "researcher" in name_lower:
+                    entity_type = "Researcher"
+                elif "coordinator" in name_lower:
+                    entity_type = "Coordinator"
+                else:
+                    entity_type = "Agent"
+            elif defined_entity_types:
+                # Filtrar por tipos predefinidos
                 matching_labels = [
                     l for l in custom_labels if l in defined_entity_types
                 ]
@@ -707,7 +723,9 @@ class GraphitiBackend(MemoryBackend):
                     "source_node_name": record.get("source_node_name", ""),
                     "target_node_uuid": target_node_uuid,
                     "target_node_name": record.get("target_node_name", ""),
-                    "attributes": record.get("attributes", {}),
+                    "attributes": _sanitize_neo4j_attributes(
+                        record.get("attributes", {})
+                    ),
                 }
 
                 if include_temporal:
