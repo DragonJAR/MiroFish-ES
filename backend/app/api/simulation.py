@@ -482,9 +482,9 @@ def prepare_simulation():
             logger.info(
                 f"Obteniendo sincrónicamente cantidad de entidades: graph_id={state.graph_id}"
             )
-            reader = ZepEntityReader()
+            backend = get_memory_backend()
             # Leer entidades rápidamente (no requiere información de bordes, solo contar cantidad)
-            filtered_preview = reader.filter_defined_entities(
+            filtered_preview = backend.filter_defined_entities(
                 graph_id=state.graph_id,
                 defined_entity_types=entity_types_list,
                 enrich_with_edges=False,  # No obtener información de bordes, acelerar
