@@ -235,6 +235,20 @@ class OasisProfileGenerator:
         self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
         logger.info(f"OasisProfileGenerator inicializado con modelo {self.model_name}")
 
+    @staticmethod
+    def _generate_username(entity_name: str) -> str:
+        """Genera un username válido desde el nombre de una entidad."""
+        import re
+
+        # Limpiar el nombre: solo letras, números, guiones bajos
+        cleaned = re.sub(r"[^a-zA-Z0-9]", "", entity_name)
+        if not cleaned:
+            cleaned = "agent"
+        # Tomar primeros 20 caracteres y añadir número aleatorio
+        prefix = cleaned[:20].lower()
+        suffix = random.randint(10, 99)
+        return f"{prefix}{suffix}"
+
     def generate_profile_from_entity(
         self,
         entity: "EntityNode",
