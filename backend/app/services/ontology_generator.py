@@ -285,6 +285,13 @@ Por favor, basándose en el contenido anterior, diseñe tipos de entidad y relac
         # Registrar mapeo desde nombre original hasta PascalCase, usado para corregir posteriormente las referencias source_targets de edge
         entity_name_map = {}
         for entity in result["entity_types"]:
+            # Saltar items que no sean dict (JSON malformado del LLM)
+            if not isinstance(entity, dict):
+                logger.warning(
+                    f"Skipping non-dict entity item: {type(entity).__name__}: {str(entity)[:100]}"
+                )
+                continue
+
             # Forzar conversión de entity name a PascalCase（requisito de Zep API）
             if "name" in entity:
                 original_name = entity["name"]
@@ -298,12 +305,27 @@ Por favor, basándose en el contenido anterior, diseñe tipos de entidad y relac
                 entity["attributes"] = []
             if "examples" not in entity:
                 entity["examples"] = []
+
+            # Filtrar items no-dict de attributes（JSON malformado del LLM）
+            entity["attributes"] = [
+                a for a in entity["attributes"] if isinstance(a, dict)
+            ]
+            # Filtrar items no-dict de examples（JSON malformado del LLM）
+            entity["examples"] = [e for e in entity["examples"] if isinstance(e, str)]
+
             # Asegurar que la descripción no exceda 100 caracteres
             if len(entity.get("description", "")) > 100:
                 entity["description"] = entity["description"][:97] + "..."
 
         # Verificación de tipos de relación
         for edge in result["edge_types"]:
+            # Saltar items que no sean dict（JSON malformado del LLM）
+            if not isinstance(edge, dict):
+                logger.warning(
+                    f"Skipping non-dict edge item: {type(edge).__name__}: {str(edge)[:100]}"
+                )
+                continue
+
             # Forzar conversión de edge name a SCREAMING_SNAKE_CASE（requisito de Zep API）
             if "name" in edge:
                 original_name = edge["name"]
@@ -314,14 +336,19 @@ Por favor, basándose en el contenido anterior, diseñe tipos de entidad y relac
                     )
             # Corregir referencias de nombre de entidad en source_targets para mantener consistencia con PascalCase convertido
             for st in edge.get("source_targets", []):
-                if st.get("source") in entity_name_map:
-                    st["source"] = entity_name_map[st["source"]]
-                if st.get("target") in entity_name_map:
-                    st["target"] = entity_name_map[st["target"]]
+                if isinstance(st, dict):
+                    if st.get("source") in entity_name_map:
+                        st["source"] = entity_name_map[st["source"]]
+                    if st.get("target") in entity_name_map:
+                        st["target"] = entity_name_map[st["target"]]
             if "source_targets" not in edge:
                 edge["source_targets"] = []
             if "attributes" not in edge:
                 edge["attributes"] = []
+
+            # Filtrar items no-dict de attributes
+            edge["attributes"] = [a for a in edge["attributes"] if isinstance(a, dict)]
+
             if len(edge.get("description", "")) > 100:
                 edge["description"] = edge["description"][:97] + "..."
 

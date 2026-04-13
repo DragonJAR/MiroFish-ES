@@ -242,9 +242,20 @@ class GraphBuilderService:
                 return f"entity_{attr_name}"
             return attr_name
 
+        def is_valid_entity_def(item) -> bool:
+            """Check if item is a dict with a 'name' key"""
+            return isinstance(item, dict) and "name" in item
+
         # Crear tipos de entidad dinámicamente
         entity_types = {}
+        skipped_entities = 0
         for entity_def in ontology.get("entity_types", []):
+            if not is_valid_entity_def(entity_def):
+                build_logger.warning(
+                    f"Skipping invalid entity definition: {type(entity_def).__name__}: {str(entity_def)[:80]}"
+                )
+                skipped_entities += 1
+                continue
             name = entity_def["name"]
             description = entity_def.get("description", f"A {name} entity.")
 
@@ -253,7 +264,12 @@ class GraphBuilderService:
             annotations = {}
 
             for attr_def in entity_def.get("attributes", []):
-                attr_name = safe_attr_name(attr_def["name"])  # Usar nombre seguro
+                if not isinstance(attr_def, dict):
+                    build_logger.warning(
+                        f"Skipping invalid attribute in {name}: {type(attr_def).__name__}"
+                    )
+                    continue
+                attr_name = safe_attr_name(attr_def.get("name", "unknown"))
                 attr_desc = attr_def.get("description", attr_name)
                 # Zep API requiere la descripción de Field, esto es obligatorio
                 attrs[attr_name] = Field(description=attr_desc, default=None)
@@ -266,9 +282,21 @@ class GraphBuilderService:
             entity_class.__doc__ = description
             entity_types[name] = entity_class
 
+        if skipped_entities:
+            build_logger.warning(
+                f"Skipped {skipped_entities} invalid entity definitions"
+            )
+
         # Crear tipos de bordes dinámicamente
         edge_definitions = {}
+        skipped_edges = 0
         for edge_def in ontology.get("edge_types", []):
+            if not isinstance(edge_def, dict) or "name" not in edge_def:
+                build_logger.warning(
+                    f"Skipping invalid edge definition: {type(edge_def).__name__}: {str(edge_def)[:80]}"
+                )
+                skipped_edges += 1
+                continue
             name = edge_def["name"]
             description = edge_def.get("description", f"A {name} relationship.")
 
@@ -277,7 +305,12 @@ class GraphBuilderService:
             annotations = {}
 
             for attr_def in edge_def.get("attributes", []):
-                attr_name = safe_attr_name(attr_def["name"])  # Usar nombre seguro
+                if not isinstance(attr_def, dict):
+                    build_logger.warning(
+                        f"Skipping invalid attribute in edge {name}: {type(attr_def).__name__}"
+                    )
+                    continue
+                attr_name = safe_attr_name(attr_def.get("name", "unknown"))
                 attr_desc = attr_def.get("description", attr_name)
                 # Zep API requiere la descripción de Field, esto es obligatorio
                 attrs[attr_name] = Field(description=attr_desc, default=None)
@@ -295,6 +328,11 @@ class GraphBuilderService:
             # Construir source_targets
             source_targets = []
             for st in edge_def.get("source_targets", []):
+                if not isinstance(st, dict):
+                    build_logger.warning(
+                        f"Skipping invalid source_target in edge {name}: {type(st).__name__}"
+                    )
+                    continue
                 source_targets.append(
                     EntityEdgeSourceTarget(
                         source=st.get("source", "Entity"),
@@ -304,6 +342,9 @@ class GraphBuilderService:
 
             if source_targets:
                 edge_definitions[name] = (edge_class, source_targets)
+
+        if skipped_edges:
+            build_logger.warning(f"Skipped {skipped_edges} invalid edge definitions")
 
         # Llamar a Zep API para configurar la ontología
         if entity_types or edge_definitions:
