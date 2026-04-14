@@ -1086,9 +1086,12 @@ class ReportAgent:
         for match in re.finditer(xml_pattern, response, re.DOTALL):
             try:
                 call_data = json.loads(match.group(1))
-                tool_calls.append(call_data)
+                if self._is_valid_tool_call(call_data):
+                    tool_calls.append(call_data)
             except json.JSONDecodeError:
-                pass
+                logger.warning(
+                    f"JSON decode failed for tool_call XML match: {match.group(1)[:100]}"
+                )
 
         if tool_calls:
             return tool_calls
@@ -1103,7 +1106,9 @@ class ReportAgent:
                     tool_calls.append(call_data)
                     return tool_calls
             except json.JSONDecodeError:
-                pass
+                logger.warning(
+                    f"JSON decode failed for bare JSON strip: {stripped[:100]}"
+                )
 
         # RespuestaPosibleContiene Pensamientotexto + JSON desnudo，intentarExtracciónMásdespues unaElementos JSON Objeto
         json_pattern = r'(\{"(?:name|tool)"\s*:.*?\})\s*$'
@@ -1114,7 +1119,9 @@ class ReportAgent:
                 if self._is_valid_tool_call(call_data):
                     tool_calls.append(call_data)
             except json.JSONDecodeError:
-                pass
+                logger.warning(
+                    f"JSON decode failed for trailing JSON pattern: {match.group(1)[:100]}"
+                )
 
         return tool_calls
 
@@ -1122,14 +1129,21 @@ class ReportAgent:
         """verificarAnalizargenerado JSON SiEslegítimoHerramientallamada"""
         # Soporte {"name": ..., "parameters": ...} Y {"tool": ..., "params": ...} dos tiposClavenombre
         tool_name = data.get("name") or data.get("tool")
-        if tool_name and tool_name in self.VALID_TOOL_NAMES:
-            # unificarClavenombrePor name / parameters
-            if "tool" in data:
-                data["name"] = data.pop("tool")
-            if "params" in data and "parameters" not in data:
-                data["parameters"] = data.pop("params")
-            return True
-        return False
+        if not tool_name or tool_name not in self.VALID_TOOL_NAMES:
+            return False
+        # Validar que parameters sea dict si está presente
+        parameters = data.get("parameters") or data.get("params")
+        if parameters is not None and not isinstance(parameters, dict):
+            logger.warning(
+                f"tool_call '{tool_name}' has non-dict parameters type: {type(parameters).__name__}"
+            )
+            return False
+        # unificarClavenombrePor name / parameters
+        if "tool" in data:
+            data["name"] = data.pop("tool")
+        if "params" in data and "parameters" not in data:
+            data["parameters"] = data.pop("params")
+        return True
 
     def _get_tools_description(self) -> str:
         """GenerarHerramientaDescripcióntexto"""
@@ -1342,7 +1356,10 @@ class ReportAgent:
                         {"role": "assistant", "content": "（Respuestavacio）"}
                     )
                     messages.append(
-                        {"role": "user", "content": "por favorContinuarGenerar contenido。"}
+                        {
+                            "role": "user",
+                            "content": "por favorContinuarGenerar contenido。",
+                        }
                     )
                     continue
                 # Másdespues una vecesIteracióntambiénVolver None，salirCicloentrar en finalizacion forzada
@@ -1906,7 +1923,9 @@ class ReportAgent:
 
         system_prompt = CHAT_SYSTEM_PROMPT_TEMPLATE.Format(
             simulation_requirement=self.simulation_requirement,
-            report_content=report_content if report_content else "（por ahoraNingunoinforme）",
+            report_content=report_content
+            if report_content
+            else "（por ahoraNingunoinforme）",
             tools_description=self._get_tools_description(),
         )
         system_prompt = f"{system_prompt}\n\n{get_language_instruction()}"

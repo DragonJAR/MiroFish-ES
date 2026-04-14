@@ -25,6 +25,42 @@ from .zep_entity_reader import EntityNode, ZepEntityReader
 
 logger = get_logger("mirofish.simulation_config")
 
+
+def _safe_int(value: Any, default: int) -> int:
+    """Parsea valor a int de forma segura. Retorna default si no es convertible."""
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except (ValueError, TypeError):
+            pass
+    logger.warning(f"Invalid int value '{value}', using default {default}")
+    return default
+
+
+def _safe_int_list(value: Any, default: List[int]) -> List[int]:
+    """Parsea valor a list[int] de forma segura. Retorna default si no es convertible."""
+    if not isinstance(value, list):
+        logger.warning(f"Invalid int list '{value}', using default {default}")
+        return default
+    result = []
+    for item in value:
+        if isinstance(item, int) and not isinstance(item, bool):
+            result.append(item)
+        elif isinstance(item, str):
+            try:
+                result.append(int(item))
+            except (ValueError, TypeError):
+                logger.warning(f"Skipping non-parseable int item '{item}'")
+        else:
+            logger.warning(f"Skipping invalid int list item type {type(item).__name__}")
+    if not result:
+        logger.warning(f"Empty int list after filtering, using default {default}")
+        return default
+    return result
+
+
 # Configuración de tiempo de hábitos chinos (hora de Beijing)
 CHINA_TIMEZONE_CONFIG = {
     # Horas de madrugada (casi ninguna actividad)
@@ -572,13 +608,13 @@ class SimulationConfigGenerator:
 
             try:
                 return json.loads(json_str)
-            except:
+            except (json.JSONDecodeError, ValueError):
                 # Intentar eliminar todos los caracteres de control
                 json_str = re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", json_str)
                 json_str = re.sub(r"\s+", " ", json_str)
                 try:
                     return json.loads(json_str)
-                except:
+                except (json.JSONDecodeError, ValueError):
                     pass
 
         return None
@@ -694,18 +730,18 @@ Descripción de campos:
             )
 
         return TimeSimulationConfig(
-            total_simulation_hours=result.get("total_simulation_hours", 72),
-            minutes_per_round=result.get(
-                "minutes_per_round", 60
-            ),  # Por defecto cada ronda 1 hora
+            total_simulation_hours=_safe_int(result.get("total_simulation_hours"), 72),
+            minutes_per_round=_safe_int(result.get("minutes_per_round"), 60),
             agents_per_hour_min=agents_per_hour_min,
             agents_per_hour_max=agents_per_hour_max,
-            peak_hours=result.get("peak_hours", [19, 20, 21, 22]),
-            off_peak_hours=result.get("off_peak_hours", [0, 1, 2, 3, 4, 5]),
+            peak_hours=_safe_int_list(result.get("peak_hours"), [19, 20, 21, 22]),
+            off_peak_hours=_safe_int_list(
+                result.get("off_peak_hours"), [0, 1, 2, 3, 4, 5]
+            ),
             off_peak_activity_multiplier=0.05,  # Madrugada casi nadie
-            morning_hours=result.get("morning_hours", [6, 7, 8]),
+            morning_hours=_safe_int_list(result.get("morning_hours"), [6, 7, 8]),
             morning_activity_multiplier=0.4,
-            work_hours=result.get("work_hours", list(range(9, 19))),
+            work_hours=_safe_int_list(result.get("work_hours"), list(range(9, 19))),
             work_activity_multiplier=0.7,
             peak_activity_multiplier=1.5,
         )

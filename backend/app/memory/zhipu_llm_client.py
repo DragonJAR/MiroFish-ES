@@ -684,16 +684,13 @@ class ZhipuAILLMClient(OpenAIGenericClient):
                         )
 
                 # Final safety: if result is not a dict but response_model expects one,
-                # convert to empty dict and let auto-fill add required list fields
+                # raise an error instead of silently returning auto-filled garbage
                 if response_model is not None and not isinstance(result, dict):
                     model_name = getattr(response_model, "__name__", "?")
-                    logger.warning(
+                    raise ValueError(
                         f"LLM returned {type(result).__name__} instead of dict for {model_name}. "
-                        f"Returning empty dict for auto-fill. Raw: {str(result)[:200]}"
+                        f"Cannot auto-fill from invalid type. Raw: {str(result)[:200]}"
                     )
-                    result = {}
-                    # Re-run normalization on the empty dict to auto-fill required fields
-                    result = _normalize_response(result, response_model)
 
                 return result
 
