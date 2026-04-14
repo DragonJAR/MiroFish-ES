@@ -91,6 +91,49 @@ MiroFish 致力于打造映射现实的群体智能镜像，通过捕捉个体�
 4. **报告生成**：ReportAgent拥有丰富的工具集与模拟后环境进行深度交互
 5. **深度互动**：与模拟世界中的任意一位进行对话 & 与ReportAgent进行对话
 
+## 🧠 记忆后端
+
+此修改版本的 MiroFish 支持知识图的两种内存后端选项：
+
+### 1. Zep Cloud（默认）
+云端内存管理服务，集成图功能。
+
+**优势：**
+- 无需本地配置
+- 自动扩展
+- API 即用即得
+
+**配置：**
+```env
+MEMORY_BACKEND=zep  # 默认，可省略
+ZEP_API_KEY=your_zep_api_key
+```
+
+仅需 Zep Cloud API 密钥：https://app.getzep.com/
+
+### 2. Graphiti（本地）
+使用 Neo4j 和 Graphiti 进行高级实体提取的本地后端。
+
+**优势：**
+- 完全数据控制（离线/本地）
+- 无外部服务依赖
+- LLM 驱动的实体提取
+
+**配置：**
+```env
+MEMORY_BACKEND=graphiti
+NEO4J_URI=bolt://localhost:7687
+NEO4J_USER=neo4j
+NEO4J_PASSWORD=mirofish.dragonjar
+```
+
+**使用 Docker 启动 Neo4j：**
+```bash
+docker compose -f docker/graphiti/docker-compose.yml up -d
+```
+
+Neo4j UI 可在 `http://localhost:7474` 访问（用户名：`neo4j`，密码：`mirofish.dragonjar`）
+
 ## 🚀 快速开始
 
 ### 一、源码部署（推荐）

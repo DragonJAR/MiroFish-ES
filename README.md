@@ -93,7 +93,7 @@ Haz clic en la imagen para ver la predicción profunda de MiroFish sobre el fina
 
 ## 🧠 Backends de Memoria
 
-MiroFish soporta dos backends de almacenamiento de memoria para el grafo de conocimiento:
+Esta version modificada de MiroFish soporta dos backends de almacenamiento de memoria para el grafo de conocimiento:
 
 ### 1. Zep Cloud (Por defecto)
 Servicio cloud de gestión de memoria con funcionalidad de grafo integrada.

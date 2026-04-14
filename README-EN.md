@@ -93,7 +93,7 @@ Click the image to watch MiroFish's deep prediction of the lost ending based on 
 
 ## 🧠 Memory Backends
 
-MiroFish supports two memory backend options for the knowledge graph:
+This modified version of MiroFish supports two memory backend options for the knowledge graph:
 
 ### 1. Zep Cloud (Default)
 Cloud-based memory management service with integrated graph functionality.
