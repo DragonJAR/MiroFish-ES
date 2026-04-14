@@ -97,8 +97,8 @@
               <span class="metric-value mono">{{ formatElapsedTime }}</span>
             </div>
             <div class="metric">
-              <span class="metric-label">ToLets</span>
-              <span class="metric-value mono">{{ totalToLetCalls }}</span>
+              <span class="metric-label">Tools</span>
+              <span class="metric-value mono">{{ totalToolCalls }}</span>
             </div>
             <div class="metric metric-right">
               <span class="metric-pill" :class="`pill--${statusClass}`">{{ statusText }}</span>
@@ -215,79 +215,79 @@
                     </div>
                   </template>
 
-                  <!-- ToLet Call -->
-                  <template v-if="log.action === 'toLet_call'">
-                    <div class="toLet-badge" :class="'toLet-' + getToLetCLetor(log.details?.toLet_name)">
+                  <!-- Tool Call -->
+                  <template v-if="log.action === 'tool_call'">
+                    <div class="tool-badge" :class="'tool-' + getToolCLetor(log.details?.tool_name)">
                       <!-- Deep Insight - Lightbulb -->
-                      <svg v-if="getToLetIcon(log.details?.toLet_name) === 'lightbulb'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg v-if="getToolIcon(log.details?.tool_name) === 'lightbulb'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.5V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.5A7 7 0 0 0 12 2z"></path>
                       </svg>
                       <!-- Panorama Search - Globe -->
-                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'globe'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg v-else-if="getToolIcon(log.details?.tool_name) === 'globe'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                       </svg>
                       <!-- Agent Interview - Users -->
-                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'users'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg v-else-if="getToolIcon(log.details?.tool_name) === 'users'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                         <circle cx="9" cy="7" r="4"></circle>
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
                       </svg>
                       <!-- Quick Search - Zap -->
-                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'zap'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg v-else-if="getToolIcon(log.details?.tool_name) === 'zap'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                       </svg>
                       <!-- Graph Stats - Chart -->
-                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'chart'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg v-else-if="getToolIcon(log.details?.tool_name) === 'chart'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="20" x2="18" y2="10"></line>
                         <line x1="12" y1="20" x2="12" y2="4"></line>
                         <line x1="6" y1="20" x2="6" y2="14"></line>
                       </svg>
                       <!-- Entity Query - Database -->
-                      <svg v-else-if="getToLetIcon(log.details?.toLet_name) === 'database'" class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <svg v-else-if="getToolIcon(log.details?.tool_name) === 'database'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
                         <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
                         <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
                       </svg>
-                      <!-- Default - ToLet -->
-                      <svg v-else class="toLet-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                      <!-- Default - Tool -->
+                      <svg v-else class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
                       </svg>
-                      {{ getToLetDisplayName(log.details?.toLet_name) }}
+                      {{ getToolDisplayName(log.details?.tool_name) }}
                     </div>
-                    <div v-if="log.details?.parameters && expandedLogs.has(log.timestamp)" class="toLet-params">
+                    <div v-if="log.details?.parameters && expandedLogs.has(log.timestamp)" class="tool-params">
                       <pre>{{ formatParams(log.details.parameters) }}</pre>
                     </div>
                   </template>
 
-                  <!-- ToLet Result -->
-                  <template v-if="log.action === 'toLet_result'">
-                    <div class="result-wrapper" :class="'result-' + log.details?.toLet_name">
-                      <!-- Hide result-meta for toLets that show stats in their own header -->
-                      <div v-if="!['interview_agents', 'insight_forge', 'panorama_search', 'quick_search'].includes(log.details?.toLet_name)" class="result-meta">
-                        <span class="result-toLet">{{ getToLetDisplayName(log.details?.toLet_name) }}</span>
+                  <!-- Tool Result -->
+                  <template v-if="log.action === 'tool_result'">
+                    <div class="result-wrapper" :class="'result-' + log.details?.tool_name">
+                      <!-- Hide result-meta for tools that show stats in their own header -->
+                      <div v-if="!['interview_agents', 'insight_forge', 'panorama_search', 'quick_search'].includes(log.details?.tool_name)" class="result-meta">
+                        <span class="result-tool">{{ getToolDisplayName(log.details?.tool_name) }}</span>
                         <span class="result-size">{{ formatResultSize(log.details?.result_length) }}</span>
                       </div>
                       
                       <!-- Structured Result Display -->
                       <div v-if="!showRawResult[log.timestamp]" class="result-structured">
                         <!-- Interview Agents - Special Display -->
-                        <template v-if="log.details?.toLet_name === 'interview_agents'">
+                        <template v-if="log.details?.tool_name === 'interview_agents'">
                           <InterviewDisplay :result="parseInterview(log.details.result)" :result-length="log.details?.result_length" />
                         </template>
                         
                         <!-- Insight Forge -->
-                        <template v-else-if="log.details?.toLet_name === 'insight_forge'">
+                        <template v-else-if="log.details?.tool_name === 'insight_forge'">
                           <InsightDisplay :result="parseInsightForge(log.details.result)" :result-length="log.details?.result_length" />
                         </template>
                         
                         <!-- Panorama Search -->
-                        <template v-else-if="log.details?.toLet_name === 'panorama_search'">
+                        <template v-else-if="log.details?.tool_name === 'panorama_search'">
                           <PanoramaDisplay :result="parsePanorama(log.details.result)" :result-length="log.details?.result_length" />
                         </template>
                         
                         <!-- Quick Search -->
-                        <template v-else-if="log.details?.toLet_name === 'quick_search'">
+                        <template v-else-if="log.details?.tool_name === 'quick_search'">
                           <QuickSearchDisplay :result="parseQuickSearch(log.details.result)" :result-length="log.details?.result_length" />
                         </template>
                         
@@ -308,8 +308,8 @@
                   <template v-if="log.action === 'llm_response'">
                     <div class="llm-meta">
                       <span class="meta-tag">Iteration {{ log.details?.iteration }}</span>
-                      <span class="meta-tag" :class="{ de: log.details?.has_toLet_calls }">
-                        ToLets: {{ log.details?.has_toLet_calls ? 'Yes' : 'No' }}
+                      <span class="meta-tag" :class="{ de: log.details?.has_tool_calls }">
+                        Tools: {{ log.details?.has_tool_calls ? 'Yes' : 'No' }}
                       </span>
                       <span class="meta-tag" :class="{ de: log.details?.has_final_answer, 'final-answer': log.details?.has_final_answer }">
                         Final: {{ log.details?.has_final_answer ? 'Yes' : 'No' }}
@@ -340,18 +340,18 @@
                 </div>
 
                 <!-- Footer: Elapsed Time + Action Buttons -->
-                <div class="timeline-footer" v-if="log.elapsed_seconds || (log.action === 'toLet_call' && log.details?.parameters) || log.action === 'toLet_result' || (log.action === 'llm_response' && log.details?.response)">
+                <div class="timeline-footer" v-if="log.elapsed_seconds || (log.action === 'tool_call' && log.details?.parameters) || log.action === 'tool_result' || (log.action === 'llm_response' && log.details?.response)">
                   <span v-if="log.elapsed_seconds" class="elapsed-badge">+{{ log.elapsed_seconds.toFixed(1) }}s</span>
                   <span v-else class="elapsed-placehLetder"></span>
                   
                   <div class="footer-actions">
-                    <!-- ToLet Call: Show/Hide Params -->
-                    <button v-if="log.action === 'toLet_call' && log.details?.parameters" class="action-btn" @click.stop="toggleLogExpand(log)">
+                    <!-- Tool Call: Show/Hide Params -->
+                    <button v-if="log.action === 'tool_call' && log.details?.parameters" class="action-btn" @click.stop="toggleLogExpand(log)">
                       {{ expandedLogs.has(log.timestamp) ? 'Hide Params' : 'Show Params' }}
                     </button>
                     
-                    <!-- ToLet Result: Raw/Structured View -->
-                    <button v-if="log.action === 'toLet_result'" class="action-btn" @click.stop="toggleRawResult(log.timestamp, $event)">
+                    <!-- Tool Result: Raw/Structured View -->
+                    <button v-if="log.action === 'tool_result'" class="action-btn" @click.stop="toggleRawResult(log.timestamp, $event)">
                       {{ showRawResult[log.timestamp] ? 'Structured View' : 'Raw Output' }}
                     </button>
                     
@@ -441,15 +441,15 @@ const toggleRawResult = (timestamp, event) => {
   // Cambiar estado
   showRawResult[timestamp] = !showRawResult[timestamp]
   
-  // Esperar actualización del DOM, ajustar posición de scrLetl para mantener el botón en su lugar
+  // Esperar actualización del DOM, ajustar posición de scrolll para mantener el botón en su lugar
   if (button && buttonTopBeforeToggle !== undefined && rightPanel.value) {
     nextTick(() => {
       const newButtonRect = button.getBoundingClientRect()
       const buttonTopAfterToggle = newButtonRect.top
-      const scrLetlDelta = buttonTopAfterToggle - buttonTopBeforeToggle
+      const scrolllDelta = buttonTopAfterToggle - buttonTopBeforeToggle
       
-      // Ajustar posición de scrLetl
-      rightPanel.value.scrLetlTop += scrLetlDelta
+      // Ajustar posición de scrolll
+      rightPanel.value.scrolllTop += scrolllDelta
     })
   }
 }
@@ -466,7 +466,7 @@ const toggleSectionContent = (idx) => {
 }
 
 const toggleSectionCLetlapse = (idx) => {
-  // SLeto las secciones completadas pueden cLetapsarse
+  // SLeto las secciones completadas pueden collapsarse
   if (!generatedSections.value[idx + 1]) return
   const newSet = new Set(collapsedSections.value)
   if (newSet.has(idx)) {
@@ -488,56 +488,56 @@ const toggleLogExpand = (log) => {
 }
 
 const isLogCollapsed = (log) => {
-  if (['toLet_call', 'toLet_result', 'llm_response'].includes(log.action)) {
+  if (['tool_call', 'tool_result', 'llm_response'].includes(log.action)) {
     return !expandedLogs.value.has(log.timestamp)
   }
   return false
 }
 
-// ToLet configurations with display names and cLetors
-const toLetConfig = {
+// Tool configurations with display names and colors
+const toolConfig = {
   'insight_forge': {
     name: 'Deep Insight',
-    cLetor: 'purple',
+    color: 'purple',
     icon: 'lightbulb' // ícono de bombilla - representa perspicacia
   },
   'panorama_search': {
     name: 'Panorama Search',
-    cLetor: 'blue',
+    color: 'blue',
     icon: 'globe' // ícono de globo - representa búsqueda panorámica
   },
   'interview_agents': {
     name: 'Agent Interview',
-    cLetor: 'green',
+    color: 'green',
     icon: 'users' // ícono de usuarios - representa diálogo
   },
   'quick_search': {
     name: 'Quick Search',
-    cLetor: 'orange',
+    color: 'orange',
     icon: 'zap' // ícono de rayo - representa velocidad
   },
   'get_graph_statistics': {
     name: 'Graph Stats',
-    cLetor: 'cyan',
+    color: 'cyan',
     icon: 'chart' // ícono de gráfico - representa estadísticas
   },
   'get_entities_by_type': {
     name: 'Entity Query',
-    cLetor: 'pink',
+    color: 'pink',
     icon: 'database' // ícono de base de datos - representa entidad
   }
 }
 
-const getToLetDisplayName = (toLetName) => {
-  return toLetConfig[toLetName]?.name || toLetName
+const getToolDisplayName = (toolName) => {
+  return toolConfig[toolName]?.name || toolName
 }
 
-const getToLetCLetor = (toLetName) => {
-  return toLetConfig[toLetName]?.cLetor || 'gray'
+const getToolCLetor = (toolName) => {
+  return toolConfig[toolName]?.color || 'gray'
 }
 
-const getToLetIcon = (toLetName) => {
-  return toLetConfig[toLetName]?.icon || 'toLet'
+const getToolIcon = (toolName) => {
+  return toolConfig[toolName]?.icon || 'tool'
 }
 
 // Parse functions
@@ -1721,8 +1721,8 @@ const progressPercent = computed(() => {
   return Math.round((completedSections.value / totalSections.value) * 100)
 })
 
-const totalToLetCalls = computed(() => {
-  return agentLogs.value.filter(l => l.action === 'toLet_call').length
+const totalToolCalls = computed(() => {
+  return agentLogs.value.filter(l => l.action === 'tool_call').length
 })
 
 const formatElapsedTime = computed(() => {
@@ -1973,7 +1973,7 @@ const getTimelineItemClass = (log, idx, total) => {
     'node--de': isLatest,
     'node--hecho': !isLatest && isMilestone,
     'node--muted': !isLatest && !isMilestone,
-    'node--toLet': log.action === 'toLet_call' || log.action === 'toLet_result'
+    'node--tool': log.action === 'tool_call' || log.action === 'tool_result'
   }
 }
 
@@ -1992,8 +1992,8 @@ const getActionLabel = (action) => {
     'section_start': 'Section Start',
     'section_content': 'Content Ready',
     'section_complete': 'Section Done',
-    'toLet_call': 'ToLet Call',
-    'toLet_result': 'ToLet Result',
+    'tool_call': 'Tool Call',
+    'tool_result': 'Tool Result',
     'llm_response': 'LLM Response',
     'report_complete': 'Complete'
   }
@@ -2061,9 +2061,9 @@ const fetchAgentLog = async () => {
           if (rightPanel.value) {
             // Si completada, desplazamiento hasta parte superior; sino desplazamiento hasta parte inferior con los nuevos registros
             if (isComplete.value) {
-              rightPanel.value.scrLetlTop = 0
+              rightPanel.value.scrolllTop = 0
             } else {
-              rightPanel.value.scrLetlTop = rightPanel.value.scrLetlHeight
+              rightPanel.value.scrolllTop = rightPanel.value.scrolllHeight
             }
           }
         })
@@ -2134,7 +2134,7 @@ const fetchConsLeteLog = async () => {
         
         nextTick(() => {
           if (logContent.value) {
-            logContent.value.scrLetlTop = logContent.value.scrLetlHeight
+            logContent.value.scrolllTop = logContent.value.scrolllHeight
           }
         })
       }
@@ -2201,7 +2201,7 @@ watch(() => props.reportId, (newId) => {
 .report-panel {
   height: 100%;
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   background: #F8F9FA;
   font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
   overflow: hidden;
@@ -2224,7 +2224,7 @@ watch(() => props.reportId, (newId) => {
   border-bottom: 1px sLetid #E5E7EB;
   font-size: 13px;
   font-weight: 600;
-  cLetor: #374151;
+  color: #374151;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   position: sticky;
@@ -2255,7 +2255,7 @@ watch(() => props.reportId, (newId) => {
 .header-index {
   font-size: 12px;
   font-weight: 600;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   margin-right: 10px;
   flex-shrink: 0;
 }
@@ -2263,7 +2263,7 @@ watch(() => props.reportId, (newId) => {
 .header-title {
   font-size: 13px;
   font-weight: 600;
-  cLetor: #374151;
+  color: #374151;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2275,26 +2275,26 @@ watch(() => props.reportId, (newId) => {
   margin-left: auto;
   font-size: 10px;
   font-weight: 600;
-  cLetor: #6B7280;
+  color: #6B7280;
   flex-shrink: 0;
 }
 
 /* Panel header status variants */
 .panel-header--de {
   background: #FAFAFA;
-  border-cLetor: #1F2937;
+  border-color: #1F2937;
 }
 
 .panel-header--de .header-index {
-  cLetor: #1F2937;
+  color: #1F2937;
 }
 
 .panel-header--de .header-title {
-  cLetor: #1F2937;
+  color: #1F2937;
 }
 
 .panel-header--de .header-meta {
-  cLetor: #1F2937;
+  color: #1F2937;
 }
 
 .panel-header--hecho {
@@ -2302,12 +2302,12 @@ watch(() => props.reportId, (newId) => {
 }
 
 .panel-header--hecho .header-index {
-  cLetor: #10B981;
+  color: #10B981;
 }
 
 .panel-header--todo .header-index,
 .panel-header--todo .header-title {
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
 }
 
 /* Left Panel - Report Style */
@@ -2318,29 +2318,29 @@ watch(() => props.reportId, (newId) => {
   border-right: 1px sLetid #E5E7EB;
   overflow-y: auto;
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   padding: 30px 50px 60px 50px;
 }
 
-.left-panel::-webkit-scrLetlbar {
+.left-panel::-webkit-scrolllbar {
   width: 6px;
 }
 
-.left-panel::-webkit-scrLetlbar-track {
+.left-panel::-webkit-scrolllbar-track {
   background: transparent;
 }
 
-.left-panel::-webkit-scrLetlbar-thumb {
+.left-panel::-webkit-scrolllbar-thumb {
   background: transparent;
   border-radius: 3px;
   transition: background 0.3s ease;
 }
 
-.left-panel:hover::-webkit-scrLetlbar-thumb {
+.left-panel:hover::-webkit-scrolllbar-thumb {
   background: rgba(0, 0, 0, 0.15);
 }
 
-.left-panel::-webkit-scrLetlbar-thumb:hover {
+.left-panel::-webkit-scrolllbar-thumb:hover {
   background: rgba(0, 0, 0, 0.25);
 }
 
@@ -2364,7 +2364,7 @@ watch(() => props.reportId, (newId) => {
 
 .report-tag {
   background: #000000;
-  cLetor: #FFFFFF;
+  color: #FFFFFF;
   font-size: 11px;
   font-weight: 700;
   padding: 4px 8px;
@@ -2374,7 +2374,7 @@ watch(() => props.reportId, (newId) => {
 
 .report-id {
   font-size: 11px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   font-weight: 500;
   letter-spacing: 0.02em;
 }
@@ -2383,7 +2383,7 @@ watch(() => props.reportId, (newId) => {
   font-family: 'Times New Roman', Times, serif;
   font-size: 36px;
   font-weight: 700;
-  cLetor: #111827;
+  color: #111827;
   line-height: 1.2;
   margin: 0 0 16px 0;
   letter-spacing: -0.02em;
@@ -2392,7 +2392,7 @@ watch(() => props.reportId, (newId) => {
 .sub-title {
   font-family: 'Times New Roman', Times, serif;
   font-size: 16px;
-  cLetor: #6B7280;
+  color: #6B7280;
   font-style: italic;
   line-height: 1.6;
   margin: 0 0 30px 0;
@@ -2408,13 +2408,13 @@ watch(() => props.reportId, (newId) => {
 /* Sections List */
 .sections-list {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   gap: 32px;
 }
 
 .report-section-item {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -2422,7 +2422,7 @@ watch(() => props.reportId, (newId) => {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  transition: background-cLetor 0.2s ease;
+  transition: background-color 0.2s ease;
   padding: 8px 12px;
   margin: -8px -12px;
   border-radius: 8px;
@@ -2433,12 +2433,12 @@ watch(() => props.reportId, (newId) => {
 }
 
 .section-header-row.clickable:hover {
-  background-cLetor: #F9FAFB;
+  background-color: #F9FAFB;
 }
 
 .collapse-icon {
   margin-left: auto;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   transition: transform 0.3s ease;
   flex-shrink: 0;
   align-self: center;
@@ -2451,7 +2451,7 @@ watch(() => props.reportId, (newId) => {
 .section-number {
   font-family: 'JetBrains Mono', monospace;
   font-size: 16px;
-  cLetor: #9CA3AF; /* Gris oscuro, no cambia con estado */
+  color: #9CA3AF; /* Gris oscuro, no cambia con estado */
   font-weight: 500;
 }
 
@@ -2459,19 +2459,19 @@ watch(() => props.reportId, (newId) => {
   font-family: 'Times New Roman', Times, serif;
   font-size: 24px;
   font-weight: 600;
-  cLetor: #111827;
+  color: #111827;
   margin: 0;
-  transition: cLetor 0.3s ease;
+  transition: color 0.3s ease;
 }
 
 /* States */
 .report-section-item.is-pending .section-title {
-  cLetor: #D1D5DB;
+  color: #D1D5DB;
 }
 
 .report-section-item.is-de .section-title,
 .report-section-item.is-completed .section-title {
-  cLetor: #111827;
+  color: #111827;
 }
 
 .section-body {
@@ -2484,7 +2484,7 @@ watch(() => props.reportId, (newId) => {
   font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.8;
-  cLetor: #374151;
+  color: #374151;
 }
 
 .generated-content :deep(p) {
@@ -2495,7 +2495,7 @@ watch(() => props.reportId, (newId) => {
 .generated-content :deep(.md-h3),
 .generated-content :deep(.md-h4) {
   font-family: 'Times New Roman', Times, serif;
-  cLetor: #111827;
+  color: #111827;
   margin-top: 1.5em;
   margin-bottom: 0.8em;
   font-weight: 700;
@@ -2520,7 +2520,7 @@ watch(() => props.reportId, (newId) => {
   border-left: 3px sLetid #E5E7EB;
   padding-left: 16px;
   margin: 1.5em 0;
-  cLetor: #6B7280;
+  color: #6B7280;
   font-style: italic;
   font-family: 'Times New Roman', Times, serif;
 }
@@ -2538,7 +2538,7 @@ watch(() => props.reportId, (newId) => {
 
 .generated-content :deep(strong) {
   font-weight: 600;
-  cLetor: #111827;
+  color: #111827;
 }
 
 /* Loading State */
@@ -2546,7 +2546,7 @@ watch(() => props.reportId, (newId) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  cLetor: #6B7280;
+  color: #6B7280;
   font-size: 14px;
   margin-top: 4px;
 }
@@ -2563,7 +2563,7 @@ watch(() => props.reportId, (newId) => {
 .loading-text {
   font-family: 'Times New Roman', Times, serif;
   font-size: 15px;
-  cLetor: #4B5563;
+  color: #4B5563;
 }
 
 .cursor-blink {
@@ -2615,12 +2615,12 @@ watch(() => props.reportId, (newId) => {
 .waiting-placehLetder {
   flex: 1;
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 20px;
   padding: 40px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
 }
 
 .waiting-animation {
@@ -2661,7 +2661,7 @@ watch(() => props.reportId, (newId) => {
   background: #FFFFFF;
   overflow-y: auto;
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
 
   /* Functional palette (low saturation, status-based) */
   --wf-border: #E5E7EB;
@@ -2680,25 +2680,25 @@ watch(() => props.reportId, (newId) => {
   --wf-todo-text: #9CA3AF;
 }
 
-.right-panel::-webkit-scrLetlbar {
+.right-panel::-webkit-scrolllbar {
   width: 6px;
 }
 
-.right-panel::-webkit-scrLetlbar-track {
+.right-panel::-webkit-scrolllbar-track {
   background: transparent;
 }
 
-.right-panel::-webkit-scrLetlbar-thumb {
+.right-panel::-webkit-scrolllbar-thumb {
   background: transparent;
   border-radius: 3px;
   transition: background 0.3s ease;
 }
 
-.right-panel:hover::-webkit-scrLetlbar-thumb {
+.right-panel:hover::-webkit-scrolllbar-thumb {
   background: rgba(0, 0, 0, 0.15);
 }
 
-.right-panel::-webkit-scrLetlbar-thumb:hover {
+.right-panel::-webkit-scrolllbar-thumb:hover {
   background: rgba(0, 0, 0, 0.25);
 }
 
@@ -2732,14 +2732,14 @@ watch(() => props.reportId, (newId) => {
 .metric-label {
   font-size: 11px;
   font-weight: 600;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
 
 .metric-value {
   font-size: 12px;
-  cLetor: #374151;
+  color: #374151;
 }
 
 .metric-pill {
@@ -2751,37 +2751,37 @@ watch(() => props.reportId, (newId) => {
   border-radius: 999px;
   border: 1px sLetid var(--wf-border);
   background: #F9FAFB;
-  cLetor: #6B7280;
+  color: #6B7280;
 }
 
 .metric-pill.pill--processing {
   background: var(--wf-de-bg);
-  border-cLetor: var(--wf-de-border);
-  cLetor: var(--wf-de-text);
+  border-color: var(--wf-de-border);
+  color: var(--wf-de-text);
 }
 
 .metric-pill.pill--completed {
   background: #ECFDF5;
-  border-cLetor: #A7F3D0;
-  cLetor: #065F46;
+  border-color: #A7F3D0;
+  color: #065F46;
 }
 
 .metric-pill.pill--pending {
   background: transparent;
   border-style: dashed;
-  cLetor: #6B7280;
+  color: #6B7280;
 }
 
 .workflow-steps {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   gap: 10px;
   padding-bottom: 10px;
 }
 
 .wf-step {
   display: grid;
-  grid-template-cLetumns: 24px 1fr;
+  grid-template-columns: 24px 1fr;
   gap: 12px;
   padding: 10px 12px;
   border: 1px sLetid var(--wf-divider);
@@ -2791,23 +2791,23 @@ watch(() => props.reportId, (newId) => {
 
 .wf-step--de {
   background: var(--wf-de-bg);
-  border-cLetor: var(--wf-de-border);
+  border-color: var(--wf-de-border);
 }
 
 .wf-step--hecho {
   background: var(--wf-hecho-bg);
-  border-cLetor: var(--wf-hecho-border);
+  border-color: var(--wf-hecho-border);
 }
 
 .wf-step--todo {
   background: transparent;
-  border-cLetor: var(--wf-border);
+  border-color: var(--wf-border);
   border-style: dashed;
 }
 
 .wf-step-connector {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   align-items: center;
   width: 24px;
   flex-shrink: 0;
@@ -2848,7 +2848,7 @@ watch(() => props.reportId, (newId) => {
 .wf-step-index {
   font-size: 11px;
   font-weight: 700;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   letter-spacing: 0.02em;
   flex-shrink: 0;
 }
@@ -2857,7 +2857,7 @@ watch(() => props.reportId, (newId) => {
   font-family: 'Times New Roman', Times, serif;
   font-size: 13px;
   font-weight: 600;
-  cLetor: #111827;
+  color: #111827;
   line-height: 1.35;
   min-width: 0;
   overflow: hidden;
@@ -2869,7 +2869,7 @@ watch(() => props.reportId, (newId) => {
   margin-left: auto;
   font-size: 10px;
   font-weight: 700;
-  cLetor: var(--wf-de-text);
+  color: var(--wf-de-text);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   flex-shrink: 0;
@@ -2877,7 +2877,7 @@ watch(() => props.reportId, (newId) => {
 
 .wf-step--todo .wf-step-title,
 .wf-step--todo .wf-step-index {
-  cLetor: var(--wf-todo-text);
+  color: var(--wf-todo-text);
 }
 
 .workflow-divider {
@@ -2894,44 +2894,44 @@ watch(() => props.reportId, (newId) => {
 
 .timeline-item {
   display: grid;
-  grid-template-cLetumns: 24px 1fr;
+  grid-template-columns: 24px 1fr;
   gap: 12px;
   padding: 10px 12px;
   margin-bottom: 10px;
   border: 1px sLetid var(--wf-divider);
   border-radius: 8px;
   background: #FFFFFF;
-  transition: background-cLetor 0.15s ease, border-cLetor 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .timeline-item:hover {
   background: #F9FAFB;
-  border-cLetor: var(--wf-border);
+  border-color: var(--wf-border);
 }
 
 .timeline-item.node--de {
   background: var(--wf-de-bg);
-  border-cLetor: var(--wf-de-border);
+  border-color: var(--wf-de-border);
 }
 
 .timeline-item.node--de:hover {
   background: var(--wf-de-bg);
-  border-cLetor: var(--wf-de-border);
+  border-color: var(--wf-de-border);
 }
 
 .timeline-item.node--hecho {
   background: var(--wf-hecho-bg);
-  border-cLetor: var(--wf-hecho-border);
+  border-color: var(--wf-hecho-border);
 }
 
 .timeline-item.node--hecho:hover {
   background: var(--wf-hecho-bg);
-  border-cLetor: var(--wf-hecho-border);
+  border-color: var(--wf-hecho-border);
 }
 
 .timeline-connector {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   align-items: center;
   width: 24px;
   flex-shrink: 0;
@@ -2991,20 +2991,20 @@ watch(() => props.reportId, (newId) => {
 .action-label {
   font-size: 12px;
   font-weight: 600;
-  cLetor: #374151;
+  color: #374151;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
 
 .action-time {
   font-size: 11px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   font-family: 'JetBrains Mono', monospace;
 }
 
 .timeline-body {
   font-size: 13px;
-  cLetor: #4B5563;
+  color: #4B5563;
 }
 
 .timeline-footer {
@@ -3028,7 +3028,7 @@ watch(() => props.reportId, (newId) => {
 
 .elapsed-badge {
   font-size: 11px;
-  cLetor: #6B7280;
+  color: #6B7280;
   background: #F3F4F6;
   padding: 2px 8px;
   border-radius: 10px;
@@ -3044,12 +3044,12 @@ watch(() => props.reportId, (newId) => {
 
 .info-key {
   font-size: 11px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   min-width: 80px;
 }
 
 .info-val {
-  cLetor: #374151;
+  color: #374151;
 }
 
 .status-message {
@@ -3061,14 +3061,14 @@ watch(() => props.reportId, (newId) => {
 
 .status-message.planning {
   background: var(--wf-de-bg);
-  border-cLetor: var(--wf-de-border);
-  cLetor: var(--wf-de-text);
+  border-color: var(--wf-de-border);
+  color: var(--wf-de-text);
 }
 
 .status-message.éxito {
   background: #ECFDF5;
-  border-cLetor: #A7F3D0;
-  cLetor: #065F46;
+  border-color: #A7F3D0;
+  color: #065F46;
 }
 
 .outline-badge {
@@ -3076,7 +3076,7 @@ watch(() => props.reportId, (newId) => {
   margin-top: 8px;
   padding: 4px 10px;
   background: #F9FAFB;
-  cLetor: #6B7280;
+  color: #6B7280;
   border: 1px sLetid #E5E7EB;
   border-radius: 12px;
   font-size: 11px;
@@ -3099,7 +3099,7 @@ watch(() => props.reportId, (newId) => {
 }
 
 .section-tag.content-ready svg {
-  cLetor: var(--wf-de-dot);
+  color: var(--wf-de-dot);
 }
 
 
@@ -3109,32 +3109,32 @@ watch(() => props.reportId, (newId) => {
 }
 
 .section-tag.completed svg {
-  cLetor: #059669;
+  color: #059669;
 }
 
 .tag-num {
   font-size: 11px;
   font-weight: 700;
-  cLetor: #6B7280;
+  color: #6B7280;
 }
 
 .section-tag.completed .tag-num {
-  cLetor: #059669;
+  color: #059669;
 }
 
 .tag-title {
   font-size: 13px;
   font-weight: 500;
-  cLetor: #374151;
+  color: #374151;
 }
 
-.toLet-badge {
+.tool-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
   background: #F9FAFB;
-  cLetor: #374151;
+  color: #374151;
   border: 1px sLetid var(--wf-border);
   border-radius: 6px;
   font-size: 12px;
@@ -3142,81 +3142,81 @@ watch(() => props.reportId, (newId) => {
   transition: all 0.2s ease;
 }
 
-.toLet-icon {
+.tool-icon {
   flex-shrink: 0;
 }
 
-/* ToLet CLetors - Purple (Deep Insight) */
-.toLet-badge.toLet-purple {
+/* Tool CLetors - Purple (Deep Insight) */
+.tool-badge.tool-purple {
   background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%);
-  border-cLetor: #C4B5FD;
-  cLetor: #6D28D9;
+  border-color: #C4B5FD;
+  color: #6D28D9;
 }
-.toLet-badge.toLet-purple .toLet-icon {
+.tool-badge.tool-purple .tool-icon {
   stroke: #7C3AED;
 }
 
-/* ToLet CLetors - Blue (Panorama Search) */
-.toLet-badge.toLet-blue {
+/* Tool CLetors - Blue (Panorama Search) */
+.tool-badge.tool-blue {
   background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-  border-cLetor: #93C5FD;
-  cLetor: #1D4ED8;
+  border-color: #93C5FD;
+  color: #1D4ED8;
 }
-.toLet-badge.toLet-blue .toLet-icon {
+.tool-badge.tool-blue .tool-icon {
   stroke: #2563EB;
 }
 
-/* ToLet CLetors - Green (Agent Interview) */
-.toLet-badge.toLet-green {
+/* Tool CLetors - Green (Agent Interview) */
+.tool-badge.tool-green {
   background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
-  border-cLetor: #86EFAC;
-  cLetor: #15803D;
+  border-color: #86EFAC;
+  color: #15803D;
 }
-.toLet-badge.toLet-green .toLet-icon {
+.tool-badge.tool-green .tool-icon {
   stroke: #16A34A;
 }
 
-/* ToLet CLetors - Orange (Quick Search) */
-.toLet-badge.toLet-orange {
+/* Tool CLetors - Orange (Quick Search) */
+.tool-badge.tool-orange {
   background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
-  border-cLetor: #FDBA74;
-  cLetor: #C2410C;
+  border-color: #FDBA74;
+  color: #C2410C;
 }
-.toLet-badge.toLet-orange .toLet-icon {
+.tool-badge.tool-orange .tool-icon {
   stroke: #EA580C;
 }
 
-/* ToLet CLetors - Cyan (Graph Stats) */
-.toLet-badge.toLet-cyan {
+/* Tool CLetors - Cyan (Graph Stats) */
+.tool-badge.tool-cyan {
   background: linear-gradient(135deg, #ECFEFF 0%, #CFFAFE 100%);
-  border-cLetor: #67E8F9;
-  cLetor: #0E7490;
+  border-color: #67E8F9;
+  color: #0E7490;
 }
-.toLet-badge.toLet-cyan .toLet-icon {
+.tool-badge.tool-cyan .tool-icon {
   stroke: #0891B2;
 }
 
-/* ToLet CLetors - Pink (Entity Query) */
-.toLet-badge.toLet-pink {
+/* Tool CLetors - Pink (Entity Query) */
+.tool-badge.tool-pink {
   background: linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%);
-  border-cLetor: #F9A8D4;
-  cLetor: #BE185D;
+  border-color: #F9A8D4;
+  color: #BE185D;
 }
-.toLet-badge.toLet-pink .toLet-icon {
+.tool-badge.tool-pink .tool-icon {
   stroke: #DB2777;
 }
 
-/* ToLet CLetors - Gray (Default) */
-.toLet-badge.toLet-gray {
+/* Tool CLetors - Gray (Default) */
+.tool-badge.tool-gray {
   background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
-  border-cLetor: #D1D5DB;
-  cLetor: #374151;
+  border-color: #D1D5DB;
+  color: #374151;
 }
-.toLet-badge.toLet-gray .toLet-icon {
+.tool-badge.tool-gray .tool-icon {
   stroke: #6B7280;
 }
 
-.toLet-params {
+.tool-params {
   margin-top: 10px;
   background: transparent;
   border-radius: 0;
@@ -3225,11 +3225,11 @@ watch(() => props.reportId, (newId) => {
   overflow-x: auto;
 }
 
-.toLet-params pre {
+.tool-params pre {
   margin: 0;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  cLetor: #4B5563;
+  color: #4B5563;
   white-space: pre-wrap;
   word-break: break-all;
   background: #F9FAFB;
@@ -3246,7 +3246,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
-  cLetor: #6B7280;
+  color: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
@@ -3254,8 +3254,8 @@ watch(() => props.reportId, (newId) => {
 
 .action-btn:hover {
   background: #E5E7EB;
-  cLetor: #374151;
-  border-cLetor: #D1D5DB;
+  color: #374151;
+  border-color: #D1D5DB;
 }
 
 /* Result Wrapper */
@@ -3274,15 +3274,15 @@ watch(() => props.reportId, (newId) => {
   margin-bottom: 10px;
 }
 
-.result-toLet {
+.result-tool {
   font-size: 12px;
   font-weight: 600;
-  cLetor: #374151;
+  color: #374151;
 }
 
 .result-size {
   font-size: 10px;
-  cLetor: #6B7280;
+  color: #6B7280;
   font-family: 'JetBrains Mono', monospace;
 }
 
@@ -3298,7 +3298,7 @@ watch(() => props.reportId, (newId) => {
   font-size: 11px;
   white-space: pre-wrap;
   word-break: break-word;
-  cLetor: #374151;
+  color: #374151;
   background: #FFFFFF;
   border: 1px sLetid #E5E7EB;
   padding: 10px;
@@ -3311,7 +3311,7 @@ watch(() => props.reportId, (newId) => {
   font-size: 11px;
   white-space: pre-wrap;
   word-break: break-word;
-  cLetor: #6B7280;
+  color: #6B7280;
 }
 
 /* Legacy toggle-raw removed - using unified .action-btn */
@@ -3327,18 +3327,18 @@ watch(() => props.reportId, (newId) => {
   font-size: 11px;
   padding: 3px 8px;
   background: #F3F4F6;
-  cLetor: #6B7280;
+  color: #6B7280;
   border-radius: 4px;
 }
 
 .meta-tag.de {
   background: #DBEAFE;
-  cLetor: #1E40AF;
+  color: #1E40AF;
 }
 
 .meta-tag.final-answer {
   background: #D1FAE5;
-  cLetor: #059669;
+  color: #059669;
   font-weight: 600;
 }
 
@@ -3351,7 +3351,7 @@ watch(() => props.reportId, (newId) => {
   background: #ECFDF5;
   border: 1px sLetid #A7F3D0;
   border-radius: 6px;
-  cLetor: #065F46;
+  color: #065F46;
   font-size: 12px;
   font-weight: 500;
 }
@@ -3372,7 +3372,7 @@ watch(() => props.reportId, (newId) => {
   font-size: 11px;
   white-space: pre-wrap;
   word-break: break-word;
-  cLetor: #4B5563;
+  color: #4B5563;
   background: #F3F4F6;
   padding: 10px;
   border-radius: 6px;
@@ -3387,7 +3387,7 @@ watch(() => props.reportId, (newId) => {
   background: #ECFDF5;
   border: 1px sLetid #A7F3D0;
   border-radius: 8px;
-  cLetor: #065F46;
+  color: #065F46;
   font-weight: 600;
   font-size: 14px;
 }
@@ -3402,7 +3402,7 @@ watch(() => props.reportId, (newId) => {
   padding: 14px 20px;
   font-size: 14px;
   font-weight: 600;
-  cLetor: #FFFFFF;
+  color: #FFFFFF;
   background: #1F2937;
   border: none;
   border-radius: 8px;
@@ -3425,11 +3425,11 @@ watch(() => props.reportId, (newId) => {
 /* Workflow Empty */
 .workflow-empty {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 60px 20px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   font-size: 13px;
 }
 
@@ -3479,14 +3479,14 @@ watch(() => props.reportId, (newId) => {
   display: block;
   font-size: 20px;
   font-weight: 700;
-  cLetor: #111827;
+  color: #111827;
   font-family: 'JetBrains Mono', monospace;
 }
 
 :deep(.stat-box .stat-label) {
   display: block;
   font-size: 10px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   margin-top: 2px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -3494,20 +3494,20 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.stat-box.highlight) {
   background: #ECFDF5;
-  border-cLetor: #A7F3D0;
+  border-color: #A7F3D0;
 }
 
 :deep(.stat-box.highlight .stat-num) {
-  cLetor: #059669;
+  color: #059669;
 }
 
 :deep(.stat-box.muted) {
   background: #F9FAFB;
-  border-cLetor: #E5E7EB;
+  border-color: #E5E7EB;
 }
 
 :deep(.stat-box.muted .stat-num) {
-  cLetor: #6B7280;
+  color: #6B7280;
 }
 
 :deep(.query-display) {
@@ -3515,7 +3515,7 @@ watch(() => props.reportId, (newId) => {
   padding: 10px 14px;
   border-radius: 6px;
   font-size: 12px;
-  cLetor: #374151;
+  color: #374151;
   margin-bottom: 12px;
   border: 1px sLetid #E5E7EB;
   line-height: 1.5;
@@ -3528,14 +3528,14 @@ watch(() => props.reportId, (newId) => {
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  cLetor: #6B7280;
+  color: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.expand-details:hover) {
-  border-cLetor: #D1D5DB;
-  cLetor: #374151;
+  border-color: #D1D5DB;
+  color: #374151;
 }
 
 :deep(.detail-content) {
@@ -3549,7 +3549,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.section-label) {
   font-size: 11px;
   font-weight: 600;
-  cLetor: #6B7280;
+  color: #6B7280;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 10px;
@@ -3591,18 +3591,18 @@ watch(() => props.reportId, (newId) => {
   border-radius: 6px;
   font-size: 10px;
   font-weight: 700;
-  cLetor: #6B7280;
+  color: #6B7280;
   flex-shrink: 0;
 }
 
 :deep(.fact-row.de .fact-idx) {
   background: #A7F3D0;
-  cLetor: #065F46;
+  color: #065F46;
 }
 
 :deep(.fact-text) {
   font-size: 12px;
-  cLetor: #4B5563;
+  color: #4B5563;
   line-height: 1.6;
 }
 
@@ -3630,12 +3630,12 @@ watch(() => props.reportId, (newId) => {
 :deep(.chip-name) {
   font-size: 12px;
   font-weight: 500;
-  cLetor: #111827;
+  color: #111827;
 }
 
 :deep(.chip-type) {
   font-size: 10px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   background: #E5E7EB;
   padding: 1px 6px;
   border-radius: 3px;
@@ -3662,7 +3662,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.rel-node) {
   font-size: 12px;
   font-weight: 500;
-  cLetor: #111827;
+  color: #111827;
   background: #F3F4F6;
   padding: 4px 10px;
   border-radius: 4px;
@@ -3671,7 +3671,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.rel-edge) {
   font-size: 10px;
   font-weight: 600;
-  cLetor: #FFFFFF;
+  color: #FFFFFF;
   background: #4F46E5;
   padding: 3px 10px;
   border-radius: 10px;
@@ -3700,7 +3700,7 @@ watch(() => props.reportId, (newId) => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   font-weight: 600;
-  cLetor: #111827;
+  color: #111827;
   letter-spacing: -0.01em;
 }
 
@@ -3719,31 +3719,31 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .stat-value) {
   font-size: 14px;
   font-weight: 600;
-  cLetor: #4F46E5;
+  color: #4F46E5;
   font-family: 'JetBrains Mono', monospace;
 }
 
 :deep(.interview-display .stat-label) {
   font-size: 11px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   text-transform: lowercase;
 }
 
 :deep(.interview-display .stat-divider) {
-  cLetor: #D1D5DB;
+  color: #D1D5DB;
   font-size: 12px;
 }
 
 :deep(.interview-display .stat-size) {
   font-size: 11px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   font-family: 'JetBrains Mono', monospace;
 }
 
 :deep(.interview-display .header-topic) {
   margin-top: 4px;
   font-size: 12px;
-  cLetor: #6B7280;
+  color: #6B7280;
   line-height: 1.5;
 }
 
@@ -3756,24 +3756,24 @@ watch(() => props.reportId, (newId) => {
   border-bottom: 1px sLetid #F3F4F6;
   overflow-x: auto;
   overflow-y: hidden;
-  scrLetlbar-width: thin;
-  scrLetlbar-cLetor: #E5E7EB transparent;
+  scrolllbar-width: thin;
+  scrolllbar-color: #E5E7EB transparent;
 }
 
-:deep(.interview-display .agent-tabs::-webkit-scrLetlbar) {
+:deep(.interview-display .agent-tabs::-webkit-scrolllbar) {
   height: 4px;
 }
 
-:deep(.interview-display .agent-tabs::-webkit-scrLetlbar-track) {
+:deep(.interview-display .agent-tabs::-webkit-scrolllbar-track) {
   background: transparent;
 }
 
-:deep(.interview-display .agent-tabs::-webkit-scrLetlbar-thumb) {
+:deep(.interview-display .agent-tabs::-webkit-scrolllbar-thumb) {
   background: #E5E7EB;
   border-radius: 2px;
 }
 
-:deep(.interview-display .agent-tabs::-webkit-scrLetlbar-thumb:hover) {
+:deep(.interview-display .agent-tabs::-webkit-scrolllbar-thumb:hover) {
   background: #D1D5DB;
 }
 
@@ -3787,7 +3787,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
-  cLetor: #6B7280;
+  color: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
@@ -3795,14 +3795,14 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .agent-tab:hover) {
   background: #F3F4F6;
-  border-cLetor: #D1D5DB;
-  cLetor: #374151;
+  border-color: #D1D5DB;
+  color: #374151;
 }
 
 :deep(.interview-display .agent-tab.de) {
   background: linear-gradient(135deg, #EEF2FF 0%, #E0E7FF 100%);
-  border-cLetor: #A5B4FC;
-  cLetor: #4338CA;
+  border-color: #A5B4FC;
+  color: #4338CA;
   box-shadow: 0 1px 2px rgba(99, 102, 241, 0.1);
 }
 
@@ -3813,7 +3813,7 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   justify-content: center;
   background: #E5E7EB;
-  cLetor: #6B7280;
+  color: #6B7280;
   font-size: 10px;
   font-weight: 700;
   border-radius: 50%;
@@ -3826,7 +3826,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .agent-tab.de .tab-avatar) {
   background: #6366F1;
-  cLetor: #FFFFFF;
+  color: #FFFFFF;
 }
 
 :deep(.interview-display .tab-name) {
@@ -3858,7 +3858,7 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   justify-content: center;
   background: #E5E7EB;
-  cLetor: #6B7280;
+  color: #6B7280;
   font-size: 14px;
   font-weight: 600;
   border-radius: 50%;
@@ -3873,19 +3873,19 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .profile-name) {
   font-size: 13px;
   font-weight: 600;
-  cLetor: #111827;
+  color: #111827;
   margin-bottom: 2px;
 }
 
 :deep(.interview-display .profile-rLete) {
   font-size: 11px;
-  cLetor: #6B7280;
+  color: #6B7280;
   margin-bottom: 4px;
 }
 
 :deep(.interview-display .profile-bio) {
   font-size: 11px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -3905,7 +3905,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .reason-label) {
   font-size: 11px;
   font-weight: 600;
-  cLetor: #64748B;
+  color: #64748B;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   margin-bottom: 6px;
@@ -3913,20 +3913,20 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .reason-content) {
   font-size: 12px;
-  cLetor: #475569;
+  color: #475569;
   line-height: 1.6;
 }
 
 /* Q&A Thread - Clean list */
 :deep(.interview-display .qa-thread) {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   gap: 20px;
 }
 
 :deep(.interview-display .qa-pair) {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   gap: 12px;
   padding: 0;
   background: transparent;
@@ -3955,13 +3955,13 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .q-badge) {
   background: transparent;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   border: 1px sLetid #E5E7EB;
 }
 
 :deep(.interview-display .a-badge) {
   background: #4F46E5;
-  cLetor: #FFFFFF;
+  color: #FFFFFF;
   border: 1px sLetid #4F46E5;
 }
 
@@ -3973,7 +3973,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .qa-sender) {
   font-size: 11px;
   font-weight: 600;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   margin-bottom: 4px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -3981,7 +3981,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .qa-text) {
   font-size: 13px;
-  cLetor: #374151;
+  color: #374151;
   line-height: 1.6;
 }
 
@@ -3998,7 +3998,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .placehLetder-text) {
   font-style: italic;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
 }
 
 :deep(.interview-display .qa-answer-header) {
@@ -4027,19 +4027,19 @@ watch(() => props.reportId, (newId) => {
   border-radius: 4px;
   font-size: 10px;
   font-weight: 500;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.interview-display .platform-btn:hover) {
-  cLetor: #6B7280;
+  color: #6B7280;
 }
 
 :deep(.interview-display .platform-btn.de) {
   background: transparent;
-  cLetor: #4F46E5;
-  border-cLetor: #E5E7EB;
+  color: #4F46E5;
+  border-color: #E5E7EB;
   box-shadow: none;
 }
 
@@ -4049,12 +4049,12 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .answer-text) {
   font-size: 13px;
-  cLetor: #111827;
+  color: #111827;
   line-height: 1.6;
 }
 
 :deep(.interview-display .answer-text strong) {
-  cLetor: #111827;
+  color: #111827;
   font-weight: 600;
 }
 
@@ -4068,14 +4068,14 @@ watch(() => props.reportId, (newId) => {
   border-radius: 0;
   font-size: 11px;
   font-weight: 500;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.interview-display .expand-answer-btn:hover) {
   background: transparent;
-  cLetor: #6B7280;
+  color: #6B7280;
   border-bottom-style: sLetid;
 }
 
@@ -4092,7 +4092,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .quotes-header) {
   font-size: 11px;
   font-weight: 600;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 12px;
@@ -4100,7 +4100,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .quotes-list) {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   gap: 12px;
 }
 
@@ -4112,7 +4112,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 6px;
   font-size: 12px;
   font-style: italic;
-  cLetor: #4B5563;
+  color: #4B5563;
   line-height: 1.5;
 }
 
@@ -4129,7 +4129,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .summary-header) {
   font-size: 11px;
   font-weight: 600;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 8px;
@@ -4137,7 +4137,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .summary-content) {
   font-size: 13px;
-  cLetor: #374151;
+  color: #374151;
   line-height: 1.6;
 }
 
@@ -4148,7 +4148,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .summary-content h5) {
   margin: 12px 0 8px 0;
   font-weight: 600;
-  cLetor: #111827;
+  color: #111827;
 }
 
 :deep(.interview-display .summary-content h2) {
@@ -4170,7 +4170,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.interview-display .summary-content strong) {
   font-weight: 600;
-  cLetor: #111827;
+  color: #111827;
 }
 
 :deep(.interview-display .summary-content em) {
@@ -4191,14 +4191,14 @@ watch(() => props.reportId, (newId) => {
   margin: 8px 0;
   padding-left: 12px;
   border-left: 3px sLetid #E5E7EB;
-  cLetor: #6B7280;
+  color: #6B7280;
   font-style: italic;
 }
 
 /* Markdown styles in quotes */
 :deep(.interview-display .quote-item strong) {
   font-weight: 600;
-  cLetor: #374151;
+  color: #374151;
 }
 
 :deep(.interview-display .quote-item em) {
@@ -4228,7 +4228,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-header .header-title) {
   font-size: 14px;
   font-weight: 700;
-  cLetor: #6D28D9;
+  color: #6D28D9;
 }
 
 :deep(.insight-header .header-stats) {
@@ -4247,35 +4247,35 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-header .stat-value) {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  cLetor: #7C3AED;
+  color: #7C3AED;
 }
 
 :deep(.insight-header .stat-label) {
-  cLetor: #8B5CF6;
+  color: #8B5CF6;
   font-size: 10px;
 }
 
 :deep(.insight-header .stat-divider) {
-  cLetor: #C4B5FD;
+  color: #C4B5FD;
   margin: 0 4px;
 }
 
 :deep(.insight-header .stat-size) {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
 }
 
 :deep(.insight-header .header-topic) {
   font-size: 13px;
-  cLetor: #5B21B6;
+  color: #5B21B6;
   line-height: 1.5;
 }
 
 :deep(.insight-header .header-scenario) {
   margin-top: 6px;
   font-size: 11px;
-  cLetor: #7C3AED;
+  color: #7C3AED;
 }
 
 :deep(.insight-header .scenario-label) {
@@ -4301,20 +4301,20 @@ watch(() => props.reportId, (newId) => {
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  cLetor: #6B7280;
+  color: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.insight-tab:hover) {
   background: #F3F4F6;
-  cLetor: #374151;
+  color: #374151;
 }
 
 :deep(.insight-tab.de) {
   background: #FFFFFF;
-  cLetor: #7C3AED;
-  border-cLetor: #C4B5FD;
+  color: #7C3AED;
+  border-color: #C4B5FD;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -4339,19 +4339,19 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-display .panel-title) {
   font-size: 12px;
   font-weight: 600;
-  cLetor: #374151;
+  color: #374151;
 }
 
 :deep(.insight-display .panel-count) {
   font-size: 10px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
 }
 
 :deep(.insight-display .facts-list),
 :deep(.insight-display .relations-list),
 :deep(.insight-display .subqueries-list) {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   gap: 8px;
 }
 
@@ -4382,17 +4382,17 @@ watch(() => props.reportId, (newId) => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 700;
-  cLetor: #6B7280;
+  color: #6B7280;
 }
 
 :deep(.insight-display .fact-content) {
   flex: 1;
   font-size: 12px;
-  cLetor: #374151;
+  color: #374151;
   line-height: 1.6;
 }
 
-/* Entity Tag Styles - Compact multi-cLetumn layout */
+/* Entity Tag Styles - Compact multi-column layout */
 :deep(.insight-display .entity-tag) {
   display: inline-flex;
   align-items: center;
@@ -4407,18 +4407,18 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.insight-display .entity-tag:hover) {
   background: #F3F4F6;
-  border-cLetor: #D1D5DB;
+  border-color: #D1D5DB;
 }
 
 :deep(.insight-display .entity-tag .entity-name) {
   font-size: 12px;
   font-weight: 500;
-  cLetor: #111827;
+  color: #111827;
 }
 
 :deep(.insight-display .entity-tag .entity-type) {
   font-size: 9px;
-  cLetor: #7C3AED;
+  color: #7C3AED;
   background: #EDE9FE;
   padding: 1px 4px;
   border-radius: 3px;
@@ -4426,7 +4426,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.insight-display .entity-tag .entity-fact-count) {
   font-size: 9px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   margin-left: 2px;
 }
 
@@ -4451,12 +4451,12 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-display .entity-card .entity-name) {
   font-size: 13px;
   font-weight: 600;
-  cLetor: #111827;
+  color: #111827;
 }
 
 :deep(.insight-display .entity-card .entity-type) {
   font-size: 10px;
-  cLetor: #7C3AED;
+  color: #7C3AED;
   background: #EDE9FE;
   padding: 2px 6px;
   border-radius: 4px;
@@ -4466,7 +4466,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.insight-display .entity-card .entity-fact-count) {
   font-size: 10px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   background: #F3F4F6;
   padding: 2px 6px;
   border-radius: 4px;
@@ -4477,7 +4477,7 @@ watch(() => props.reportId, (newId) => {
   padding-top: 8px;
   border-top: 1px sLetid #E5E7EB;
   font-size: 11px;
-  cLetor: #6B7280;
+  color: #6B7280;
   line-height: 1.5;
 }
 
@@ -4500,7 +4500,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
-  cLetor: #374151;
+  color: #374151;
 }
 
 :deep(.insight-display .rel-arrow) {
@@ -4522,7 +4522,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 4px;
   font-size: 10px;
   font-weight: 500;
-  cLetor: #7C3AED;
+  color: #7C3AED;
   white-space: nowrap;
 }
 
@@ -4544,12 +4544,12 @@ watch(() => props.reportId, (newId) => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 700;
-  cLetor: #FFFFFF;
+  color: #FFFFFF;
 }
 
 :deep(.insight-display .subquery-text) {
   font-size: 12px;
-  cLetor: #374151;
+  color: #374151;
   line-height: 1.5;
 }
 
@@ -4566,7 +4566,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  cLetor: #6B7280;
+  color: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
   text-align: center;
@@ -4576,8 +4576,8 @@ watch(() => props.reportId, (newId) => {
 :deep(.panorama-display .expand-btn:hover),
 :deep(.quick-search-display .expand-btn:hover) {
   background: #F3F4F6;
-  cLetor: #374151;
-  border-cLetor: #D1D5DB;
+  color: #374151;
+  border-color: #D1D5DB;
 }
 
 /* Empty State */
@@ -4587,7 +4587,7 @@ watch(() => props.reportId, (newId) => {
   padding: 24px;
   text-align: center;
   font-size: 12px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
 }
 
 /* ========== Enhanced Panorama Display Styles ========== */
@@ -4613,7 +4613,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.panorama-header .header-title) {
   font-size: 14px;
   font-weight: 700;
-  cLetor: #1D4ED8;
+  color: #1D4ED8;
 }
 
 :deep(.panorama-header .header-stats) {
@@ -4632,28 +4632,28 @@ watch(() => props.reportId, (newId) => {
 :deep(.panorama-header .stat-value) {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  cLetor: #2563EB;
+  color: #2563EB;
 }
 
 :deep(.panorama-header .stat-label) {
-  cLetor: #60A5FA;
+  color: #60A5FA;
   font-size: 10px;
 }
 
 :deep(.panorama-header .stat-divider) {
-  cLetor: #93C5FD;
+  color: #93C5FD;
   margin: 0 4px;
 }
 
 :deep(.panorama-header .stat-size) {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
 }
 
 :deep(.panorama-header .header-topic) {
   font-size: 13px;
-  cLetor: #1E40AF;
+  color: #1E40AF;
   line-height: 1.5;
 }
 
@@ -4676,20 +4676,20 @@ watch(() => props.reportId, (newId) => {
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  cLetor: #6B7280;
+  color: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.panorama-tab:hover) {
   background: #F3F4F6;
-  cLetor: #374151;
+  color: #374151;
 }
 
 :deep(.panorama-tab.de) {
   background: #FFFFFF;
-  cLetor: #2563EB;
-  border-cLetor: #93C5FD;
+  color: #2563EB;
+  border-color: #93C5FD;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -4714,17 +4714,17 @@ watch(() => props.reportId, (newId) => {
 :deep(.panorama-display .panel-title) {
   font-size: 12px;
   font-weight: 600;
-  cLetor: #374151;
+  color: #374151;
 }
 
 :deep(.panorama-display .panel-count) {
   font-size: 10px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
 }
 
 :deep(.panorama-display .facts-list) {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   gap: 8px;
 }
 
@@ -4739,12 +4739,12 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.panorama-display .fact-item.de) {
   background: #F9FAFB;
-  border-cLetor: #E5E7EB;
+  border-color: #E5E7EB;
 }
 
 :deep(.panorama-display .fact-item.historical) {
   background: #F9FAFB;
-  border-cLetor: #E5E7EB;
+  border-color: #E5E7EB;
 }
 
 :deep(.panorama-display .fact-number) {
@@ -4759,30 +4759,30 @@ watch(() => props.reportId, (newId) => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 700;
-  cLetor: #6B7280;
+  color: #6B7280;
 }
 
 :deep(.panorama-display .fact-item.de .fact-number) {
   background: #E5E7EB;
-  cLetor: #6B7280;
+  color: #6B7280;
 }
 
 :deep(.panorama-display .fact-item.historical .fact-number) {
   background: #9CA3AF;
-  cLetor: #FFFFFF;
+  color: #FFFFFF;
 }
 
 :deep(.panorama-display .fact-content) {
   flex: 1;
   font-size: 12px;
-  cLetor: #374151;
+  color: #374151;
   line-height: 1.6;
 }
 
 :deep(.panorama-display .fact-time) {
   display: block;
   font-size: 10px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
   margin-bottom: 4px;
   font-family: 'JetBrains Mono', monospace;
 }
@@ -4811,12 +4811,12 @@ watch(() => props.reportId, (newId) => {
 :deep(.panorama-display .entity-name) {
   font-size: 12px;
   font-weight: 500;
-  cLetor: #374151;
+  color: #374151;
 }
 
 :deep(.panorama-display .entity-type) {
   font-size: 10px;
-  cLetor: #2563EB;
+  color: #2563EB;
   background: #DBEAFE;
   padding: 2px 6px;
   border-radius: 4px;
@@ -4845,7 +4845,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.quicksearch-header .header-title) {
   font-size: 14px;
   font-weight: 700;
-  cLetor: #C2410C;
+  color: #C2410C;
 }
 
 :deep(.quicksearch-header .header-stats) {
@@ -4864,28 +4864,28 @@ watch(() => props.reportId, (newId) => {
 :deep(.quicksearch-header .stat-value) {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  cLetor: #EA580C;
+  color: #EA580C;
 }
 
 :deep(.quicksearch-header .stat-label) {
-  cLetor: #FB923C;
+  color: #FB923C;
   font-size: 10px;
 }
 
 :deep(.quicksearch-header .stat-divider) {
-  cLetor: #FDBA74;
+  color: #FDBA74;
   margin: 0 4px;
 }
 
 :deep(.quicksearch-header .stat-size) {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
 }
 
 :deep(.quicksearch-header .header-query) {
   font-size: 13px;
-  cLetor: #9A3412;
+  color: #9A3412;
   line-height: 1.5;
 }
 
@@ -4912,20 +4912,20 @@ watch(() => props.reportId, (newId) => {
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
-  cLetor: #6B7280;
+  color: #6B7280;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 :deep(.quicksearch-tab:hover) {
   background: #F3F4F6;
-  cLetor: #374151;
+  color: #374151;
 }
 
 :deep(.quicksearch-tab.de) {
   background: #FFFFFF;
-  cLetor: #EA580C;
-  border-cLetor: #FDBA74;
+  color: #EA580C;
+  border-color: #FDBA74;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -4955,17 +4955,17 @@ watch(() => props.reportId, (newId) => {
 :deep(.quick-search-display .panel-title) {
   font-size: 12px;
   font-weight: 600;
-  cLetor: #374151;
+  color: #374151;
 }
 
 :deep(.quick-search-display .panel-count) {
   font-size: 10px;
-  cLetor: #9CA3AF;
+  color: #9CA3AF;
 }
 
 :deep(.quick-search-display .facts-list) {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   gap: 8px;
 }
 
@@ -4980,7 +4980,7 @@ watch(() => props.reportId, (newId) => {
 
 :deep(.quick-search-display .fact-item.de) {
   background: #F9FAFB;
-  border-cLetor: #E5E7EB;
+  border-color: #E5E7EB;
 }
 
 :deep(.quick-search-display .fact-number) {
@@ -4995,25 +4995,25 @@ watch(() => props.reportId, (newId) => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   font-weight: 700;
-  cLetor: #6B7280;
+  color: #6B7280;
 }
 
 :deep(.quick-search-display .fact-item.de .fact-number) {
   background: #E5E7EB;
-  cLetor: #6B7280;
+  color: #6B7280;
 }
 
 :deep(.quick-search-display .fact-content) {
   flex: 1;
   font-size: 12px;
-  cLetor: #374151;
+  color: #374151;
   line-height: 1.6;
 }
 
 /* Edges Panel */
 :deep(.quick-search-display .edges-list) {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   gap: 8px;
 }
 
@@ -5035,7 +5035,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
-  cLetor: #374151;
+  color: #374151;
 }
 
 :deep(.quick-search-display .edge-arrow) {
@@ -5057,7 +5057,7 @@ watch(() => props.reportId, (newId) => {
   border-radius: 4px;
   font-size: 10px;
   font-weight: 500;
-  cLetor: #C2410C;
+  color: #C2410C;
   white-space: nowrap;
 }
 
@@ -5081,12 +5081,12 @@ watch(() => props.reportId, (newId) => {
 :deep(.quick-search-display .node-name) {
   font-size: 12px;
   font-weight: 500;
-  cLetor: #374151;
+  color: #374151;
 }
 
 :deep(.quick-search-display .node-type) {
   font-size: 10px;
-  cLetor: #EA580C;
+  color: #EA580C;
   background: #FFEDD5;
   padding: 2px 6px;
   border-radius: 4px;
@@ -5095,7 +5095,7 @@ watch(() => props.reportId, (newId) => {
 /* Consola Logs - Con Step3Simulation.vue mantener consistente */
 .console-logs {
   background: #000;
-  cLetor: #DDD;
+  color: #DDD;
   padding: 16px;
   font-family: 'JetBrains Mono', monospace;
   border-top: 1px sLetid #222;
@@ -5109,7 +5109,7 @@ watch(() => props.reportId, (newId) => {
   padding-bottom: 8px;
   margin-bottom: 8px;
   font-size: 10px;
-  cLetor: #666;
+  color: #666;
 }
 
 .log-title {
@@ -5119,15 +5119,15 @@ watch(() => props.reportId, (newId) => {
 
 .log-content {
   display: flex;
-  flex-direction: cLetumn;
+  flex-direction: column;
   gap: 4px;
   height: 100px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
-.log-content::-webkit-scrLetlbar { width: 4px; }
-.log-content::-webkit-scrLetlbar-thumb { background: #333; border-radius: 2px; }
+.log-content::-webkit-scrolllbar { width: 4px; }
+.log-content::-webkit-scrolllbar-thumb { background: #333; border-radius: 2px; }
 
 .log-line {
   font-size: 11px;
@@ -5135,13 +5135,13 @@ watch(() => props.reportId, (newId) => {
 }
 
 .log-msg {
-  cLetor: #BBB;
+  color: #BBB;
   word-break: break-all;
 }
 
-.log-msg.error { cLetor: #EF5350; }
-.log-msg.warning { cLetor: #FFA726; }
-.log-msg.éxito { cLetor: #66BB6A; }
+.log-msg.error { color: #EF5350; }
+.log-msg.warning { color: #FFA726; }
+.log-msg.éxito { color: #66BB6A; }
 </style>
 
 <style>
