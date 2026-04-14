@@ -12,7 +12,8 @@ from .base import (
     EpisodeResult,
     FilteredEntities,
 )
-from .factory import get_memory_backend, reset_memory_backend
+from .factory import get_memory_backend, get_memory_updater, reset_memory_backend
+from .updaters import GraphMemoryUpdaterInterface, GraphMemoryUpdateResult
 
 __all__ = [
     "MemoryBackend",
@@ -22,5 +23,8 @@ __all__ = [
     "EpisodeResult",
     "FilteredEntities",
     "get_memory_backend",
+    "get_memory_updater",
     "reset_memory_backend",
+    "GraphMemoryUpdaterInterface",
+    "GraphMemoryUpdateResult",
 ]

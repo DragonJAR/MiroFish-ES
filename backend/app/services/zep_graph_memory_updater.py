@@ -3,11 +3,9 @@ Servicio de actualización de memoria de grafo Zep
 Actualiza dinámicamente actividades de Agente en simulación al grafo Zep
 """
 
-import os
 import time
 import threading
-import json
-from typing import Dict, Any, List, Optional, Callable
+from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from datetime import datetime
 from queue import Queue, Empty
@@ -16,7 +14,10 @@ from zep_cloud.client import Zep
 
 from ..config import Config
 from ..utils.logger import get_logger
-from ..utils.locale import get_locale, set_locale
+from ..memory.updaters import (
+    GraphMemoryUpdaterInterface,
+    GraphMemoryUpdateResult,
+)
 
 logger = get_logger("mirofish.zep_graph_memory_updater")
 
@@ -206,14 +207,17 @@ class AgentActivity:
         return f"ejecutó operación {self.action_type}"
 
 
-class ZepGraphMemoryUpdater:
+class ZepGraphMemoryUpdater(GraphMemoryUpdaterInterface):
     """
     Actualizador de memoria de Grafo Zep
 
-    Monitorea el archivo de log actions de simulación, actualiza dinámicamente actividades de Agente en el Grafo Zep.
-    Agrupa por plataforma, envía por lotes a Zep después de acumular BATCH_SIZE actividades.
+    Implementa GraphMemoryUpdaterInterface para DRY con Graphiti.
+    Monitorea el archivo de log actions de simulación, actualiza dinámicamente
+    actividades de Agente en el Grafo Zep. Agrupa por plataforma, envía por
+    lotes a Zep después de acumular BATCH_SIZE actividades.
 
-    Todos los comportamientos significativos se actualizarán a Zep, action_args contendrá información contextual completa:
+    Todos los comportamientos significativos se actualizarán a Zep, action_args
+    contendrá información contextual completa:
     - Contenido original de posts con likes/dislikes
     - Contenido original de posts retuiteados/citados
     - Nombres de usuarios seguidos/bloqueados
@@ -236,7 +240,7 @@ class ZepGraphMemoryUpdater:
     MAX_RETRIES = 3
     RETRY_DELAY = 2  # segundos
 
-    def __init__(self, graph_id: str, api_key: Optional[str] = None):
+    def __init__(self, graph_id: str = None, api_key: Optional[str] = None):
         """
         Inicializar actualizador
 
@@ -255,7 +259,7 @@ class ZepGraphMemoryUpdater:
         # Cola de actividades
         self._activity_queue: Queue = Queue()
 
-        # Buffer de actividades agrupado por plataforma (cada plataforma acumula hasta BATCH_SIZE antes de enviar por lote)
+        # Buffer de actividades agrupado por plataforma
         self._platform_buffers: Dict[str, List[AgentActivity]] = {
             "twitter": [],
             "reddit": [],
@@ -267,14 +271,14 @@ class ZepGraphMemoryUpdater:
         self._worker_thread: Optional[threading.Thread] = None
 
         # Estadísticas
-        self._total_activities = 0  # Número de actividades agregadas a la cola
-        self._total_sent = 0  # Número de lotes enviados con éxito a Zep
-        self._total_items_sent = 0  # Número de actividades enviadas con éxito a Zep
-        self._failed_count = 0  # Número de lotes fallidos al enviar
-        self._skipped_count = 0  # Número de actividades filtradas/saltadas (DO_NOTHING)
+        self._total_activities = 0
+        self._total_sent = 0
+        self._total_items_sent = 0
+        self._failed_count = 0
+        self._skipped_count = 0
 
         logger.info(
-            f"ZepGraphMemoryUpdater Inicialización completada: graph_id={graph_id}, batch_size={self.BATCH_SIZE}"
+            f"ZepGraphMemoryUpdater inicializado: graph_id={graph_id}, batch_size={self.BATCH_SIZE}"
         )
 
     def _get_platform_display_name(self, platform: str) -> str:
@@ -434,20 +438,22 @@ class ZepGraphMemoryUpdater:
                 self._total_items_sent += len(activities)
                 display_name = self._get_platform_display_name(platform)
                 logger.info(
-                    f"Éxito批量发送 {len(activities)} 条{display_name}活动到Grafo {self.graph_id}"
+                    f"Envío exitoso en lote de {len(activities)} actividades {display_name} al Grafo {self.graph_id}"
                 )
-                logger.debug(f"批量内容预览: {combined_text[:200]}...")
+                logger.debug(
+                    f"Vista previa del contenido del lote: {combined_text[:200]}..."
+                )
                 return
 
             except Exception as e:
                 if attempt < self.MAX_RETRIES - 1:
                     logger.warning(
-                        f"批量发送到ZepFallido (尝试 {attempt + 1}/{self.MAX_RETRIES}): {e}"
+                        f"Error en envío por lotes a Zep (intento {attempt + 1}/{self.MAX_RETRIES}): {e}"
                     )
                     time.sleep(self.RETRY_DELAY * (attempt + 1))
                 else:
                     logger.error(
-                        f"批量发送到ZepFallido，已Reintentar{self.MAX_RETRIES}次: {e}"
+                        f"Error en envío por lotes a Zep, se agotaron los {self.MAX_RETRIES} reintentos: {e}"
                     )
                     self._failed_count += 1
 
@@ -497,65 +503,187 @@ class ZepGraphMemoryUpdater:
         }
 
 
-class ZepGraphMemoryManager:
+class ZepGraphMemoryManager(GraphMemoryUpdaterInterface):
     """
     Gestionar actualizadores de memoria de Grafo Zep para múltiples simulaciones
 
-    Cada simulación puede tener su propia instancia de actualizador
+    Implementa GraphMemoryUpdaterInterface para DRY con Graphiti.
+    Cada simulación puede tener su propia instancia de actualizador.
     """
 
     _updaters: Dict[str, ZepGraphMemoryUpdater] = {}
     _lock = threading.Lock()
 
-    @classmethod
-    def create_updater(cls, simulation_id: str, graph_id: str) -> ZepGraphMemoryUpdater:
+    # Bandera para prevenir llamadas repetidas de stop_all
+    _stop_all_done = False
+
+    def create_updater(self, session_id: str, graph_id: str) -> "ZepGraphMemoryUpdater":
         """
         Crear actualizador de memoria de Grafo para simulación
 
         Args:
-            simulation_id: ID de simulación
+            session_id: ID de simulación
             graph_id: ZepGrafoID
 
         Returns:
             Instancia de ZepGraphMemoryUpdater
         """
-        with cls._lock:
-            # 如果已存在，先停止旧的
-            if simulation_id in cls._updaters:
-                cls._updaters[simulation_id].stop()
+        with self._lock:
+            if session_id in self._updaters:
+                self._updaters[session_id].stop()
 
             updater = ZepGraphMemoryUpdater(graph_id)
             updater.start()
-            cls._updaters[simulation_id] = updater
+            self._updaters[session_id] = updater
 
             logger.info(
-                f"Creando actualizador de memoria de Grafo: simulation_id={simulation_id}, graph_id={graph_id}"
+                f"Creando actualizador de memoria de Grafo Zep: session_id={session_id}, graph_id={graph_id}"
             )
             return updater
 
+    def update_batch(
+        self, entities: List[dict], relations: List[dict], session_id: str
+    ) -> GraphMemoryUpdateResult:
+        """
+        Enviar lote de entidades/relaciones al grafo Zep.
+
+        Para Zep, cada dict en entities se convierte en una AgentActivity
+        y se agrega a la cola de procesamiento.
+        """
+        try:
+            updater = self._updaters.get(session_id)
+            if not updater:
+                return GraphMemoryUpdateResult(
+                    success=False,
+                    updated_count=0,
+                    failed_count=len(entities),
+                    error_message=f"No existe updater para session_id={session_id}",
+                )
+
+            for entity in entities:
+                # Convertir dict a AgentActivity si es necesario
+                if isinstance(entity, dict):
+                    activity = AgentActivity(
+                        platform=entity.get("platform", "twitter"),
+                        agent_id=entity.get("agent_id", 0),
+                        agent_name=entity.get("agent_name", ""),
+                        action_type=entity.get("action_type", "UPDATE"),
+                        action_args=entity.get("action_args", {}),
+                        round_num=entity.get("round_num", 0),
+                        timestamp=entity.get("timestamp", datetime.now().isoformat()),
+                    )
+                    updater.add_activity(activity)
+
+            return GraphMemoryUpdateResult(
+                success=True,
+                updated_count=len(entities),
+                failed_count=0,
+            )
+        except Exception as e:
+            logger.error(f"Error en update_batch Zep: {e}")
+            return GraphMemoryUpdateResult(
+                success=False,
+                updated_count=0,
+                failed_count=len(entities),
+                error_message=str(e),
+            )
+
+    def finalize(self, session_id: str) -> GraphMemoryUpdateResult:
+        """
+        Flush final de actividades pendientes en Zep.
+        """
+        try:
+            updater = self._updaters.get(session_id)
+            if not updater:
+                return GraphMemoryUpdateResult(
+                    success=False,
+                    updated_count=0,
+                    failed_count=0,
+                    error_message=f"No existe updater para session_id={session_id}",
+                )
+
+            # Flush de actividades restantes
+            updater._flush_remaining()
+
+            stats = updater.get_stats()
+            return GraphMemoryUpdateResult(
+                success=True,
+                updated_count=stats.get("items_sent", 0),
+                failed_count=stats.get("failed_count", 0),
+            )
+        except Exception as e:
+            logger.error(f"Error en finalize Zep: {e}")
+            return GraphMemoryUpdateResult(
+                success=False,
+                updated_count=0,
+                failed_count=0,
+                error_message=str(e),
+            )
+
+    def stop_updater(self, session_id: str):
+        """Detener y eliminar actualizador de simulación"""
+        with self._lock:
+            if session_id in self._updaters:
+                self._updaters[session_id].stop()
+                del self._updaters[session_id]
+                logger.info(
+                    f"Detenida actualización de memoria de Grafo Zep: session_id={session_id}"
+                )
+
+    def get_current_updater(self, session_id: str) -> Optional["ZepGraphMemoryUpdater"]:
+        """Obtener el actualizador actual para una sesión"""
+        return self._updaters.get(session_id)
+
+    def stop_all(self):
+        """Detener todos los actualizadores"""
+        if self._stop_all_done:
+            return
+        self._stop_all_done = True
+
+        with self._lock:
+            if self._updaters:
+                for session_id, updater in list(self._updaters.items()):
+                    try:
+                        updater.stop()
+                    except Exception as e:
+                        logger.error(
+                            f"Falló al detener actualizador: session_id={session_id}, error={e}"
+                        )
+                self._updaters.clear()
+            logger.info("Detenidos todos los actualizadores de memoria de Grafo Zep")
+
+    def get_stats(self, session_id: str) -> dict:
+        """Obtener estadísticas del actualizador de una sesión"""
+        updater = self._updaters.get(session_id)
+        if updater:
+            return updater.get_stats()
+        return {}
+
+    def get_all_stats(self) -> Dict[str, Dict[str, Any]]:
+        """Obtener información estadística de todos los actualizadores"""
+        return {
+            sim_id: updater.get_stats() for sim_id, updater in self._updaters.items()
+        }
+
     @classmethod
     def get_updater(cls, simulation_id: str) -> Optional[ZepGraphMemoryUpdater]:
-        """Obtener actualizador de simulación"""
+        """Obtener actualizador de simulación (método legacy)"""
         return cls._updaters.get(simulation_id)
 
     @classmethod
-    def stop_updater(cls, simulation_id: str):
-        """Detener y eliminar actualizador de simulación"""
+    def stop_updater_cls(cls, simulation_id: str):
+        """Detener y eliminar actualizador de simulación (método legacy)"""
         with cls._lock:
             if simulation_id in cls._updaters:
                 cls._updaters[simulation_id].stop()
                 del cls._updaters[simulation_id]
                 logger.info(
-                    f"Detenida actualización de memoria de Grafo: simulation_id={simulation_id}"
+                    f"Detenida actualización de memoria de Grafo Zep: simulation_id={simulation_id}"
                 )
 
-    # Bandera para prevenir llamadas repetidas de stop_all
-    _stop_all_done = False
-
     @classmethod
-    def stop_all(cls):
-        """Detener todos los actualizadores"""
-        # Prevenir llamadas repetidas
+    def stop_all_cls(cls):
+        """Detener todos los actualizadores (método legacy)"""
         if cls._stop_all_done:
             return
         cls._stop_all_done = True
@@ -570,11 +698,4 @@ class ZepGraphMemoryManager:
                             f"Falló al detener actualizador: simulation_id={simulation_id}, error={e}"
                         )
                 cls._updaters.clear()
-            logger.info("Detenidos todos los actualizadores de memoria de Grafo")
-
-    @classmethod
-    def get_all_stats(cls) -> Dict[str, Dict[str, Any]]:
-        """Obtener información estadística de todos los actualizadores"""
-        return {
-            sim_id: updater.get_stats() for sim_id, updater in cls._updaters.items()
-        }
+            logger.info("Detenidos todos los actualizadores de memoria de Grafo Zep")

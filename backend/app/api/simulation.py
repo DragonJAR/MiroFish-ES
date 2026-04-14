@@ -1609,6 +1609,18 @@ def start_simulation():
         # Obtener ID de Grafo (usado para actualización de memoria del Grafo)
         graph_id = None
         if enable_graph_memory_update:
+            # Validar que MEMORY_BACKEND sea "zep" para esta funcionalidad
+            if Config.MEMORY_BACKEND != "zep":
+                return jsonify(
+                    {
+                        "success": False,
+                        "error": t(
+                            "api.memoryBackendNotSupported",
+                            backend=Config.MEMORY_BACKEND,
+                        ),
+                    }
+                ), 400
+
             # Obtener graph_id desde estado de simulación o proyecto
             graph_id = state.graph_id
             if not graph_id:

@@ -5,7 +5,6 @@ Lee nodos del grafo Zep, filtra nodos que coincidan con tipos de entidad predefi
 
 import time
 from typing import Dict, Any, List, Optional, Set, Callable, TypeVar
-from dataclasses import dataclass, field
 
 try:
     from zep_cloud.client import Zep
@@ -18,62 +17,12 @@ except ImportError:
 from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
+from ..memory.base import EntityNode, FilteredEntities
 
 logger = get_logger("mirofish.zep_entity_reader")
 
 # Para tipo de retorno generico
 T = TypeVar("T")
-
-
-@dataclass
-class EntityNode:
-    """Estructura de datos del nodo de entidad"""
-
-    uuid: str
-    name: str
-    labels: List[str]
-    summary: str
-    attributes: Dict[str, Any]
-    # Informacion de bordes relacionados
-    related_edges: List[Dict[str, Any]] = field(default_factory=list)
-    # Informacion de otros nodos relacionados
-    related_nodes: List[Dict[str, Any]] = field(default_factory=list)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "uuid": self.uuid,
-            "name": self.name,
-            "labels": self.labels,
-            "summary": self.summary,
-            "attributes": self.attributes,
-            "related_edges": self.related_edges,
-            "related_nodes": self.related_nodes,
-        }
-
-    def get_entity_type(self) -> Optional[str]:
-        """Obtener tipo de entidad (excluir etiqueta predeterminada Entity)"""
-        for label in self.labels:
-            if label not in ["Entity", "Node"]:
-                return label
-        return None
-
-
-@dataclass
-class FilteredEntities:
-    """Conjunto de entidades filtradas"""
-
-    entities: List[EntityNode]
-    entity_types: Set[str]
-    total_count: int
-    filtered_count: int
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "entities": [e.to_dict() for e in self.entities],
-            "entity_types": list(self.entity_types),
-            "total_count": self.total_count,
-            "filtered_count": self.filtered_count,
-        }
 
 
 class ZepEntityReader:

@@ -21,7 +21,7 @@ from queue import Queue
 from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.locale import get_locale, set_locale
-from .zep_graph_memory_updater import ZepGraphMemoryManager
+from ..memory.factory import get_memory_updater
 from .simulation_ipc import SimulationIPCClient, CommandType, IPCResponse
 
 logger = get_logger("mirofish.simulation_runner")
@@ -387,10 +387,11 @@ class SimulationRunner:
                 )
 
             try:
-                ZepGraphMemoryManager.create_updater(simulation_id, graph_id)
+                updater = get_memory_updater()
+                updater.create_updater(simulation_id, graph_id)
                 cls._graph_memory_enabled[simulation_id] = True
                 logger.info(
-                    f"Actualización de memoria de grafo habilitada: simulation_id={simulation_id}, graph_id={graph_id}"
+                    f"Actualización de memoria de grafo habilitada: simulation_id={simulation_id}, graph_id={graph_id}, backend={Config.MEMORY_BACKEND}"
                 )
             except Exception as e:
                 logger.error(f"Fallo al crear actualizador de memoria de grafo: {e}")
@@ -587,7 +588,7 @@ class SimulationRunner:
             # Detener actualizador de memoria de grafo
             if cls._graph_memory_enabled.get(simulation_id, False):
                 try:
-                    ZepGraphMemoryManager.stop_updater(simulation_id)
+                    get_memory_updater().stop_updater(simulation_id)
                     logger.info(
                         f"Actualización de memoria de grafo detenida: simulation_id={simulation_id}"
                     )
@@ -635,7 +636,9 @@ class SimulationRunner:
         graph_memory_enabled = cls._graph_memory_enabled.get(state.simulation_id, False)
         graph_updater = None
         if graph_memory_enabled:
-            graph_updater = ZepGraphMemoryManager.get_updater(state.simulation_id)
+            graph_updater = get_memory_updater().get_current_updater(
+                state.simulation_id
+            )
 
         try:
             with open(log_path, "r", encoding="utf-8") as f:
@@ -877,7 +880,7 @@ class SimulationRunner:
         # Detener actualizador de memoria de grafo
         if cls._graph_memory_enabled.get(simulation_id, False):
             try:
-                ZepGraphMemoryManager.stop_updater(simulation_id)
+                get_memory_updater().stop_updater(simulation_id)
                 logger.info(
                     f"Actualizador de memoria de grafo detenido: simulation_id={simulation_id}"
                 )
@@ -1289,9 +1292,9 @@ class SimulationRunner:
 
         logger.info("Limpiando todos los procesos de simulacion...")
 
-        # Primero detener todos los actualizadores de memoria de grafo (stop_all imprimira registros internamente)
+        # Primero detener todos los actualizadores de memoria de grafo
         try:
-            ZepGraphMemoryManager.stop_all()
+            get_memory_updater().stop_all()
         except Exception as e:
             logger.error(f"Fall al detener el actualizador de memoria de grafo: {e}")
         cls._graph_memory_enabled.clear()

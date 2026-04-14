@@ -5,6 +5,7 @@ Patrón Singleton para manejar la instancia del backend
 
 from typing import Optional
 from .base import MemoryBackend
+from .updaters import GraphMemoryUpdaterInterface
 from ..config import Config
 from ..utils.logger import get_logger
 
@@ -40,6 +41,39 @@ def get_memory_backend() -> MemoryBackend:
         logger.info(f"Backend de memoria inicializado: {backend_type}")
 
     return _backend_instance
+
+
+def get_memory_updater() -> GraphMemoryUpdaterInterface:
+    """
+    Factory para actualizadores de memoria de grafo basado en MEMORY_BACKEND.
+
+    Returns:
+        GraphMemoryUpdaterInterface: Instancia del actualizador
+        - ZepGraphMemoryUpdater si MEMORY_BACKEND="zep"
+        - GraphitiGraphMemoryUpdater si MEMORY_BACKEND="graphiti"
+
+    Raises:
+        ValueError: Si MEMORY_BACKEND no es soportado
+    """
+    backend_type = getattr(Config, "MEMORY_BACKEND", "zep").lower()
+
+    logger.info(f"Inicializando actualizador de memoria de grafo: {backend_type}")
+
+    if backend_type == "graphiti":
+        from ..services.graphiti_graph_memory_updater import (
+            GraphitiGraphMemoryUpdater,
+        )
+
+        return GraphitiGraphMemoryUpdater()
+    elif backend_type == "zep":
+        from ..services.zep_graph_memory_updater import ZepGraphMemoryManager
+
+        return ZepGraphMemoryManager()
+    else:
+        raise ValueError(
+            f"MEMORY_BACKEND no soportado para actualizador: {backend_type}. "
+            f"Valores soportados: 'zep', 'graphiti'"
+        )
 
 
 def reset_memory_backend():

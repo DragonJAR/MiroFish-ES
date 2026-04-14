@@ -43,7 +43,12 @@ from .simulation_ipc import (
 )
 
 # Memory backend
-from ..memory import get_memory_backend
+from ..memory import get_memory_backend, get_memory_updater
+
+try:
+    from .graphiti_graph_memory_updater import GraphitiGraphMemoryUpdater
+except ImportError:
+    GraphitiGraphMemoryUpdater = None
 
 __all__ = [
     "OntologyGenerator",
@@ -78,4 +83,6 @@ __all__ = [
     "CommandType",
     "CommandStatus",
     "get_memory_backend",
+    "get_memory_updater",
+    "GraphitiGraphMemoryUpdater",
 ]

@@ -401,7 +401,7 @@ const doStartSimulation = async () => {
       simulation_id: props.simulationId,
       platform: 'parallel',
       force: true,  // Forzar reinicio
-      enable_graph_memory_update: true  // Habilitar actualización del gráfico de memoria
+      enable_graph_memory_update: false  // Deshabilitado por defecto para evitar errores con Zep no disponible
     }
     
     if (props.maxRounds) {
