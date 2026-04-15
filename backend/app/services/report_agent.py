@@ -1067,7 +1067,8 @@ class ReportAgent:
                 nodes = self.zep_tools.get_entities_by_type(
                     graph_id=self.graph_id, entity_type=entity_type
                 )
-                result = [n.to_dict() for n in nodes]
+                # Support both object.to_dict() (Zep) and plain dict (Graphiti)
+                result = [n.to_dict() if hasattr(n, "to_dict") else n for n in nodes]
                 return json.dumps(result, ensure_ascii=False, indent=2)
 
             else:
