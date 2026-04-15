@@ -374,7 +374,7 @@
       </div>
     </div>
 
-    <!-- Bottom ConsLete Logs -->
+    <!-- Bottom Console Logs -->
     <div class="console-logs">
       <div class="log-header">
         <span class="log-title">CONSOLE OUTPUT</span>
@@ -1357,7 +1357,7 @@ const InterviewDisplay = {
         }
       }
 
-      // Si no se encontró número o sLeto se encontró unoelementos，VLetverCompleto
+      // Si no se encontró número o solido se encontró unoelementos，VLetverCompleto
       if (matches.length <= 1) {
         const cleaned = answerText
           .replace(/^Pregunta\d+[：:]\s*/, '')
@@ -2007,7 +2007,7 @@ const getLogLevelClass = (log) => {
   return ''
 }
 
-// PLetling
+// Polling
 let agentLogTimer = null
 let consoleLogTimer = null
 
@@ -2046,7 +2046,7 @@ const fetchAgentLog = async () => {
             isComplete.value = true
             currentSectionIndex.value = null  // AsegurarLimpiar loading Estado
             emit('update-status', 'completed')
-            stopPLetling()
+            stopPolling()
             // Lógica de desplazamiento unificada en bucle final después de nextTick en procesar
           }
           
@@ -2119,7 +2119,7 @@ const extractFinalContent = (response) => {
   return null
 }
 
-const fetchConsLeteLog = async () => {
+const fetchConsoleLog = async () => {
   if (!props.reportId) return
   
   try {
@@ -2144,17 +2144,17 @@ const fetchConsLeteLog = async () => {
   }
 }
 
-const startPLetling = () => {
+const startPolling = () => {
   if (agentLogTimer || consoleLogTimer) return
   
   fetchAgentLog()
-  fetchConsLeteLog()
+  fetchConsoleLog()
   
   agentLogTimer = setInterval(fetchAgentLog, 2000)
-  consoleLogTimer = setInterval(fetchConsLeteLog, 1500)
+  consoleLogTimer = setInterval(fetchConsoleLog, 1500)
 }
 
-const stopPLetling = () => {
+const stopPolling = () => {
   if (agentLogTimer) {
     clearInterval(agentLogTimer)
     agentLogTimer = null
@@ -2169,12 +2169,12 @@ const stopPLetling = () => {
 onMounted(() => {
   if (props.reportId) {
     addLog(`Report Agent initialized: ${props.reportId}`)
-    startPLetling()
+    startPolling()
   }
 })
 
 onUnmounted(() => {
-  stopPLetling()
+  stopPolling()
 })
 
 watch(() => props.reportId, (newId) => {
@@ -2192,7 +2192,7 @@ watch(() => props.reportId, (newId) => {
     isComplete.value = false
     startTime.value = null
     
-    startPLetling()
+    startPolling()
   }
 }, { immediate: true })
 </script>
@@ -2221,7 +2221,7 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 14px 20px;
   background: #FFFFFF;
-  border-bottom: 1px sLetid #E5E7EB;
+  border-bottom: 1px solid #E5E7EB;
   font-size: 13px;
   font-weight: 600;
   color: #374151;
@@ -2315,7 +2315,7 @@ watch(() => props.reportId, (newId) => {
   width: 45%;
   min-width: 450px;
   background: #FFFFFF;
-  border-right: 1px sLetid #E5E7EB;
+  border-right: 1px solid #E5E7EB;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -2501,7 +2501,7 @@ watch(() => props.reportId, (newId) => {
   font-weight: 700;
 }
 
-.generated-content :deep(.md-h2) { font-size: 20px; border-bottom: 1px sLetid #F3F4F6; padding-bottom: 8px; }
+.generated-content :deep(.md-h2) { font-size: 20px; border-bottom: 1px solid #F3F4F6; padding-bottom: 8px; }
 .generated-content :deep(.md-h3) { font-size: 18px; }
 .generated-content :deep(.md-h4) { font-size: 16px; }
 
@@ -2517,7 +2517,7 @@ watch(() => props.reportId, (newId) => {
 }
 
 .generated-content :deep(.md-quote) {
-  border-left: 3px sLetid #E5E7EB;
+  border-left: 3px solid #E5E7EB;
   padding-left: 16px;
   margin: 1.5em 0;
   color: #6B7280;
@@ -2533,7 +2533,7 @@ watch(() => props.reportId, (newId) => {
   font-size: 12px;
   overflow-x: auto;
   margin: 1em 0;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
 }
 
 .generated-content :deep(strong) {
@@ -2630,10 +2630,10 @@ watch(() => props.reportId, (newId) => {
 }
 
 .waiting-ring {
-  position: absLetute;
+  position: absoluteute;
   width: 100%;
   height: 100%;
-  border: 2px sLetid #E5E7EB;
+  border: 2px solid #E5E7EB;
   border-radius: 50%;
   animation: ripple 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
@@ -2749,7 +2749,7 @@ watch(() => props.reportId, (newId) => {
   text-transform: uppercase;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px sLetid var(--wf-border);
+  border: 1px solid var(--wf-border);
   background: #F9FAFB;
   color: #6B7280;
 }
@@ -2784,7 +2784,7 @@ watch(() => props.reportId, (newId) => {
   grid-template-columns: 24px 1fr;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px sLetid var(--wf-divider);
+  border: 1px solid var(--wf-divider);
   border-radius: 8px;
   background: #FFFFFF;
 }
@@ -2818,7 +2818,7 @@ watch(() => props.reportId, (newId) => {
   height: 10px;
   border-radius: 50%;
   background: var(--wf-muted-dot);
-  border: 2px sLetid #FFFFFF;
+  border: 2px solid #FFFFFF;
   z-index: 1;
 }
 
@@ -2898,7 +2898,7 @@ watch(() => props.reportId, (newId) => {
   gap: 12px;
   padding: 10px 12px;
   margin-bottom: 10px;
-  border: 1px sLetid var(--wf-divider);
+  border: 1px solid var(--wf-divider);
   border-radius: 8px;
   background: #FFFFFF;
   transition: background-color 0.15s ease, border-color 0.15s ease;
@@ -2942,7 +2942,7 @@ watch(() => props.reportId, (newId) => {
   height: 12px;
   border-radius: 50%;
   background: var(--wf-muted-dot);
-  border: 2px sLetid #FFFFFF;
+  border: 2px solid #FFFFFF;
   z-index: 1;
 }
 
@@ -3013,7 +3013,7 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   margin-top: 10px;
   padding-top: 10px;
-  border-top: 1px sLetid #F3F4F6;
+  border-top: 1px solid #F3F4F6;
 }
 
 .elapsed-placehLetder {
@@ -3056,7 +3056,7 @@ watch(() => props.reportId, (newId) => {
   padding: 8px 12px;
   border-radius: 6px;
   font-size: 13px;
-  border: 1px sLetid transparent;
+  border: 1px solid transparent;
 }
 
 .status-message.planning {
@@ -3077,7 +3077,7 @@ watch(() => props.reportId, (newId) => {
   padding: 4px 10px;
   background: #F9FAFB;
   color: #6B7280;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 12px;
   font-size: 11px;
   font-weight: 500;
@@ -3089,7 +3089,7 @@ watch(() => props.reportId, (newId) => {
   gap: 8px;
   padding: 6px 12px;
   background: #F9FAFB;
-  border: 1px sLetid var(--wf-border);
+  border: 1px solid var(--wf-border);
   border-radius: 6px;
 }
 
@@ -3105,7 +3105,7 @@ watch(() => props.reportId, (newId) => {
 
 .section-tag.completed {
   background: #ECFDF5;
-  border: 1px sLetid #A7F3D0;
+  border: 1px solid #A7F3D0;
 }
 
 .section-tag.completed svg {
@@ -3135,7 +3135,7 @@ watch(() => props.reportId, (newId) => {
   padding: 6px 12px;
   background: #F9FAFB;
   color: #374151;
-  border: 1px sLetid var(--wf-border);
+  border: 1px solid var(--wf-border);
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
@@ -3233,7 +3233,7 @@ watch(() => props.reportId, (newId) => {
   white-space: pre-wrap;
   word-break: break-all;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
   padding: 10px;
 }
@@ -3241,7 +3241,7 @@ watch(() => props.reportId, (newId) => {
 /* Unified Action Buttons */
 .action-btn {
   background: #F3F4F6;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   padding: 4px 10px;
   border-radius: 4px;
   font-size: 11px;
@@ -3262,7 +3262,7 @@ watch(() => props.reportId, (newId) => {
 .result-wrapper {
   background: transparent;
   border: none;
-  border-top: 1px sLetid var(--wf-divider);
+  border-top: 1px solid var(--wf-divider);
   border-radius: 0;
   padding: 12px 0 0 0;
 }
@@ -3300,7 +3300,7 @@ watch(() => props.reportId, (newId) => {
   word-break: break-word;
   color: #374151;
   background: #FFFFFF;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   padding: 10px;
   border-radius: 6px;
 }
@@ -3349,7 +3349,7 @@ watch(() => props.reportId, (newId) => {
   margin-top: 10px;
   padding: 10px 14px;
   background: #ECFDF5;
-  border: 1px sLetid #A7F3D0;
+  border: 1px solid #A7F3D0;
   border-radius: 6px;
   color: #065F46;
   font-size: 12px;
@@ -3385,7 +3385,7 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 12px 16px;
   background: #ECFDF5;
-  border: 1px sLetid #A7F3D0;
+  border: 1px solid #A7F3D0;
   border-radius: 8px;
   color: #065F46;
   font-weight: 600;
@@ -3469,7 +3469,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.stat-box) {
   flex: 1;
   background: #FFFFFF;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
   padding: 10px 8px;
   text-align: center;
@@ -3517,13 +3517,13 @@ watch(() => props.reportId, (newId) => {
   font-size: 12px;
   color: #374151;
   margin-bottom: 12px;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   line-height: 1.5;
 }
 
 :deep(.expand-details) {
   background: #FFFFFF;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 11px;
@@ -3541,7 +3541,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.detail-content) {
   margin-top: 14px;
   background: #FFFFFF;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 8px;
   padding: 14px;
 }
@@ -3554,7 +3554,7 @@ watch(() => props.reportId, (newId) => {
   letter-spacing: 0.04em;
   margin-bottom: 10px;
   padding-bottom: 6px;
-  border-bottom: 1px sLetid #F3F4F6;
+  border-bottom: 1px solid #F3F4F6;
 }
 
 /* Facts Section */
@@ -3566,7 +3566,7 @@ watch(() => props.reportId, (newId) => {
   display: flex;
   gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px sLetid #F3F4F6;
+  border-bottom: 1px solid #F3F4F6;
 }
 
 :deep(.fact-row:last-child) {
@@ -3622,7 +3622,7 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   gap: 6px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
   padding: 6px 12px;
 }
@@ -3652,7 +3652,7 @@ watch(() => props.reportId, (newId) => {
   gap: 8px;
   padding: 8px 0;
   flex-wrap: wrap;
-  border-bottom: 1px sLetid #F3F4F6;
+  border-bottom: 1px solid #F3F4F6;
 }
 
 :deep(.relation-row:last-child) {
@@ -3753,7 +3753,7 @@ watch(() => props.reportId, (newId) => {
   gap: 8px;
   padding: 0 0 14px 0;
   background: transparent;
-  border-bottom: 1px sLetid #F3F4F6;
+  border-bottom: 1px solid #F3F4F6;
   overflow-x: auto;
   overflow-y: hidden;
   scrolllbar-width: thin;
@@ -3783,7 +3783,7 @@ watch(() => props.reportId, (newId) => {
   gap: 6px;
   padding: 6px 12px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
@@ -3896,7 +3896,7 @@ watch(() => props.reportId, (newId) => {
 /* Selection Reason - SelecciónRazón */
 :deep(.interview-display .selection-reason) {
   background: #F8FAFC;
-  border: 1px sLetid #E2E8F0;
+  border: 1px solid #E2E8F0;
   border-radius: 8px;
   padding: 12px 14px;
   margin-bottom: 16px;
@@ -3956,13 +3956,13 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .q-badge) {
   background: transparent;
   color: #9CA3AF;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
 }
 
 :deep(.interview-display .a-badge) {
   background: #4F46E5;
   color: #FFFFFF;
-  border: 1px sLetid #4F46E5;
+  border: 1px solid #4F46E5;
 }
 
 :deep(.interview-display .qa-content) {
@@ -4023,7 +4023,7 @@ watch(() => props.reportId, (newId) => {
   gap: 4px;
   padding: 2px 6px;
   background: transparent;
-  border: 1px sLetid transparent;
+  border: 1px solid transparent;
   border-radius: 4px;
   font-size: 10px;
   font-weight: 500;
@@ -4076,14 +4076,14 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .expand-answer-btn:hover) {
   background: transparent;
   color: #6B7280;
-  border-bottom-style: sLetid;
+  border-bottom-style: solid;
 }
 
 /* Quotes Section - Clean list */
 :deep(.interview-display .quotes-section) {
   background: transparent;
   border: none;
-  border-top: 1px sLetid #F3F4F6;
+  border-top: 1px solid #F3F4F6;
   border-radius: 0;
   padding: 16px 0 0 0;
   margin-top: 16px;
@@ -4108,7 +4108,7 @@ watch(() => props.reportId, (newId) => {
   margin: 0;
   padding: 10px 12px;
   background: #FFFFFF;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
   font-size: 12px;
   font-style: italic;
@@ -4122,7 +4122,7 @@ watch(() => props.reportId, (newId) => {
   padding: 16px 0 0 0;
   background: transparent;
   border: none;
-  border-top: 1px sLetid #F3F4F6;
+  border-top: 1px solid #F3F4F6;
   border-radius: 0;
 }
 
@@ -4190,7 +4190,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.interview-display .summary-content blockquote) {
   margin: 8px 0;
   padding-left: 12px;
-  border-left: 3px sLetid #E5E7EB;
+  border-left: 3px solid #E5E7EB;
   color: #6B7280;
   font-style: italic;
 }
@@ -4214,7 +4214,7 @@ watch(() => props.reportId, (newId) => {
   padding: 12px 16px;
   background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%);
   border-radius: 8px 8px 0 0;
-  border: 1px sLetid #C4B5FD;
+  border: 1px solid #C4B5FD;
   border-bottom: none;
 }
 
@@ -4287,7 +4287,7 @@ watch(() => props.reportId, (newId) => {
   gap: 2px;
   padding: 8px 12px;
   background: #FAFAFA;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-top: none;
 }
 
@@ -4297,7 +4297,7 @@ watch(() => props.reportId, (newId) => {
   gap: 4px;
   padding: 6px 10px;
   background: transparent;
-  border: 1px sLetid transparent;
+  border: 1px solid transparent;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
@@ -4322,7 +4322,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-content) {
   padding: 12px;
   background: #FFFFFF;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-top: none;
   border-radius: 0 0 8px 8px;
 }
@@ -4333,7 +4333,7 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px sLetid #F3F4F6;
+  border-bottom: 1px solid #F3F4F6;
 }
 
 :deep(.insight-display .panel-title) {
@@ -4366,7 +4366,7 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -4399,7 +4399,7 @@ watch(() => props.reportId, (newId) => {
   gap: 4px;
   padding: 4px 8px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
   cursor: default;
   transition: all 0.15s ease;
@@ -4434,7 +4434,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-display .entity-card) {
   padding: 12px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 8px;
 }
 
@@ -4475,7 +4475,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-display .entity-summary) {
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px sLetid #E5E7EB;
+  border-top: 1px solid #E5E7EB;
   font-size: 11px;
   color: #6B7280;
   line-height: 1.5;
@@ -4488,7 +4488,7 @@ watch(() => props.reportId, (newId) => {
   gap: 8px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -4496,7 +4496,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.insight-display .rel-target) {
   padding: 4px 8px;
   background: #FFFFFF;
-  border: 1px sLetid #D1D5DB;
+  border: 1px solid #D1D5DB;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
@@ -4532,7 +4532,7 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -4562,7 +4562,7 @@ watch(() => props.reportId, (newId) => {
   margin-top: 12px;
   padding: 8px 12px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
@@ -4599,7 +4599,7 @@ watch(() => props.reportId, (newId) => {
   padding: 12px 16px;
   background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
   border-radius: 8px 8px 0 0;
-  border: 1px sLetid #93C5FD;
+  border: 1px solid #93C5FD;
   border-bottom: none;
 }
 
@@ -4662,7 +4662,7 @@ watch(() => props.reportId, (newId) => {
   gap: 2px;
   padding: 8px 12px;
   background: #FAFAFA;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-top: none;
 }
 
@@ -4672,7 +4672,7 @@ watch(() => props.reportId, (newId) => {
   gap: 4px;
   padding: 6px 10px;
   background: transparent;
-  border: 1px sLetid transparent;
+  border: 1px solid transparent;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
@@ -4697,7 +4697,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.panorama-content) {
   padding: 12px;
   background: #FFFFFF;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-top: none;
   border-radius: 0 0 8px 8px;
 }
@@ -4708,7 +4708,7 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px sLetid #F3F4F6;
+  border-bottom: 1px solid #F3F4F6;
 }
 
 :deep(.panorama-display .panel-title) {
@@ -4733,7 +4733,7 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -4804,7 +4804,7 @@ watch(() => props.reportId, (newId) => {
   gap: 6px;
   padding: 6px 10px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -4831,7 +4831,7 @@ watch(() => props.reportId, (newId) => {
   padding: 12px 16px;
   background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
   border-radius: 8px 8px 0 0;
-  border: 1px sLetid #FDBA74;
+  border: 1px solid #FDBA74;
   border-bottom: none;
 }
 
@@ -4898,7 +4898,7 @@ watch(() => props.reportId, (newId) => {
   gap: 2px;
   padding: 8px 12px;
   background: #FAFAFA;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-top: none;
 }
 
@@ -4908,7 +4908,7 @@ watch(() => props.reportId, (newId) => {
   gap: 4px;
   padding: 6px 10px;
   background: transparent;
-  border: 1px sLetid transparent;
+  border: 1px solid transparent;
   border-radius: 6px;
   font-size: 11px;
   font-weight: 500;
@@ -4933,7 +4933,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.quicksearch-content) {
   padding: 12px;
   background: #FFFFFF;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-top: none;
   border-radius: 0 0 8px 8px;
 }
@@ -4949,7 +4949,7 @@ watch(() => props.reportId, (newId) => {
   align-items: center;
   margin-bottom: 12px;
   padding-bottom: 8px;
-  border-bottom: 1px sLetid #F3F4F6;
+  border-bottom: 1px solid #F3F4F6;
 }
 
 :deep(.quick-search-display .panel-title) {
@@ -4974,7 +4974,7 @@ watch(() => props.reportId, (newId) => {
   gap: 10px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -5023,7 +5023,7 @@ watch(() => props.reportId, (newId) => {
   gap: 8px;
   padding: 10px 12px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -5031,7 +5031,7 @@ watch(() => props.reportId, (newId) => {
 :deep(.quick-search-display .edge-target) {
   padding: 4px 8px;
   background: #FFFFFF;
-  border: 1px sLetid #D1D5DB;
+  border: 1px solid #D1D5DB;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 500;
@@ -5074,7 +5074,7 @@ watch(() => props.reportId, (newId) => {
   gap: 6px;
   padding: 6px 10px;
   background: #F9FAFB;
-  border: 1px sLetid #E5E7EB;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
 }
 
@@ -5098,14 +5098,14 @@ watch(() => props.reportId, (newId) => {
   color: #DDD;
   padding: 16px;
   font-family: 'JetBrains Mono', monospace;
-  border-top: 1px sLetid #222;
+  border-top: 1px solid #222;
   flex-shrink: 0;
 }
 
 .log-header {
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px sLetid #333;
+  border-bottom: 1px solid #333;
   padding-bottom: 8px;
   margin-bottom: 8px;
   font-size: 10px;
