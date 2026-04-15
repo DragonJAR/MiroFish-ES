@@ -955,7 +955,7 @@ class GraphitiBackend(MemoryBackend):
                     "relation_types": relation_types,
                 }
 
-        return asyncio.run(_get_stats())
+        return _run_async(_get_stats())
 
     def get_entities_by_type(
         self, graph_id: str, entity_type: str
@@ -981,7 +981,7 @@ class GraphitiBackend(MemoryBackend):
                     for r in records
                 ]
 
-        return asyncio.run(_get_entities())
+        return _run_async(_get_entities())
 
     def get_entity_summary(self, graph_id: str, entity_name: str) -> Dict[str, Any]:
         """Get entity + its relationships"""
@@ -1018,7 +1018,7 @@ class GraphitiBackend(MemoryBackend):
                     ],
                 }
 
-        return asyncio.run(_get_summary())
+        return _run_async(_get_summary())
 
     def get_simulation_context(
         self, graph_id: str, simulation_requirement: str, limit: int = 10
