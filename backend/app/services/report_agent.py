@@ -83,7 +83,7 @@ class ReportLogger:
             section_index: índice de la sección actual (opcional)
         """
         log_entry = {
-            "timestamp": datetime.now().isoFormat(),
+            "timestamp": datetime.now().isoformat(),
             "elapsed_seconds": round(self._get_elapsed_time(), 2),
             "report_id": self.report_id,
             "action": action,
@@ -1667,7 +1667,7 @@ class ReportAgent:
             graph_id=self.graph_id,
             simulation_requirement=self.simulation_requirement,
             status=ReportStatus.PENDING,
-            created_at=datetime.now().isoFormat(),
+            created_at=datetime.now().isoformat(),
         )
 
         # Completadodel capítuloTítuloLista（ Para progresoTraza）
@@ -1838,7 +1838,7 @@ class ReportAgent:
                 report_id, outline
             )
             report.status = ReportStatus.COMPLETED
-            report.completed_at = datetime.now().isoFormat()
+            report.completed_at = datetime.now().isoformat()
 
             # calcular tiempo total
             total_time_seconds = (datetime.now() - start_time).total_seconds()
@@ -2354,7 +2354,7 @@ class ReportManager:
             "message": message,
             "current_section": current_section,
             "completed_sections": completed_sections or [],
-            "updated_at": datetime.now().isoFormat(),
+            "updated_at": datetime.now().isoformat(),
         }
 
         with open(cls._get_progress_path(report_id), "w", encoding="utf-8") as f:
