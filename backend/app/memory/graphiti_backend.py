@@ -223,6 +223,11 @@ class GraphitiBackend(MemoryBackend):
 
         return self._graphiti
 
+    @property
+    def graph(self):
+        """Alias for _get_graphiti() for compatibility with code expecting .graph attribute"""
+        return self._get_graphiti()
+
     def _ensure_indices(self):
         """Construir índices en primer uso"""
         if not self._indices_built:
@@ -908,3 +913,158 @@ class GraphitiBackend(MemoryBackend):
         except Exception as e:
             logger.error(f"Error al construir índices: {str(e)}")
             return False
+
+    def get_graph_statistics(self, graph_id: str) -> Dict[str, Any]:
+        """Get graph statistics using Cypher queries to Neo4j"""
+
+        async def _get_stats():
+            async with self.graph.driver.session() as session:
+                # Count nodes
+                node_result = await session.run(
+                    "MATCH (n:Entity) WHERE n.group_id = $graph_id RETURN count(n) as total_nodes",
+                    graph_id=graph_id,
+                )
+                node_count = (await node_result.single())["total_nodes"]
+
+                # Count edges
+                edge_result = await session.run(
+                    "MATCH ()-[r]->() WHERE r.group_id = $graph_id RETURN count(r) as total_edges",
+                    graph_id=graph_id,
+                )
+                edge_count = (await edge_result.single())["total_edges"]
+
+                # Get entity types
+                type_result = await session.run(
+                    "MATCH (n:Entity) WHERE n.group_id = $graph_id UNWIND labels(n) as label RETURN collect(distinct label) as entity_types",
+                    graph_id=graph_id,
+                )
+                entity_types = (await type_result.single())["entity_types"]
+
+                # Get relation types
+                rel_result = await session.run(
+                    "MATCH ()-[r]->() WHERE r.group_id = $graph_id UNWIND type(r) as rel_type RETURN collect(distinct rel_type) as relation_types",
+                    graph_id=graph_id,
+                )
+                relation_types = (await rel_result.single())["relation_types"]
+
+                return {
+                    "graph_id": graph_id,
+                    "total_nodes": node_count,
+                    "total_edges": edge_count,
+                    "entity_types": entity_types,
+                    "relation_types": relation_types,
+                }
+
+        return asyncio.run(_get_stats())
+
+    def get_entities_by_type(
+        self, graph_id: str, entity_type: str
+    ) -> List[Dict[str, Any]]:
+        """Get entities by type using Cypher"""
+
+        async def _get_entities():
+            async with self.graph.driver.session() as session:
+                result = await session.run(
+                    "MATCH (n:Entity) WHERE n.group_id = $graph_id AND $entity_type IN labels(n) "
+                    "RETURN n.uuid as uuid, n.name as name, n.entity_type as entity_type, n.created_at as created_at",
+                    graph_id=graph_id,
+                    entity_type=entity_type,
+                )
+                records = await result.data()
+                return [
+                    {
+                        "uuid": r["uuid"],
+                        "name": r["name"],
+                        "entity_type": r["entity_type"],
+                        "created_at": r["created_at"],
+                    }
+                    for r in records
+                ]
+
+        return asyncio.run(_get_entities())
+
+    def get_entity_summary(self, graph_id: str, entity_name: str) -> Dict[str, Any]:
+        """Get entity + its relationships"""
+
+        async def _get_summary():
+            async with self.graph.driver.session() as session:
+                # Get entity
+                node_result = await session.run(
+                    "MATCH (n:Entity {group_id: $graph_id, name: $entity_name}) "
+                    "OPTIONAL MATCH (n)-[r]-() RETURN n as entity, collect(r) as relationships",
+                    graph_id=graph_id,
+                    entity_name=entity_name,
+                )
+                record = await node_result.single()
+                if not record or not record["entity"]:
+                    return {"entity": None, "relationships": []}
+
+                entity = record["entity"]
+                relationships = record["relationships"]
+
+                return {
+                    "entity": {
+                        "name": entity.get("name"),
+                        "entity_type": entity.get("entity_type"),
+                        "uuid": entity.get("uuid"),
+                    },
+                    "relationships": [
+                        {
+                            "type": type(r),
+                            "target": r.end_node.get("name") if r.end_node else None,
+                        }
+                        for r in relationships
+                        if r
+                    ],
+                }
+
+        return asyncio.run(_get_summary())
+
+    def get_simulation_context(
+        self, graph_id: str, simulation_requirement: str, limit: int = 10
+    ) -> Dict[str, Any]:
+        """Get statistics + LLM summary for simulation context"""
+        from ..utils.llm_client import get_llm_client
+
+        # Get basic stats
+        stats = self.get_graph_statistics(graph_id)
+
+        # Get top entities
+        entities_result = self.get_entities_by_type(graph_id, "Agent")
+        top_agents = entities_result[:limit]
+
+        # Build context for LLM
+        context = {
+            "graph_id": graph_id,
+            "statistics": stats,
+            "top_agents": [
+                {"name": a.get("name"), "type": a.get("entity_type")}
+                for a in top_agents
+            ],
+            "simulation_requirement": simulation_requirement,
+        }
+
+        # Generate LLM summary
+        llm_client = get_llm_client()
+        prompt = f"""Analyze this simulation graph and provide a summary:
+
+Graph Statistics:
+- Total Nodes: {stats.get("total_nodes", 0)}
+- Total Edges: {stats.get("total_edges", 0)}
+- Entity Types: {", ".join(stats.get("entity_types", []))}
+- Relation Types: {", ".join(stats.get("relation_types", []))}
+
+Top Agents:
+{chr(10).join([f"- {a.get('name')}: {a.get('entity_type')}" for a in top_agents])}
+
+Simulation Requirement: {simulation_requirement}
+
+Provide a concise summary of the simulation context."""
+
+        try:
+            summary = llm_client.chat(prompt)
+            context["llm_summary"] = summary
+        except Exception as e:
+            context["llm_summary"] = f"LLM summary unavailable: {str(e)}"
+
+        return context

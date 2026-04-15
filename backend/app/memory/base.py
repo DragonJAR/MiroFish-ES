@@ -277,3 +277,63 @@ class MemoryBackend(ABC):
             True si se construyeron correctamente
         """
         pass
+
+    @abstractmethod
+    def get_graph_statistics(self, graph_id: str) -> Dict[str, Any]:
+        """
+        Obtener estadísticas del grafo
+
+        Args:
+            graph_id: ID del grafo
+
+        Returns:
+            Dict con graph_id, total_nodes, total_edges, entity_types, relation_types
+        """
+        pass
+
+    @abstractmethod
+    def get_entities_by_type(
+        self, graph_id: str, entity_type: str
+    ) -> List[Dict[str, Any]]:
+        """
+        Obtener entidades por tipo
+
+        Args:
+            graph_id: ID del grafo
+            entity_type: Tipo de entidad a filtrar
+
+        Returns:
+            Lista de diccionarios con uuid, name, entity_type, created_at
+        """
+        pass
+
+    @abstractmethod
+    def get_entity_summary(self, graph_id: str, entity_name: str) -> Dict[str, Any]:
+        """
+        Obtener resumen de entidad con sus relaciones
+
+        Args:
+            graph_id: ID del grafo
+            entity_name: Nombre de la entidad
+
+        Returns:
+            Dict con entity y relationships
+        """
+        pass
+
+    @abstractmethod
+    def get_simulation_context(
+        self, graph_id: str, simulation_requirement: str, limit: int = 10
+    ) -> Dict[str, Any]:
+        """
+        Obtener contexto de simulación (estadísticas + resumen LLM)
+
+        Args:
+            graph_id: ID del grafo
+            simulation_requirement: Descripción del requisito de simulación
+            limit: Límite de entidades a incluir
+
+        Returns:
+            Dict con statistics, top_agents, simulation_requirement, y llm_summary
+        """
+        pass

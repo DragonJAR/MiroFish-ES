@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from zep_cloud.client import Zep
 
 from ..config import Config
+from ..memory import get_memory_backend
 from ..utils.logger import get_logger
 from ..utils.llm_client import LLMClient
 from ..utils.locale import get_locale, t
@@ -456,10 +457,22 @@ class ZepToolsService:
         self, api_key: Optional[str] = None, llm_client: Optional[LLMClient] = None
     ):
         self.api_key = api_key or Config.ZEP_API_KEY
-        if not self.api_key:
-            raise ValueError("ZEP_API_KEY no está configurado")
 
-        self.client = Zep(api_key=self.api_key)
+        # Detect memory backend type
+        self.memory_backend = get_memory_backend()
+        self._use_zep = Config.MEMORY_BACKEND == "zep"
+
+        if self._use_zep:
+            # Zep Cloud mode - requires API key
+            if not self.api_key:
+                raise ValueError("ZEP_API_KEY no está configurado")
+            self.client = Zep(api_key=self.api_key)
+            self.graph = self.client.graph
+        else:
+            # Graphiti mode - Zep API not used
+            self.client = None
+            self.graph = None
+
         # Cliente LLM para InsightForge generar sub-preguntas
         self._llm_client = llm_client
         logger.info(t("console.zepToolsInitialized"))
@@ -512,8 +525,7 @@ class ZepToolsService:
         """
         búsqueda semántica de grafo
 
-        Usa búsqueda híbrida (semántica+BM25) para buscar inFormación relevante en el grafo.
-        Si la API de búsqueda de Zep Cloud no está disponible, degrada a coincidencia de palabras clave locales.
+        Delega al backend configurado (Zep o Graphiti)
 
         Args:
             graph_id: ID del Grafo (Grafo independiente)
@@ -526,69 +538,86 @@ class ZepToolsService:
         """
         logger.info(t("console.graphSearch", graphId=graph_id, query=query[:50]))
 
-        # Intentar usar API de búsqueda Zep Cloud
-        try:
-            search_results = self._call_with_retry(
-                func=lambda: self.client.graph.search(
-                    graph_id=graph_id,
+        if self._use_zep:
+            # Zep Cloud implementation
+            try:
+                search_results = self._call_with_retry(
+                    func=lambda: self.client.graph.search(
+                        graph_id=graph_id,
+                        query=query,
+                        limit=limit,
+                        scope=scope,
+                        reranker="cross_encoder",
+                    ),
+                    opeRation_name=t("console.graphSearchOp", graphId=graph_id),
+                )
+
+                facts = []
+                edges = []
+                nodes = []
+
+                # Analizar bordes de resultados de búsqueda
+                if hasattr(search_results, "edges") and search_results.edges:
+                    for edge in search_results.edges:
+                        if hasattr(edge, "fact") and edge.fact:
+                            facts.append(edge.fact)
+                        edges.append(
+                            {
+                                "uuid": getattr(edge, "uuid_", None)
+                                or getattr(edge, "uuid", ""),
+                                "name": getattr(edge, "name", ""),
+                                "fact": getattr(edge, "fact", ""),
+                                "source_node_uuid": getattr(
+                                    edge, "source_node_uuid", ""
+                                ),
+                                "target_node_uuid": getattr(
+                                    edge, "target_node_uuid", ""
+                                ),
+                            }
+                        )
+
+                # Analizar nodos de resultados de búsqueda
+                if hasattr(search_results, "nodes") and search_results.nodes:
+                    for node in search_results.nodes:
+                        nodes.append(
+                            {
+                                "uuid": getattr(node, "uuid_", None)
+                                or getattr(node, "uuid", ""),
+                                "name": getattr(node, "name", ""),
+                                "labels": getattr(node, "labels", []),
+                                "summary": getattr(node, "summary", ""),
+                            }
+                        )
+                        # Resumen de nodo también cuenta como hecho
+                        if hasattr(node, "summary") and node.summary:
+                            facts.append(f"[{node.name}]: {node.summary}")
+
+                logger.info(t("console.searchComplete", count=len(facts)))
+
+                return SearchResult(
+                    facts=facts,
+                    edges=edges,
+                    nodes=nodes,
                     query=query,
-                    limit=limit,
-                    scope=scope,
-                    reranker="cross_encoder",
-                ),
-                opeRation_name=t("console.graphSearchOp", graphId=graph_id),
+                    total_count=len(facts),
+                )
+
+            except Exception as e:
+                logger.warning(t("console.zepSearchApiFallback", error=str(e)))
+                # Degradar: usar coincidencia de palabras clave locales
+                return self._local_search(graph_id, query, limit, scope)
+        else:
+            # Graphiti implementation via MemoryBackend
+            result = self.memory_backend.search(
+                query=query, graph_id=graph_id, limit=limit
             )
-
-            facts = []
-            edges = []
-            nodes = []
-
-            # Analizar bordes de resultados de búsqueda
-            if hasattr(search_results, "edges") and search_results.edges:
-                for edge in search_results.edges:
-                    if hasattr(edge, "fact") and edge.fact:
-                        facts.append(edge.fact)
-                    edges.append(
-                        {
-                            "uuid": getattr(edge, "uuid_", None)
-                            or getattr(edge, "uuid", ""),
-                            "name": getattr(edge, "name", ""),
-                            "fact": getattr(edge, "fact", ""),
-                            "source_node_uuid": getattr(edge, "source_node_uuid", ""),
-                            "target_node_uuid": getattr(edge, "target_node_uuid", ""),
-                        }
-                    )
-
-            # Analizar nodos de resultados de búsqueda
-            if hasattr(search_results, "nodes") and search_results.nodes:
-                for node in search_results.nodes:
-                    nodes.append(
-                        {
-                            "uuid": getattr(node, "uuid_", None)
-                            or getattr(node, "uuid", ""),
-                            "name": getattr(node, "name", ""),
-                            "labels": getattr(node, "labels", []),
-                            "summary": getattr(node, "summary", ""),
-                        }
-                    )
-                    # Resumen de nodo también cuenta como hecho
-                    if hasattr(node, "summary") and node.summary:
-                        facts.append(f"[{node.name}]: {node.summary}")
-
-            logger.info(t("console.searchComplete", count=len(facts)))
-
             return SearchResult(
-                facts=facts,
-                edges=edges,
-                nodes=nodes,
+                facts=result.facts,
+                edges=result.edges,
+                nodes=result.nodes,
                 query=query,
-                total_count=len(facts),
+                total_count=result.total_count,
             )
-
-        except Exception as e:
-            logger.warning(t("console.zepSearchApiFallback", error=str(e)))
-            # Degradar: usar coincidencia de palabras clave locales
-            return self._local_search(graph_id, query, limit, scope)
 
     def _local_search(
         self, graph_id: str, query: str, limit: int = 10, scope: str = "edges"
@@ -852,18 +881,31 @@ class ZepToolsService:
         """
         logger.info(t("console.FetchingEntitiesByType", type=entity_type))
 
-        all_nodes = self.get_all_nodes(graph_id)
+        if self._use_zep:
+            all_nodes = self.get_all_nodes(graph_id)
 
-        filtered = []
-        for node in all_nodes:
-            # Inspecciónlabelssi contienededoestablecertipo
-            if entity_type in node.labels:
-                filtered.append(node)
+            filtered = []
+            for node in all_nodes:
+                # Inspecciónlabelssi contienededoestablecertipo
+                if entity_type in node.labels:
+                    filtered.append(node)
 
-        logger.info(
-            t("console.foundEntitiesByType", count=len(filtered), type=entity_type)
-        )
-        return filtered
+            logger.info(
+                t("console.foundEntitiesByType", count=len(filtered), type=entity_type)
+            )
+            return filtered
+        else:
+            entities = self.memory_backend.get_entities_by_type(graph_id, entity_type)
+            return [
+                NodeInfo(
+                    uuid=e.get("uuid", ""),
+                    name=e.get("name", ""),
+                    labels=[e.get("entity_type", "")],
+                    summary="",
+                    attributes={},
+                )
+                for e in entities
+            ]
 
     def get_entity_summary(self, graph_id: str, entity_name: str) -> Dict[str, Any]:
         """
@@ -880,31 +922,34 @@ class ZepToolsService:
         """
         logger.info(t("console.FetchingEntitySummary", name=entity_name))
 
-        # primerobúsquedaeseentidadrelacionadodeinformación
-        search_result = self.search_graph(
-            graph_id=graph_id, query=entity_name, limit=20
-        )
+        if self._use_zep:
+            # primerobúsquedaeseentidadrelacionadodeinformación
+            search_result = self.search_graph(
+                graph_id=graph_id, query=entity_name, limit=20
+            )
 
-        # probarprobarEnTodosnodoenbuscarHastaeseentidad
-        all_nodes = self.get_all_nodes(graph_id)
-        entity_node = None
-        for node in all_nodes:
-            if node.name.lower() == entity_name.lower():
-                entity_node = node
-                break
+            # probarprobarEnTodosnodoenbuscarHastaeseentidad
+            all_nodes = self.get_all_nodes(graph_id)
+            entity_node = None
+            for node in all_nodes:
+                if node.name.lower() == entity_name.lower():
+                    entity_node = node
+                    break
 
-        reLated_edges = []
-        if entity_node:
-            # transmitirentradagraph_idnúmero
-            reLated_edges = self.get_node_edges(graph_id, entity_node.uuid)
+            reLated_edges = []
+            if entity_node:
+                # transmitirentradagraph_idnúmero
+                reLated_edges = self.get_node_edges(graph_id, entity_node.uuid)
 
-        return {
-            "entity_name": entity_name,
-            "entity_info": entity_node.to_dict() if entity_node else None,
-            "reLated_facts": search_result.facts,
-            "reLated_edges": [e.to_dict() for e in reLated_edges],
-            "total_relations": len(reLated_edges),
-        }
+            return {
+                "entity_name": entity_name,
+                "entity_info": entity_node.to_dict() if entity_node else None,
+                "reLated_facts": search_result.facts,
+                "reLated_edges": [e.to_dict() for e in reLated_edges],
+                "total_relations": len(reLated_edges),
+            }
+        else:
+            return self.memory_backend.get_entity_summary(graph_id, entity_name)
 
     def get_graph_statistics(self, graph_id: str) -> Dict[str, Any]:
         """
@@ -918,49 +963,36 @@ class ZepToolsService:
         """
         logger.info(t("console.FetchingGraphStats", graphId=graph_id))
 
-        nodes = self.get_all_nodes(graph_id)
-        edges = self.get_all_edges(graph_id)
+        if self._use_zep:
+            nodes = self.get_all_nodes(graph_id)
+            edges = self.get_all_edges(graph_id)
 
-        # Estadísticasentidadtipominutodistribuir
-        entity_types = {}
-        for node in nodes:
-            for label in node.labels:
-                if label not in ["Entity", "Node"]:
-                    entity_types[label] = entity_types.get(label, 0) + 1
+            # Estadísticasentidadtipominutodistribuir
+            entity_types = {}
+            for node in nodes:
+                for label in node.labels:
+                    if label not in ["Entity", "Node"]:
+                        entity_types[label] = entity_types.get(label, 0) + 1
 
-        # Estadísticasrelacióntipominutodistribuir
-        relation_types = {}
-        for edge in edges:
-            relation_types[edge.name] = relation_types.get(edge.name, 0) + 1
+            # Estadísticasrelacióntipominutodistribuir
+            relation_types = {}
+            for edge in edges:
+                relation_types[edge.name] = relation_types.get(edge.name, 0) + 1
 
-        return {
-            "graph_id": graph_id,
-            "total_nodes": len(nodes),
-            "total_edges": len(edges),
-            "entity_types": entity_types,
-            "relation_types": relation_types,
-        }
+            return {
+                "graph_id": graph_id,
+                "total_nodes": len(nodes),
+                "total_edges": len(edges),
+                "entity_types": entity_types,
+                "relation_types": relation_types,
+            }
+        else:
+            return self.memory_backend.get_graph_statistics(graph_id)
 
-    def get_simulation_context(
+    def _get_simulation_context_zep(
         self, graph_id: str, simulation_requirement: str, limit: int = 30
     ) -> Dict[str, Any]:
-        """
-        obtener inFormación de contexto relacionada con la simulación
-
-        búsqueda integral de toda la inFormación relacionada con Requisito de simulación
-
-        Args:
-            graph_id: ID del Grafo
-            simulation_requirement: Descripción de Requisito de simulación
-            limit: límite de cantidad de inFormación por tipo
-
-        Returns:
-            información de contexto de simulación
-        """
-        logger.info(
-            t("console.FetchingSimContext", requirement=simulation_requirement[:50])
-        )
-
+        """Zep implementation of get_simulation_context"""
         # BuscarConRequisito de simulaciónrelacionadodeinformación
         search_result = self.search_graph(
             graph_id=graph_id, query=simulation_requirement, limit=limit
@@ -992,6 +1024,33 @@ class ZepToolsService:
             "entities": entities[:limit],  # límite de cantidad
             "total_entities": len(entities),
         }
+
+    def get_simulation_context(
+        self, graph_id: str, simulation_requirement: str, limit: int = 30
+    ) -> Dict[str, Any]:
+        """
+        obtener inFormación de contexto relacionada con la simulación
+
+        Args:
+            graph_id: ID del Grafo
+            simulation_requirement: Descripción de Requisito de simulación
+            limit: límite de cantidad de inFormación por tipo
+
+        Returns:
+            información de contexto de simulación
+        """
+        logger.info(
+            t("console.FetchingSimContext", requirement=simulation_requirement[:50])
+        )
+
+        if self._use_zep:
+            return self._get_simulation_context_zep(
+                graph_id, simulation_requirement, limit
+            )
+        else:
+            return self.memory_backend.get_simulation_context(
+                graph_id, simulation_requirement, limit
+            )
 
     # ========== herramientas de búsqueda centrales (optimizadas） ==========
 

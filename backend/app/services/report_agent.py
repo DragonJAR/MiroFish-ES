@@ -377,7 +377,21 @@ class ReportConsoleLogger:
 
     def __del__(self):
         """Asegurar cerrar manejador de archivos en destructores"""
-        self.close()
+        # Cleanup inline para evitar errores de argumentos en __del__
+        # (Python pasa self implícitamente, pero el estado del GC puede ser delicado)
+        if self._file_handler is not None:
+            for logger_name in ["mirofish.report_agent", "mirofish.zep_tools"]:
+                try:
+                    target_logger = logging.getLogger(logger_name)
+                    if self._file_handler in target_logger.handlers:
+                        target_logger.removeHandler(self._file_handler)
+                except Exception:
+                    pass  # Ignorar errores en destructores
+            try:
+                self._file_handler.close()
+            except Exception:
+                pass
+            self._file_handler = None
 
 
 class ReportStatus(str, Enum):
@@ -1850,7 +1864,7 @@ class ReportAgent:
 
             logger.info(t("report.reportGenDone", reportId=report_id))
 
-            # CerrarConsolaLogregistrador
+            # Cerrar logger de consola
             if self.console_logger:
                 self.console_logger.close()
                 self.console_logger = None
@@ -1877,9 +1891,9 @@ class ReportAgent:
                     completed_sections=completed_section_titles,
                 )
             except Exception:
-                pass  # IgnorarGuardarFallidodelError
+                pass  # Ignorar errores de cleanup en chat
 
-            # CerrarConsolaLogregistrador
+            # Cerrar logger de consola
             if self.console_logger:
                 self.console_logger.close()
                 self.console_logger = None
