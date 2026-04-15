@@ -13,7 +13,11 @@ NOTA: En v0.28.x la API se simplificó drasticamente:
 
 import asyncio
 import concurrent.futures
+import nest_asyncio
 import threading
+
+# Permitir asyncio.run() anidado — necesario para operaciones Neo4j async
+nest_asyncio.apply()
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 
