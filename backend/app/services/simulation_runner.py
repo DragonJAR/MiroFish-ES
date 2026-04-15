@@ -576,6 +576,25 @@ class SimulationRunner:
             state.reddit_running = False
             cls._save_run_state(state)
 
+            # Also update state.json (API-facing state) when simulation completes or fails
+            try:
+                sim_dir = os.path.join(cls.RUN_STATE_DIR, simulation_id)
+                state_file = os.path.join(sim_dir, "state.json")
+                if os.path.exists(state_file):
+                    with open(state_file, "r", encoding="utf-8") as f:
+                        state_data = json.load(f)
+                    state_data["status"] = "completed" if exit_code == 0 else "failed"
+                    state_data["updated_at"] = datetime.now().isoformat()
+                    with open(state_file, "w", encoding="utf-8") as f:
+                        json.dump(state_data, f, indent=2, ensure_ascii=False)
+                    logger.info(
+                        f"Updated state.json to {state_data['status']}: {simulation_id}"
+                    )
+            except Exception as state_err:
+                logger.warning(
+                    f"Failed to update state.json: {simulation_id}, error={state_err}"
+                )
+
         except Exception as e:
             logger.error(
                 f"Excepción en hilo de monitoreo: {simulation_id}, error={str(e)}"
