@@ -1199,7 +1199,7 @@ class ReportAgent:
             progress_callback("Planning", 30, t("progress.geneRatingOutline"))
 
         system_prompt = f"{PLAN_SYSTEM_PROMPT}\n\n{get_language_instruction()}"
-        user_prompt = PLAN_USER_PROMPT_TEMPLATE.Format(
+        user_prompt = PLAN_USER_PROMPT_TEMPLATE.format(
             simulation_requirement=self.simulation_requirement,
             total_nodes=context.get("graph_statistics", {}).get("total_nodes", 0),
             total_edges=context.get("graph_statistics", {}).get("total_edges", 0),
@@ -1292,7 +1292,7 @@ class ReportAgent:
         if self.report_logger:
             self.report_logger.log_section_start(section.title, section_index)
 
-        system_prompt = SECTION_SYSTEM_PROMPT_TEMPLATE.Format(
+        system_prompt = SECTION_SYSTEM_PROMPT_TEMPLATE.format(
             report_title=outline.title,
             report_summary=outline.summary,
             simulation_requirement=self.simulation_requirement,
@@ -1312,7 +1312,7 @@ class ReportAgent:
         else:
             previous_content = "（estoEsprimeraElementos capítulo）"
 
-        user_prompt = SECTION_USER_PROMPT_TEMPLATE.Format(
+        user_prompt = SECTION_USER_PROMPT_TEMPLATE.format(
             previous_content=previous_content,
             section_title=section.title,
         )
@@ -1456,7 +1456,7 @@ class ReportAgent:
                     messages.append(
                         {
                             "role": "user",
-                            "content": REACT_INSUFFICIENT_TOOLS_MSG.Format(
+                            "content": REACT_INSUFFICIENT_TOOLS_MSG.format(
                                 tool_calls_count=tool_calls_count,
                                 min_tool_calls=min_tool_calls,
                                 unused_hint=unused_hint,
@@ -1492,7 +1492,7 @@ class ReportAgent:
                     messages.append(
                         {
                             "role": "user",
-                            "content": REACT_TOOL_LIMIT_MSG.Format(
+                            "content": REACT_TOOL_LIMIT_MSG.format(
                                 tool_calls_count=tool_calls_count,
                                 max_tool_calls=self.MAX_TOOL_CALLS_PER_SECTION,
                             ),
@@ -1542,7 +1542,7 @@ class ReportAgent:
                 unused_tools = all_tools - used_tools
                 unused_hint = ""
                 if unused_tools and tool_calls_count < self.MAX_TOOL_CALLS_PER_SECTION:
-                    unused_hint = REACT_UNUSED_TOOLS_HINT.Format(
+                    unused_hint = REACT_UNUSED_TOOLS_HINT.format(
                         unused_list="、".join(unused_tools)
                     )
 
@@ -1550,7 +1550,7 @@ class ReportAgent:
                 messages.append(
                     {
                         "role": "user",
-                        "content": REACT_OBSERVATION_TEMPLATE.Format(
+                        "content": REACT_OBSERVATION_TEMPLATE.format(
                             tool_name=call["name"],
                             result=result,
                             tool_calls_count=tool_calls_count,
@@ -1577,7 +1577,7 @@ class ReportAgent:
                 messages.append(
                     {
                         "role": "user",
-                        "content": REACT_INSUFFICIENT_TOOLS_MSG_ALT.Format(
+                        "content": REACT_INSUFFICIENT_TOOLS_MSG_ALT.format(
                             tool_calls_count=tool_calls_count,
                             min_tool_calls=min_tool_calls,
                             unused_hint=unused_hint,
@@ -1935,7 +1935,7 @@ class ReportAgent:
         except Exception as e:
             logger.warning(t("report.FetchReportFailed", error=e))
 
-        system_prompt = CHAT_SYSTEM_PROMPT_TEMPLATE.Format(
+        system_prompt = CHAT_SYSTEM_PROMPT_TEMPLATE.format(
             simulation_requirement=self.simulation_requirement,
             report_content=report_content
             if report_content
