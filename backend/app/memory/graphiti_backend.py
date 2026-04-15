@@ -226,28 +226,48 @@ class GraphitiBackend(MemoryBackend):
     def _ensure_indices(self):
         """Construir índices en primer uso"""
         if not self._indices_built:
+            graphiti = self._get_graphiti()
+
+            # =========================================================
+            # 1. build_indices_and_constraints() — puede lanzar
+            #    EquivalentSchemaRuleAlreadyExistsException si el índice
+            #    ya existe (bug conocido en Graphiti 0.28.x)
+            # =========================================================
             try:
-                graphiti = self._get_graphiti()
                 _run_async(graphiti.build_indices_and_constraints())
+            except Exception as build_err:
+                # Si el error es "index already exists", es OK — continuamos
+                error_str = str(build_err)
+                if (
+                    "EquivalentSchemaRuleAlreadyExistsException" in error_str
+                    or "already exists" in error_str.lower()
+                ):
+                    logger.info(
+                        "Índices de Graphiti ya existen (EquivalentSchemaRuleAlreadyExistsException), continuando..."
+                    )
+                else:
+                    logger.warning(
+                        f"No se pudieron construir índices de Graphiti: {build_err}"
+                    )
 
-                # =========================================================
-                # ÍNDICES VECTORIALES NECESARIOS PARA Neo4j 5 Community
-                # =========================================================
-                # Graphiti internamente usa vector.similarity.cosine() para
-                # deduplicar entidades en add_episode(). Neo4j 5 Community
-                # requiere un VECTOR INDEX en la propiedad para que
-                # vector.similarity.cosine() funcione con LIST<FLOAT>.
-                # Sin este índice, add_episode() falla con:
-                # "Invalid input for 'vector.similarity.cosine()':
-                #  Argument b is not a valid vector"
-                #
-                # Graphiti.build_indices_and_constraints() NO crea este índice.
+            # =========================================================
+            # 2. ÍNDICES VECTORIALES NECESARIOS PARA Neo4j 5 Community
+            # =========================================================
+            # Graphiti internamente usa vector.similarity.cosine() para
+            # deduplicar entidades en add_episode(). Neo4j 5 Community
+            # requiere un VECTOR INDEX en la propiedad para que
+            # vector.similarity.cosine() funcione con LIST<FLOAT>.
+            # Sin este índice, add_episode() falla con:
+            # "Invalid input for 'vector.similarity.cosine()':
+            #  Argument b is not a valid vector"
+            #
+            # Graphiti.build_indices_and_constraints() NO crea este índice.
+            try:
                 self._create_vector_index(graphiti)
-
                 self._indices_built = True
                 logger.info("Índices de Graphiti construidos")
-            except Exception as e:
-                logger.warning(f"No se pudieron construir índices: {e}")
+            except Exception as idx_err:
+                logger.warning(f"No se pudieron crear índices vectoriales: {idx_err}")
 
     def _create_vector_index(self, graphiti):
         """
@@ -264,6 +284,24 @@ class GraphitiBackend(MemoryBackend):
         - Función: cosine
         """
         import os
+
+        # Pre-check: Verificar si el índice ya existe antes de intentar crearlo
+        # Esto evita el error EquivalentSchemaRuleAlreadyExistsException
+        try:
+            check_cypher = "SHOW INDEXES YIELD name, type, labelsOrTypes, properties WHERE name = 'entity_name_embedding_idx' RETURN name"
+            result = _run_async(graphiti.driver.execute_query(check_cypher))
+            result_data = _run_async(result.data())
+            if result_data and len(result_data) > 0:
+                logger.info(
+                    "Vector index 'entity_name_embedding_idx' ya existe, omitiendo creación"
+                )
+                return True
+        except Exception as check_err:
+            # Si el check falla, logueamos pero continuamos con la creación
+            # (el except de abajo capturará "already exists" si es el caso)
+            logger.debug(
+                f"Index check query no retornó resultados o falló: {check_err}"
+            )
 
         try:
             # Obtener dimensión del embedding desde el modelo configurado

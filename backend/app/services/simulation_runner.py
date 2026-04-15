@@ -22,6 +22,7 @@ from ..config import Config
 from ..utils.logger import get_logger
 from ..utils.locale import get_locale, set_locale
 from ..memory.factory import get_memory_updater
+from ..utils.camel_rate_limit_wrapper import SimulationProcessManager
 from .simulation_ipc import SimulationIPCClient, CommandType, IPCResponse
 
 logger = get_logger("mirofish.simulation_runner")
@@ -224,6 +225,7 @@ class SimulationRunner:
     _monitor_threads: Dict[str, threading.Thread] = {}
     _stdout_files: Dict[str, Any] = {}  # Almacenar manejador de archivo stdout
     _stderr_files: Dict[str, Any] = {}  # Almacenar manejador de archivo stderr
+    _process_managers: Dict[str, Any] = {}  # Managers de timeout/circuit breaker
 
     # Configuración de actualización de memoria de grafo
     _graph_memory_enabled: Dict[str, bool] = {}  # simulation_id -> enabled
@@ -474,6 +476,15 @@ class SimulationRunner:
             cls._processes[simulation_id] = process
             cls._save_run_state(state)
 
+            # Crear y arrancar SimulationProcessManager para timeout y circuit breaker
+            manager = SimulationProcessManager(
+                simulation_id=simulation_id,
+                process=process,
+                timeout_seconds=Config.SIMULATION_MAX_WALL_CLOCK_SECONDS,
+            )
+            cls._process_managers[simulation_id] = manager
+            manager.start()
+
             # Capture locale before spawning monitor thread
             current_locale = get_locale()
 
@@ -604,6 +615,16 @@ class SimulationRunner:
             cls._save_run_state(state)
 
         finally:
+            # Detener SimulationProcessManager
+            if simulation_id in cls._process_managers:
+                try:
+                    cls._process_managers[simulation_id].stop()
+                except Exception as e:
+                    logger.error(
+                        f"Fallo al detener process manager: {simulation_id}, error={e}"
+                    )
+                cls._process_managers.pop(simulation_id, None)
+
             # Detener actualizador de memoria de grafo
             if cls._graph_memory_enabled.get(simulation_id, False):
                 try:
@@ -895,6 +916,16 @@ class SimulationRunner:
         state.reddit_running = False
         state.completed_at = datetime.now().isoformat()
         cls._save_run_state(state)
+
+        # Detener SimulationProcessManager
+        if simulation_id in cls._process_managers:
+            try:
+                cls._process_managers[simulation_id].stop()
+            except Exception as e:
+                logger.error(
+                    f"Fallo al detener process manager: {simulation_id}, error={e}"
+                )
+            cls._process_managers.pop(simulation_id, None)
 
         # Detener actualizador de memoria de grafo
         if cls._graph_memory_enabled.get(simulation_id, False):
@@ -1327,6 +1358,16 @@ class SimulationRunner:
                     logger.info(
                         f"Terminar proceso de simulacion: {simulation_id}, pid={process.pid}"
                     )
+
+                    # Detener process manager primero (si existe)
+                    if simulation_id in cls._process_managers:
+                        try:
+                            cls._process_managers[simulation_id].stop()
+                        except Exception as e:
+                            logger.warning(
+                                f"Fallo al detener process manager: {simulation_id}, error={e}"
+                            )
+                        cls._process_managers.pop(simulation_id, None)
 
                     try:
                         # Usar metodo de terminacion de proceso multiplataforma

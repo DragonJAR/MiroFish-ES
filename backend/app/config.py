@@ -71,6 +71,11 @@ class Config:
         os.path.dirname(__file__), "../uploads/simulations"
     )
 
+    # Timeout de wall-clock para simulaciones (previene simulaciones colgadas)
+    SIMULATION_MAX_WALL_CLOCK_SECONDS = float(
+        os.environ.get("SIMULATION_MAX_WALL_CLOCK_SECONDS", "3600")
+    )
+
     # Configuración de acciones disponibles de plataforma OASIS
     OASIS_TWITTER_ACTIONS = [
         "CREATE_POST",
