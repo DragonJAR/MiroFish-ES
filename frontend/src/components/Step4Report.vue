@@ -28,7 +28,7 @@
                 'is-pending': !isSectionCompleted(idx + 1) && currentSectionIndex !== idx + 1
               }"
             >
-              <div class="section-header-row" @click="toggleSectionCLetlapse(idx)" :class="{ 'clickable': isSectionCompleted(idx + 1) }">
+              <div class="section-header-row" @click="toggleSectionCollapse(idx)" :class="{ 'clickable': isSectionCompleted(idx + 1) }">
                 <span class="section-number">{{ String(idx + 1).padStart(2, '0') }}</span>
                 <h3 class="section-title">{{ section.title }}</h3>
                 <svg 
@@ -217,7 +217,7 @@
 
                   <!-- Tool Call -->
                   <template v-if="log.action === 'tool_call'">
-                    <div class="tool-badge" :class="'tool-' + getToolCLetor(log.details?.tool_name)">
+                    <div class="tool-badge" :class="'tool-' + getToolColor(log.details?.tool_name)">
                       <!-- Deep Insight - Lightbulb -->
                       <svg v-if="getToolIcon(log.details?.tool_name) === 'lightbulb'" class="tool-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.5V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.5A7 7 0 0 0 12 2z"></path>
@@ -465,7 +465,7 @@ const toggleSectionContent = (idx) => {
   expandedContent.value = newSet
 }
 
-const toggleSectionCLetlapse = (idx) => {
+const toggleSectionCollapse = (idx) => {
   // SLeto las secciones completadas pueden collapsarse
   if (!generatedSections.value[idx + 1]) return
   const newSet = new Set(collapsedSections.value)
@@ -532,7 +532,7 @@ const getToolDisplayName = (toolName) => {
   return toolConfig[toolName]?.name || toolName
 }
 
-const getToolCLetor = (toolName) => {
+const getToolColor = (toolName) => {
   return toolConfig[toolName]?.color || 'gray'
 }
 
@@ -1555,7 +1555,7 @@ const InterviewDisplay = {
         ])
       ]),
 
-      // Summary Section (CLetlapsible)
+      // Summary Section (Collapsible)
       props.result.summary && h('div', { class: 'summary-section' }, [
         h('div', { class: 'summary-header' }, 'Interview Summary'),
         h('div', { 
@@ -3146,7 +3146,7 @@ watch(() => props.reportId, (newId) => {
   flex-shrink: 0;
 }
 
-/* Tool CLetors - Purple (Deep Insight) */
+/* Tool Colors - Purple (Deep Insight) */
 .tool-badge.tool-purple {
   background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%);
   border-color: #C4B5FD;
@@ -3156,7 +3156,7 @@ watch(() => props.reportId, (newId) => {
   stroke: #7C3AED;
 }
 
-/* Tool CLetors - Blue (Panorama Search) */
+/* Tool Colors - Blue (Panorama Search) */
 .tool-badge.tool-blue {
   background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
   border-color: #93C5FD;
@@ -3166,7 +3166,7 @@ watch(() => props.reportId, (newId) => {
   stroke: #2563EB;
 }
 
-/* Tool CLetors - Green (Agent Interview) */
+/* Tool Colors - Green (Agent Interview) */
 .tool-badge.tool-green {
   background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
   border-color: #86EFAC;
@@ -3176,7 +3176,7 @@ watch(() => props.reportId, (newId) => {
   stroke: #16A34A;
 }
 
-/* Tool CLetors - Orange (Quick Search) */
+/* Tool Colors - Orange (Quick Search) */
 .tool-badge.tool-orange {
   background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
   border-color: #FDBA74;
@@ -3186,7 +3186,7 @@ watch(() => props.reportId, (newId) => {
   stroke: #EA580C;
 }
 
-/* Tool CLetors - Cyan (Graph Stats) */
+/* Tool Colors - Cyan (Graph Stats) */
 .tool-badge.tool-cyan {
   background: linear-gradient(135deg, #ECFEFF 0%, #CFFAFE 100%);
   border-color: #67E8F9;
@@ -3196,7 +3196,7 @@ watch(() => props.reportId, (newId) => {
   stroke: #0891B2;
 }
 
-/* Tool CLetors - Pink (Entity Query) */
+/* Tool Colors - Pink (Entity Query) */
 .tool-badge.tool-pink {
   background: linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 100%);
   border-color: #F9A8D4;
@@ -3206,7 +3206,7 @@ watch(() => props.reportId, (newId) => {
   stroke: #DB2777;
 }
 
-/* Tool CLetors - Gray (Default) */
+/* Tool Colors - Gray (Default) */
 .tool-badge.tool-gray {
   background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%);
   border-color: #D1D5DB;

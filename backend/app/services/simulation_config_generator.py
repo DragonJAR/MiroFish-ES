@@ -16,9 +16,8 @@ from typing import Dict, Any, List, Optional, Callable
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 
-from openai import OpenAI
-
 from ..config import Config
+from ..utils.llm_client import LLMClient
 from ..utils.logger import get_logger
 from ..utils.locale import get_language_instruction, t
 from .zep_entity_reader import EntityNode, ZepEntityReader
@@ -282,7 +281,12 @@ class SimulationConfigGenerator:
         if not self.api_key:
             raise ValueError("LLM_API_KEY no configurada")
 
-        self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        # Usa LLMClient centralizado: retry, fallback y circuit breaker
+        self._llm = LLMClient(
+            api_key=self.api_key,
+            base_url=self.base_url,
+            model=self.model_name,
+        )
 
     def generate_config(
         self,
@@ -512,113 +516,6 @@ class SimulationConfigGenerator:
 
         return "\n".join(lines)
 
-    def _call_llm_with_retry(self, prompt: str, system_prompt: str) -> Dict[str, Any]:
-        """Llamada LLM con reintento, contiene lógica de corrección JSON"""
-        import re
-
-        max_attempts = 3
-        last_error = None
-
-        for attempt in range(max_attempts):
-            try:
-                response = self.client.chat.completions.create(
-                    model=self.model_name,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt},
-                    ],
-                    response_format={"type": "json_object"},
-                    temperature=0.7
-                    - (attempt * 0.1),  # Reducir temperatura en cada reintento
-                    # No configurar max_tokens, dejar que LLM decida
-                )
-
-                content = response.choices[0].message.content
-                finish_reason = response.choices[0].finish_reason
-
-                # Verificar si fue truncado
-                if finish_reason == "length":
-                    logger.warning(f"Salida LLM truncada (intento {attempt + 1})")
-                    content = self._fix_truncated_json(content)
-
-                # Intentar analizar JSON
-                try:
-                    return json.loads(content)
-                except json.JSONDecodeError as e:
-                    logger.warning(
-                        f"Análisis JSON fallido (intento {attempt + 1}): {str(e)[:80]}"
-                    )
-
-                    # Intentar corregir JSON
-                    fixed = self._try_fix_config_json(content)
-                    if fixed:
-                        return fixed
-
-                    last_error = e
-
-            except Exception as e:
-                logger.warning(
-                    f"Llamada LLM fallida (intento {attempt + 1}): {str(e)[:80]}"
-                )
-                last_error = e
-                import time
-
-                time.sleep(2 * (attempt + 1))
-
-        raise last_error or Exception("Llamada LLM fallida")
-
-    def _fix_truncated_json(self, content: str) -> str:
-        """Corregir JSON truncado"""
-        content = content.strip()
-
-        # Calcular llaves sin cerrar
-        open_braces = content.count("{") - content.count("}")
-        open_brackets = content.count("[") - content.count("]")
-
-        # Verificar si hay cadenas sin cerrar
-        if content and content[-1] not in '",}]':
-            content += '"'
-
-        # Cerrar llaves
-        content += "]" * open_brackets
-        content += "}" * open_braces
-
-        return content
-
-    def _try_fix_config_json(self, content: str) -> Optional[Dict[str, Any]]:
-        """Intentar corregir configuración JSON"""
-        import re
-
-        # Corregir casos truncados
-        content = self._fix_truncated_json(content)
-
-        # Extraer parte JSON
-        json_match = re.search(r"\{[\s\S]*\}", content)
-        if json_match:
-            json_str = json_match.group()
-
-            # Eliminar saltos de línea en cadenas
-            def fix_string(match):
-                s = match.group(0)
-                s = s.replace("\n", " ").replace("\r", " ")
-                s = re.sub(r"\s+", " ", s)
-                return s
-
-            json_str = re.sub(r'"[^"\\]*(?:\\.[^"\\]*)*"', fix_string, json_str)
-
-            try:
-                return json.loads(json_str)
-            except (json.JSONDecodeError, ValueError):
-                # Intentar eliminar todos los caracteres de control
-                json_str = re.sub(r"[\x00-\x1f\x7f-\x9f]", " ", json_str)
-                json_str = re.sub(r"\s+", " ", json_str)
-                try:
-                    return json.loads(json_str)
-                except (json.JSONDecodeError, ValueError):
-                    pass
-
-        return None
-
     def _generate_time_config(self, context: str, num_entities: int) -> Dict[str, Any]:
         """Generar configuración de tiempo"""
         # Usar longitud de truncamiento de contexto de la configuración
@@ -676,7 +573,11 @@ Descripción de campos:
         system_prompt = f"{system_prompt}\n\n{get_language_instruction()}"
 
         try:
-            return self._call_llm_with_retry(prompt, system_prompt)
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ]
+            return self._llm.chat_json(messages, temperature=0.7)
         except Exception as e:
             logger.warning(
                 f"Generación de configuración de tiempo con LLM fallida: {e}, usando configuración por defecto"
@@ -805,7 +706,11 @@ Retornar formato JSON (sin markdown):
         system_prompt = f"{system_prompt}\n\n{get_language_instruction()}\nIMPORTANT: The 'poster_type' field value MUST be in English PascalCase exactly Matching the available entity types. Only 'content', 'narrative_direction', 'hot_topics' and 'reasoning' fields should use the specified language."
 
         try:
-            return self._call_llm_with_retry(prompt, system_prompt)
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ]
+            return self._llm.chat_json(messages, temperature=0.7)
         except Exception as e:
             logger.warning(
                 f"Generación de configuración de eventos con LLM fallida: {e}, usando configuración por defecto"
@@ -979,7 +884,11 @@ Retornar formato JSON (sin markdown):
         system_prompt = f"{system_prompt}\n\n{get_language_instruction()}\nIMPORTANT: The 'stance' field value MUST be one of the English strings: 'supportive', 'opposing', 'neutral', 'observer'. All JSON field names and numeric values must remain unchanged. Only natural language text fields should use the specified language."
 
         try:
-            result = self._call_llm_with_retry(prompt, system_prompt)
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ]
+            result = self._llm.chat_json(messages, temperature=0.7)
             llm_configs = {
                 cfg["agent_id"]: cfg for cfg in result.get("agent_configs", [])
             }
