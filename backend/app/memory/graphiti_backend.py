@@ -1024,7 +1024,7 @@ class GraphitiBackend(MemoryBackend):
         self, graph_id: str, simulation_requirement: str, limit: int = 10
     ) -> Dict[str, Any]:
         """Get statistics + LLM summary for simulation context"""
-        from ..utils.llm_client import get_llm_client
+        from ..utils.llm_client import LLMClient
 
         # Get basic stats
         stats = self.get_graph_statistics(graph_id)
@@ -1045,7 +1045,7 @@ class GraphitiBackend(MemoryBackend):
         }
 
         # Generate LLM summary
-        llm_client = get_llm_client()
+        llm_client = LLMClient()
         prompt = f"""Analyze this simulation graph and provide a summary:
 
 Graph Statistics:
