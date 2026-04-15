@@ -1101,11 +1101,16 @@ class ReportAgent:
         for match in re.finditer(xml_pattern, response, re.DOTALL):
             try:
                 call_data = json.loads(match.group(1))
-                if self._is_valid_tool_call(call_data):
+                # Ignore non-dict results (e.g., bare strings like "name")
+                if isinstance(call_data, dict) and self._is_valid_tool_call(call_data):
                     tool_calls.append(call_data)
             except json.JSONDecodeError:
                 logger.warning(
                     f"JSON decode failed for tool_call XML match: {match.group(1)[:100]}"
+                )
+            except AttributeError:
+                logger.warning(
+                    f"Tool call parse failed - not a dict: {type(call_data).__name__}"
                 )
 
         if tool_calls:
@@ -1117,12 +1122,16 @@ class ReportAgent:
         if stripped.startswith("{") and stripped.endswith("}"):
             try:
                 call_data = json.loads(stripped)
-                if self._is_valid_tool_call(call_data):
+                if isinstance(call_data, dict) and self._is_valid_tool_call(call_data):
                     tool_calls.append(call_data)
                     return tool_calls
             except json.JSONDecodeError:
                 logger.warning(
                     f"JSON decode failed for bare JSON strip: {stripped[:100]}"
+                )
+            except AttributeError:
+                logger.warning(
+                    f"Tool call parse failed - not a dict: {type(call_data).__name__}"
                 )
 
         # RespuestaPosibleContiene Pensamientotexto + JSON desnudo，intentarExtracciónMásdespues unaElementos JSON Objeto
@@ -1131,11 +1140,15 @@ class ReportAgent:
         if match:
             try:
                 call_data = json.loads(match.group(1))
-                if self._is_valid_tool_call(call_data):
+                if isinstance(call_data, dict) and self._is_valid_tool_call(call_data):
                     tool_calls.append(call_data)
             except json.JSONDecodeError:
                 logger.warning(
                     f"JSON decode failed for trailing JSON pattern: {match.group(1)[:100]}"
+                )
+            except AttributeError:
+                logger.warning(
+                    f"Tool call parse failed - not a dict: {type(call_data).__name__}"
                 )
 
         return tool_calls
