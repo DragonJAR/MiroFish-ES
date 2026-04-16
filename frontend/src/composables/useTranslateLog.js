@@ -191,7 +191,7 @@ const logKeyMap = {
  * @returns {function} - Función translateLog(log)
  */
 export function useTranslateLog() {
-  const { t } = useI18n()
+  const { t } = useI18n({ useScope: 'global' })
   
   const translateLog = (log) => {
     if (!log || typeof log !== 'string') return log || ''
