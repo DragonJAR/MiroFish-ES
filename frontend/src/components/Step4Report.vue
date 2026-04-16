@@ -573,7 +573,7 @@ const parseInsightForge = (text) => {
     const subQSection = text.match(/### Sub-preguntas del análisis\n([\s\S]*?)(?=\n###|$)/)
     if (subQSection) {
       const lines = subQSection[1].split('\n').filter(l => l.match(/^\d+\./))
-      result.subQueries = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
+      result.subQueries = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(v => !!v)
     }
     
     // Extraer hechos clave - extraer completo, sin limitar cantidad
@@ -583,7 +583,7 @@ const parseInsightForge = (text) => {
       result.facts = lines.map(l => {
         const match = l.match(/^\d+\.\s*"?(.+?)"?\s*$/)
         return match ? match[1].replace(/^"|"$/g, '').trim() : l.replace(/^\d+\.\s*/, '').trim()
-      }).filter(Boolean)
+      }).filter(v => !!v)
     }
     
     // Extraer entidades principales - extraer completo, incluir resumen y número de hechos relacionados
@@ -615,7 +615,7 @@ const parseInsightForge = (text) => {
           return { source: match[1].trim(), relation: match[2].trim(), target: match[3].trim() }
         }
         return null
-      }).filter(Boolean)
+      }).filter(v => !!v)
     }
   } catch (e) {
     console.warn('Parse insight_forge failed:', e)
@@ -656,7 +656,7 @@ const parsePanorama = (text) => {
         // Eliminar números y comillas
         const factText = l.replace(/^\d+\.\s*/, '').replace(/^"|"$/g, '').trim()
         return factText
-      }).filter(Boolean)
+      }).filter(v => !!v)
     }
     
     // Extraer hechos históricos - extraer completo, sin limitar cantidad
@@ -666,7 +666,7 @@ const parsePanorama = (text) => {
       result.historicalFacts = lines.map(l => {
         const factText = l.replace(/^\d+\.\s*/, '').replace(/^"|"$/g, '').trim()
         return factText
-      }).filter(Boolean)
+      }).filter(v => !!v)
     }
     
     // Extraer entidades involucradas - extraer completo, sin limitar cantidad
@@ -677,7 +677,7 @@ const parsePanorama = (text) => {
         const match = l.match(/^-\s*\*\*(.+?)\*\*\s*\((.+?)\)/)
         if (match) return { name: match[1].trim(), type: match[2].trim() }
         return null
-      }).filter(Boolean)
+      }).filter(v => !!v)
     }
   } catch (e) {
     console.warn('Parse panorama failed:', e)
@@ -923,7 +923,7 @@ const parseQuickSearch = (text) => {
     const factsSection = text.match(/### hechos relacionados:\n([\s\S]*)$/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
-      result.facts = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
+      result.facts = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(v => !!v)
     }
     
     // IntentarExtraer información de bordes（si hay）
@@ -939,7 +939,7 @@ const parseQuickSearch = (text) => {
         const simpleMatch = l.match(/^-\s*(.+)$/)
         if (simpleMatch) return { name: simpleMatch[1].trim(), type: '' }
         return null
-      }).filter(Boolean)
+      }).filter(v => !!v)
     }
   } catch (e) {
     console.warn('Parse quick_search failed:', e)
