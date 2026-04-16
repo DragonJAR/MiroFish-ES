@@ -111,26 +111,26 @@ class ReportLogger:
             },
         )
 
-    def log_Planning_start(self):
+    def log_planning_start(self):
         """Registrar inicio de Planificación del Esquema"""
         self.log(
-            action="Planning_start",
+            action="planning_start",
             stage="Planning",
             details={"message": t("report.PlanningStart")},
         )
 
-    def log_Planning_context(self, context: Dict[str, Any]):
+    def log_planning_context(self, context: Dict[str, Any]):
         """Registrar inFormación de contexto durante la Planificación"""
         self.log(
-            action="Planning_context",
+            action="planning_context",
             stage="Planning",
             details={"message": t("report.FetchSimContext"), "context": context},
         )
 
-    def log_Planning_complete(self, outline_dict: Dict[str, Any]):
+    def log_planning_complete(self, outline_dict: Dict[str, Any]):
         """Registrar fin de Planificación del Esquema"""
         self.log(
-            action="Planning_complete",
+            action="planning_complete",
             stage="Planning",
             details={"message": t("report.PlanningComplete"), "outline": outline_dict},
         )
@@ -1437,7 +1437,7 @@ class ReportAgent:
             )
 
             # RegistrarplanificacionInicioLog
-            self.report_logger.log_Planning_start()
+            self.report_logger.log_planning_start()
 
             if progress_callback:
                 progress_callback("Planning", 0, t("progress.startPlanningOutline"))
@@ -1452,7 +1452,7 @@ class ReportAgent:
             report.outline = outline
 
             # RegistrarplanificacionCompletadoLog
-            self.report_logger.log_Planning_complete(outline.to_dict())
+            self.report_logger.log_planning_complete(outline.to_dict())
 
             # GuardaresquemaHastaArchivo
             ReportManager.save_outline(report_id, outline)

@@ -180,7 +180,7 @@
                     <div class="status-message planning">{{ log.details?.message }}</div>
                   </template>
                   <template v-if="log.action === 'planning_complete'">
-                    <div class="status-message éxito">{{ log.details?.message }}</div>
+                    <div class="status-message success">{{ log.details?.message }}</div>
                     <div class="outline-badge" v-if="log.details?.outline">
                       {{ log.details.outline.sections?.length || 0 }} sections planned
                     </div>
@@ -449,7 +449,7 @@ const toggleRawResult = (timestamp, event) => {
       const scrolllDelta = buttonTopAfterToggle - buttonTopBeforeToggle
       
       // Ajustar posición de scrolll
-      rightPanel.value.scrolllTop += scrolllDelta
+      rightPanel.value.scrollTop += scrolllDelta
     })
   }
 }
@@ -573,7 +573,7 @@ const parseInsightForge = (text) => {
     const subQSection = text.match(/### Sub-preguntas del análisis\n([\s\S]*?)(?=\n###|$)/)
     if (subQSection) {
       const lines = subQSection[1].split('\n').filter(l => l.match(/^\d+\./))
-      result.subQueries = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(BoLetean)
+      result.subQueries = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
     }
     
     // Extraer hechos clave - extraer completo, sin limitar cantidad
@@ -583,7 +583,7 @@ const parseInsightForge = (text) => {
       result.facts = lines.map(l => {
         const match = l.match(/^\d+\.\s*"?(.+?)"?\s*$/)
         return match ? match[1].replace(/^"|"$/g, '').trim() : l.replace(/^\d+\.\s*/, '').trim()
-      }).filter(BoLetean)
+      }).filter(Boolean)
     }
     
     // Extraer entidades principales - extraer completo, incluir resumen y número de hechos relacionados
@@ -615,7 +615,7 @@ const parseInsightForge = (text) => {
           return { source: match[1].trim(), relation: match[2].trim(), target: match[3].trim() }
         }
         return null
-      }).filter(BoLetean)
+      }).filter(Boolean)
     }
   } catch (e) {
     console.warn('Parse insight_forge failed:', e)
@@ -656,7 +656,7 @@ const parsePanorama = (text) => {
         // Eliminar números y comillas
         const factText = l.replace(/^\d+\.\s*/, '').replace(/^"|"$/g, '').trim()
         return factText
-      }).filter(BoLetean)
+      }).filter(Boolean)
     }
     
     // Extraer hechos históricos - extraer completo, sin limitar cantidad
@@ -666,7 +666,7 @@ const parsePanorama = (text) => {
       result.historicalFacts = lines.map(l => {
         const factText = l.replace(/^\d+\.\s*/, '').replace(/^"|"$/g, '').trim()
         return factText
-      }).filter(BoLetean)
+      }).filter(Boolean)
     }
     
     // Extraer entidades involucradas - extraer completo, sin limitar cantidad
@@ -677,7 +677,7 @@ const parsePanorama = (text) => {
         const match = l.match(/^-\s*\*\*(.+?)\*\*\s*\((.+?)\)/)
         if (match) return { name: match[1].trim(), type: match[2].trim() }
         return null
-      }).filter(BoLetean)
+      }).filter(Boolean)
     }
   } catch (e) {
     console.warn('Parse panorama failed:', e)
@@ -690,7 +690,7 @@ const parseInterview = (text) => {
   const result = {
     topic: '',
     agentCount: '',
-    éxitoCount: 0,
+    successCount: 0,
     totalCount: 0,
     selectionReason: '',
     interviews: [],
@@ -705,7 +705,7 @@ const parseInterview = (text) => {
     // Extraer número de entrevista (como "5 / 9 de Agentes")
     const countMatch = text.match(/\*\*EntrevistaNúmero:\*\*\s*(\d+)\s*\/\s*(\d+)/)
     if (countMatch) {
-      result.éxitoCount = parseInt(countMatch[1])
+      result.successCount = parseInt(countMatch[1])
       result.totalCount = parseInt(countMatch[2])
       result.agentCount = `${countMatch[1]} / ${countMatch[2]}`
     }
@@ -923,7 +923,7 @@ const parseQuickSearch = (text) => {
     const factsSection = text.match(/### hechos relacionados:\n([\s\S]*)$/)
     if (factsSection) {
       const lines = factsSection[1].split('\n').filter(l => l.match(/^\d+\./))
-      result.facts = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(BoLetean)
+      result.facts = lines.map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(Boolean)
     }
     
     // IntentarExtraer información de bordes（si hay）
@@ -939,7 +939,7 @@ const parseQuickSearch = (text) => {
         const simpleMatch = l.match(/^-\s*(.+)$/)
         if (simpleMatch) return { name: simpleMatch[1].trim(), type: '' }
         return null
-      }).filter(BoLetean)
+      }).filter(Boolean)
     }
   } catch (e) {
     console.warn('Parse quick_search failed:', e)
@@ -1395,7 +1395,7 @@ const InterviewDisplay = {
       const questionCount = interview.questions?.length || 1
       const answers = splitAnswerByQuestions(answer, questionCount)
 
-      // Dividir éxito e índice ambos
+      // Dividir success e índice ambos
       if (answers.length > 1 && qIdx < answers.length) {
         return answers[qIdx] || ''
       }
@@ -1420,7 +1420,7 @@ const InterviewDisplay = {
           h('div', { class: 'header-title' }, 'Agent Interview'),
           h('div', { class: 'header-stats' }, [
             h('span', { class: 'stat-item' }, [
-              h('span', { class: 'stat-value' }, props.result.éxitoCount || props.result.interviews.length),
+              h('span', { class: 'stat-value' }, props.result.successCount || props.result.interviews.length),
               h('span', { class: 'stat-label' }, 'Interviewed')
             ]),
             props.result.totalCount > 0 && h('span', { class: 'stat-divider' }, '/'),
@@ -1988,6 +1988,7 @@ const getActionLabel = (action) => {
   const labels = {
     'report_start': 'Report Started',
     'planning_start': 'Planning',
+    'planning_context': 'Context Fetch',
     'planning_complete': 'Plan Complete',
     'section_start': 'Section Start',
     'section_content': 'Content Ready',
@@ -2017,7 +2018,7 @@ const fetchAgentLog = async () => {
   try {
     const res = await getAgentLog(props.reportId, agentLogLine.value)
     
-    if (res.éxito && res.data) {
+    if (res.success && res.data) {
       const newLogs = res.data.logs || []
       
       if (newLogs.length > 0) {
@@ -2061,9 +2062,9 @@ const fetchAgentLog = async () => {
           if (rightPanel.value) {
             // Si completada, desplazamiento hasta parte superior; sino desplazamiento hasta parte inferior con los nuevos registros
             if (isComplete.value) {
-              rightPanel.value.scrolllTop = 0
+              rightPanel.value.scrollTop = 0
             } else {
-              rightPanel.value.scrolllTop = rightPanel.value.scrolllHeight
+              rightPanel.value.scrollTop = rightPanel.value.scrollHeight
             }
           }
         })
@@ -2125,7 +2126,7 @@ const fetchConsoleLog = async () => {
   try {
     const res = await getConsoleLog(props.reportId, consoleLogLine.value)
     
-    if (res.éxito && res.data) {
+    if (res.success && res.data) {
       const newLogs = res.data.logs || []
       
       if (newLogs.length > 0) {
@@ -2134,7 +2135,7 @@ const fetchConsoleLog = async () => {
         
         nextTick(() => {
           if (logContent.value) {
-            logContent.value.scrolllTop = logContent.value.scrolllHeight
+            logContent.value.scrollTop = logContent.value.scrollHeight
           }
         })
       }
@@ -3065,7 +3066,7 @@ watch(() => props.reportId, (newId) => {
   color: var(--wf-de-text);
 }
 
-.status-message.éxito {
+.status-message.success {
   background: #ECFDF5;
   border-color: #A7F3D0;
   color: #065F46;
@@ -5141,7 +5142,7 @@ watch(() => props.reportId, (newId) => {
 
 .log-msg.error { color: #EF5350; }
 .log-msg.warning { color: #FFA726; }
-.log-msg.éxito { color: #66BB6A; }
+.log-msg.success { color: #66BB6A; }
 </style>
 
 <style>
