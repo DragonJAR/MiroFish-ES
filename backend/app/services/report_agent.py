@@ -22,6 +22,7 @@ from ..config import Config
 from ..utils.llm_client import LLMClient
 from ..utils.logger import get_logger
 from ..utils.locale import get_language_instruction, t
+from ..prompts import load_prompt, get_prompt
 from .zep_tools import (
     ZepToolsService,
     SearchResult,
@@ -558,319 +559,6 @@ Flujo de funcionalidades:
 
 # ── Planificación de esquema prompt ──
 
-PLAN_SYSTEM_PROMPT = """\
-Eres un experto en escritura de「Reportes de Predicción del Futuro」y posees una「Perspectiva de Dios» sobre el mundo de simulación — puedes comprender el comportamiento, discursos e interacciones de cada Agente en la simulación.
-
-【Concepto clave】
-Hemos construido un mundo de simulación e inyectado un「Requisito de simulación」específico como variable. El Resultado de evolución del mundo de simulación es la predicción de situaciones futuras que pueden ocurrir. No estás observando「datos experimentales」, sino「ensayo del futuro」。
-
-【Tu tarea】
-Escribe un「Reporte de Predicción del Futuro」que responda:
-1. ¿Qué pasará en el futuro Bajo nuestras condiciones establecidas?
-2. ¿Cómo reaccionarán y actuarán los diversos Agentes (multitudes)?
-3. ¿Qué tendencias futuras y riesgos merecen atención esta simulación?
-
-【Posicionamiento del reporte】
-- ✅ Este es un reporte de predicción del futuro basado en simulación, revelando「si esto sucede, así será el futuro」
-- ✅ Enfocado en Resultados de predicción: dirección de eventos, reacciones grupales, FenóMenos emergentes, riesgos potenciales
-- ✅ Los actos y dichos de los Agentes en el mundo de simulación son predicciones del comportamiento futuro de las multitudes
-- ❌ No es un análisis del estado actual del mundo real
-- ❌ No es una revisión general de Opinión pública sin profundidad
-
-【Límite de cantidad de secciones】
-- Mínimo 2 secciones, máximo 5 secciones
-- No se requieren subsecciones, cada sección escrita directaMente con contenido completo
-- El contenido debe ser conciso, enfocado en descubrimientos de predicción clave
-- La Estructura de secciones es diseñada por ti según los Resultados de predicción
-
-Por favor, salida el Esquema del reporte en Formato JSON, con el siguiente Formato:
-{
-    "title": "Título del reporte",
-    "summary": "Resumen del reporte (una frase que resume los descubrimientos clave de predicción)",
-    "sections": [
-        {
-            "title": "Título de la sección",
-            "description": "Descripción del contenido de la sección"
-        }
-    ]
-}
-
-Nota: el array sections debe tener mínimo 2 Elementos, máximo 5 Elementos！"""
-
-PLAN_USER_PROMPT_TEMPLATE = """\
-【Escenario de predicción establecido】
-Variables que inyectamos al mundo de simulación (Requisito de simulación): {simulation_requirement}
-
-【Escalas del mundo de simulación】
-- Cantidad de entidades participantes en la simulación: {total_nodes}
-- Cantidad de relaciones generadas entre entidades: {total_edges}
-- Distribución de tipos de entidades: {entity_types}
-- Cantidad de Agentes activos: {total_entities}
-
-【Muestra de algunos hechos futuros predichos por la simulación】
-{reLated_facts_json}
-
-Por favor, examine este ensayo del futuro desde la「Perspectiva de Dios」:
-1. ¿Qué estado se presenta en el futuro Bajo nuestras condiciones establecidas?
-2. ¿Cómo reaccionan y actúan los diversos grupos (Agentes)?
-3. ¿Qué tendencias futuras merecen atención esta simulación?
-
-Según los Resultados de predicción, diseña la Estructura de secciones Más adecuada para el reporte.
-
-【Recordatorio】Cantidad de secciones del reporte: mínimo 2, máximo 5, contenido conciso enfocado en descubrimientos de predicción clave。"""
-
-# ── Generación de capítulos prompt ──
-
-SECTION_SYSTEM_PROMPT_TEMPLATE = """\
-Eres un experto en escritura de「Reportes de Predicción del Futuro」, escribiendo una sección del reporte.
-
-Título del reporte: {report_title}
-Resumen del reporte: {report_summary}
-Escenario de predicción (Requisito de simulación): {simulation_requirement}
-
-Sección actual a escribir: {section_title}
-
-════════════════════════════════════════════════════════════
-【Concepto clave】
-════════════════════════════════════════════════════════════
-
-El mundo de simulación es un ensayo del futuro. Hemos inyectado condiciones específicas (Requisito de simulación) al mundo de simulación,
-el comportamiento e interacciones de los Agentes en la simulación son predicciones del comportamiento futuro de las multitudes.
-
-Tu tarea es:
-- Revelar qué pasará en el futuro Bajo las condiciones establecidas
-- Predecir cómo reaccionarán y actuarán los diversos grupos (Agentes)
-- Descubrir tendencias futuras, riesgos y OportUnidades que merecen atención
-
-❌ No lo escribas como un análisis del estado actual del mundo real
-✅ Debes enfocarte en「cómo será el futuro」 — los Resultados de simulación son el futuro predicho
-
-════════════════════════════════════════════════════════════
-【Reglas Más importantes - Debes cumplir】
-══════════════════════════════════════════════════════════════
-
-1. 【Debes llamar Herramientas para observar el mundo de simulación】
-   - Estás observando el ensayo del futuro desde la「Perspectiva de Dios」
-   - Todo el contenido debe provenir de eventos y actos/dichos de Agentes que ocurren en el mundo de simulación
-   - Está prohibido usar tu propio Conocimiento para escribir contenido del reporte
-   - Cada sección debe llamar Herramientas al Menos 3 veces (máximo 5 veces) para observar el mundo de simulación, representa el futuro
-
-2. 【Debes citar los actos/dichos originales de Agentes】
-   - Los discursos y comportamientos de Agentes son predicciones del comportamiento futuro de las multitudes
-   - En el reporte, usa Formato de cita para mostrar estas predicciones, por Ejemplo:
-     > "Un cierto grupo expresará: contenido original..."
-   - Estas citas son la evidencia central de la predicción de simulación
-
-3. 【Consistencia de idioma - El contenido citado debe traducirse al idioma del reporte】
-   - El contenido devuelto por Herramientas puede contener expresiones diFerentes al idioma del reporte
-   - El reporte debe escribirse completaMente usando el idioma consistente con el especificado por el usuario
-   - Cuando cites contenido devuelto por Herramientas en otro idioma, debes traducirlo al idioma del reporte antes de escribirlo
-   - Al traducir, mantén el significado original sin cambios, asegurando que la expresión sea natural y fluida
-   - Esta Regla se aplica Tanto al cuerpo principal como al contenido en Bloques de cita (Formato >)
-
-4. 【Presentación fiel de Resultados de predicción】
-   - El contenido del reporte debe reflejar Resultados de simulación en el mundo de simulación que representan el futuro
-   - No agregar inFormación que no exista en la simulación
-   - Si hay inFormación insuficiente en algún aspecto, explícala honestly
-
-════════════════════════════════════════════════════════════
-【⚠️ Normas de Formato - ¡Muy importante!】
-════════════════════════════════════════════════════════════
-
-【Una sección = Unidad mínima de contenido】
-- Cada sección es la Unidad mínima de división del reporte
-- ❌ Está prohibido usar cualquier título Markdown (#, ##, ###, ####, etc.) dentro de secciones
-- ❌ Está prohibido agregar título de sección al inicio del contenido
-- ✅ El título de sección se agrega automáticaMente por el Sistema, solo necesitas escribir contenido en texto Plano
-- ✅ Usa **negrita**, separación de párrafos, citas, listas para organizar contenido, pero no uses títulos
-
-【Ejemplo correcto】
-```
-Esta sección analiza la situación de propagación de Opinión pública. Mediante análisis Profundo de datos de simulación, descubrimos...
-
-**Etapa de detonación inicial**
-
-Weibo como el primer lugar de Opinión pública, asumiendo el rol central de inFormación inicial:
-
-> "Weibo contribuyó con el 68% del volumen inicial de comentarios..."
-
-**Etapa de amplificación emocional**
-
-La plataForma Douyin amplió aún Más la influencia del evento:
-
-- Fuerte impacto visual
-- Alta resonancia emocional
-```
-
-【Ejemplo de error】
-```
-## Resumen de ejecución          ← ¡Error! No agregues ningún título
-### 1. Primera etapa     ← ¡Error! No uses ### para dividir subsecciones
-#### 1.1 Análisis detallado   ← ¡Error! No uses #### para subdividir
-
-Esta sección analiza...
-```
-
-══════════════════════════════════════════════════════════════
-【Herramientas de recuperación disponibles】(cada sección llama 3-5 veces）
-══════════════════════════════════════════════════════════════
-
-{tools_description}
-
-【Sugerencias de uso de Herramientas - Por favor mezcla diFerentes Herramientas, no uses solo una】
-- insight_forge: Análisis de perspicacia profunda, descompone automáticaMente preguntas y recupera hechos y relaciones desde múltiples dimensiones
-- panorama_search: Búsqueda panorámica en amplitud, entiende vista completa, línea de tiempo y Proceso de evolución del evento
-- quick_search: Validación rápida de algún punto específico de inFormación
-- interview_agents: Entrevista a Agentes de simulación, obtiene puntos de vista en primera persona y reacciones reales de diFerentes roles
-
-══════════════════════════════════════════════════════════════
-【Flujo de traBajo】
-════════════════════════════════════════════════════════════════
-
-Cada Respuesta solo puedes hacer una de las siguientes dos Cosas (no simultáneaMente):
-
-Opción A - Llamar herramienta:
-Salida tu Pensamiento, luego llama a una herramienta con el siguiente Formato:
-<tool_call>
-{"name": "tool_name", "parameters": {{"param_name": "param_value"}}}
-\
-
-El sistema ejecutará la herramienta y te devolverá el resultado. No necesitas ni puedes escribir el resultado devuelto por la herramienta tú mismo.
-
-Opción B - Salida del contenido final:
-Cuando ya hayas obtenido suficiente información a través de herramientas, sal el contenido del capítulo con el prefijo "Final Answer:".
-
-⚠️ Prohibiciones estrictas:
-- Está prohibido Contener llamadas a herramientas Y Final Answer en la misma respuesta
-- Está prohibido inventar el resultado devuelto por la herramienta (Observation), todos los resultados de herramientas son inyectados por el sistema
-- Cada respuesta Más puede llamar como máximo una herramienta
-
-════════════════════════════════════════════════════════════
-【 contenido del capítulo Requisito】
-══════════════════════════════════════════════════════════════
-
-1. El  contenido Debe basarse en Datos de simulación recuperados por herramientas
-2. Citar ampliamente el texto original para mostrar el efecto de simulación
-3. Usar Formato Markdown (Pero está prohibido usar títulos)：
-   - Usar **texto en negrita** Para marcar puntos clave (en lugar de subtítulos)
-   - Usar listas (-O1.2.3.) Para organizar puntos clave
-   - Usar líneas vacías Para separar diferentes párrafos
-   - ❌ Está prohibido usar #、##、###、#### u otra sintaxis de títulos Cualquier
-4. 【Formato estándar de cita - Debe ser párrafo independiente】
-   Las citas Deben ser párrafos independientes, con una línea vacía antes y después, no se pueden mezclar en párrafos：
-
-   ✅ Formato correcto：
-   ```
-   La respuesta de la escuela fue considerada carente de  contenido sustantivo.
-
-   > "El modo de respuesta de la escuela parece rígido y lento en el entorno de las redes sociales que cambia instantáneamente."
-
-   Esta evaluación refleja la insatisfacción pública generalizada.
-   ```
-
-   ❌ Error formato：
-   ```
-   La respuesta de la escuela fue considerada carente de  contenido sustantivo.> "El modo de respuesta de la escuela..." Esta evaluación refleja...
-   ```
-5. Mantener coherencia lógica con otros capítulos
-6. 【Evitar duplicación】Leer cuidadosamente el  contenido de capítulos completados abajo, no repetir Descripción de la misma Información
-7. 【Enfasis de nuevo】No agregar Cualquier título! Usar **negrita** en lugar de subtítulos de capítulos"""
-
-SECTION_USER_PROMPT_TEMPLATE = """\
- completado del capítulo  contenido (por favor leer cuidadosamente, evitar duplicación)：
-{previous_content}
-
-═══════════════════════════════════════════════════════════
-【Tarea actual】Escribir capítulo: {section_title}
-═══════════════════════════════════════════════════════════
-
-【Recordatorio Importante】
-1. Leer cuidadosamente los capítulos completados arriba, evitar duplicación del mismo  contenido！
-2. Antes de Inicio Debe llamar primero a herramientas Para obtener datos de simulación
-3. Por favor mezclar usar diferentes herramientas, no Solo usar un tipo
-4. El  contenido del reporte Debe provenir de resultados de búsqueda, no usar Conocimiento propio
-
-【⚠️ Advertencia de Formato - Debe cumplir】
-- ❌ No escribir Cualquier título (#、##、###、####Todos no Fila)
-- ❌ No escribir "{section_title}"Como Inicio
-- ✅ El Título del capítulo es agregado automáticaMente por el Sistema
-- ✅ Escribir directamente el cuerpo del texto, usar **negrita** en lugar de subtítulos de capítulos
-
-Por favor Inicio：
-1. Primero Pensar (Thought) Qué Información Necesita este capítulo
-2. Luego llamar a herramientas (Action) Para obtener datos de simulación
-3. Recopiar suficiente Información y luego salida Final Answer (cuerpo de texto puro, Ninguno Cualquier título)"""
-
-# ── ReACT Ciclo interno Plantilla de Mensaje ──
-
-REACT_OBSERVATION_TEMPLATE = """\
-Observation（resultado de búsqueda）:
-
-═══ Herramienta {tool_name} Volver ═══
-{result}
-
-═══════════════════════════════════════════════════════════════
-ya llamadoHerramienta {tool_calls_count}/{max_tool_calls}  veces（usado: {used_tools_str}）{unused_hint}
-- Si Información suficiente:con el prefijo "Final Answer:" sal el  contenido del capítulo (Debe Citar el texto original mencionado arriba)
-- SiNecesitaMásmásInformación：llamar unaElementosHerramientaContinuarrecuperacion
-═══════════════════════════════════════════════════════════════"""
-
-
-REACT_INSUFFICIENT_TOOLS_MSG = (
-    "【Nota】Solo has llamado Herramientas {tool_calls_count} veces, mínimo requiere {min_tool_calls} veces."
-    "Por favor llama Herramientas para obtener Más datos de simulación, luego salida Final Answer。{unused_hint}"
-)
-
-
-REACT_INSUFFICIENT_TOOLS_MSG_ALT = (
-    "ActualMente solo has llamado Herramientas {tool_calls_count} veces, mínimo requiere {min_tool_calls} veces。"
-    "Por favor llama Herramientas para obtener datos de simulación。{unused_hint}"
-)
-
-
-REACT_TOOL_LIMIT_MSG = (
-    "El número de Llamadas a Herramientas ha alcanzado el límite ({tool_calls_count}/{max_tool_calls}), no se pueden llamar Más Herramientas。"
-    'Por favor, basándote en la inFormación ya obtenida, salida el contenido de la sección con "Final Answer:" al inicio。'
-)
-
-
-REACT_UNUSED_TOOLS_HINT = "\n💡 Aún no has usado: {unused_list}, se recomienda intentar diFerentes Herramientas para obtener inFormación desde múltiples ángulos"
-
-REACT_FORCE_FINAL_MSG = "Se ha alcanzado el límite de Llamadas a Herramientas, por favor salida directaMente Final Answer: y genera el contenido de la sección。"
-
-# ── Chat prompt ──
-
-CHAT_SYSTEM_PROMPT_TEMPLATE = """\
-TúEsunoElementosconciso y eficienteSimulaciónPredicciónasistente。
-
-【contexto】
-PredicciónCondición: {simulation_requirement}
-
-【{t('console.zep.reportAlreadyGenerated')} de análisis】
-{report_content}
-
-【Regla】
-1. Prioridadbasado en el informe anterior contenidoresponderProblema
-2. responder directamenteProblema，evitar largas Pensamientoargumentacion
-3. soloEninforme contenidocuando sea insuficiente，solo llamarHerramientarecuperacionMásmásDatos
-4. respuesta concisa、clara、Tenerorganizada
-
-【disponibleHerramienta】（soloEnNecesitausar cuando，Másllamar varias1-2 veces）
-{tools_description}
-
-【Herramientaformato de llamada】
-<tool_call>
-{{"name": "HerramientaNombre", "parameters": {{"nombre del parametro": "parametroValor"}}}}
-</tool_call>
-
-【Estilo de Respuesta】
-- Conciso y directo, no discursos Largos
-- Usa Formato > para citar contenido clave
-- Prioriza dar conclusiones, luego explica razones"""
-
-CHAT_OBSERVATION_SUFFIX = "\n\nPor favor responde concisaMente a la pregunta。"
-
-
 # ═══════════════════════════════════════════════════════════════
 # ReportAgent principalClase
 # ═══════════════════════════════════════════════════════════════
@@ -1212,8 +900,10 @@ class ReportAgent:
         if progress_callback:
             progress_callback("Planning", 30, t("progress.geneRatingOutline"))
 
-        system_prompt = f"{PLAN_SYSTEM_PROMPT}\n\n{get_language_instruction()}"
-        user_prompt = PLAN_USER_PROMPT_TEMPLATE.format(
+        system_prompt = f"{load_prompt('report', 'plan_system', simulation_requirement=self.simulation_requirement, tools_description=self._get_tools_description())}\n\n{get_language_instruction()}"
+        user_prompt = load_prompt(
+            "report",
+            "plan_user",
             simulation_requirement=self.simulation_requirement,
             total_nodes=context.get("graph_statistics", {}).get("total_nodes", 0),
             total_edges=context.get("graph_statistics", {}).get("total_edges", 0),
@@ -1301,12 +991,18 @@ class ReportAgent:
              capítulo contenido（Markdownformato）
         """
         logger.info(t("report.reactGenerateSection", title=section.title))
+        logger.warning(
+            f"[DIAGNOSTIC] _generate_section_react section={section.title!r}"
+        )
 
         # Registrar capítuloInicioLog
         if self.report_logger:
             self.report_logger.log_section_start(section.title, section_index)
 
-        system_prompt = SECTION_SYSTEM_PROMPT_TEMPLATE.format(
+        # Construir system prompt desde prompts centralizados
+        system_prompt = load_prompt(
+            "report",
+            "section_system",
             report_title=outline.title,
             report_summary=outline.summary,
             simulation_requirement=self.simulation_requirement,
@@ -1315,18 +1011,20 @@ class ReportAgent:
         )
         system_prompt = f"{system_prompt}\n\n{get_language_instruction()}"
 
-        # construir usuarioprompt - cadaElementosCompletado capítulopasar a cada unoMásgrande4000caracteres
+        # Construir user prompt - maximo 4000 caracteres por cada seccion completada
         if previous_sections:
             previous_parts = []
             for sec in previous_sections:
-                # cadaElementos capítuloMásmás4000caracteres
+                # Maximo 4000 caracteres por seccion
                 truncated = sec[:4000] + "..." if len(sec) > 4000 else sec
                 previous_parts.append(truncated)
             previous_content = "\n\n---\n\n".join(previous_parts)
         else:
-            previous_content = "（estoEsprimeraElementos capítulo）"
+            previous_content = "(Esta es la primera seccion)"
 
-        user_prompt = SECTION_USER_PROMPT_TEMPLATE.format(
+        user_prompt = load_prompt(
+            "report",
+            "section_user",
             previous_content=previous_content,
             section_title=section.title,
         )
@@ -1368,6 +1066,9 @@ class ReportAgent:
             response = self.llm.chat(
                 messages=messages, temperature=0.5, max_tokens=4096
             )
+            logger.warning(
+                f"[DIAGNOSTIC] LLM response type={type(response).__name__} len={len(response) if response else 0} first200={response[:200] if response else 'NONE'}"
+            )
 
             # Inspección LLM VolverSicomo None（API ExcepciónO contenidovacio）
             if response is None:
@@ -1396,7 +1097,13 @@ class ReportAgent:
             logger.debug(f"LLMRespuesta: {response[:200]}...")
 
             # Analizaruno veces，reutilizar resultado
+            logger.warning(
+                f"[DIAGNOSTIC] calling _parse_tool_calls on response[:300]={response[:300] if response else 'NONE'}"
+            )
             tool_calls = self._parse_tool_calls(response)
+            logger.warning(
+                f"[DIAGNOSTIC] _parse_tool_calls returned {len(tool_calls)} calls: {[(type(c).__name__, c if not isinstance(c, dict) else c.get('name')) for c in tool_calls]}"
+            )
             has_tool_calls = bool(tool_calls)
             has_final_answer = "Final Answer:" in response
 
@@ -1470,7 +1177,9 @@ class ReportAgent:
                     messages.append(
                         {
                             "role": "user",
-                            "content": REACT_INSUFFICIENT_TOOLS_MSG.format(
+                            "content": load_prompt(
+                                "report",
+                                "react_insufficient",
                                 tool_calls_count=tool_calls_count,
                                 min_tool_calls=min_tool_calls,
                                 unused_hint=unused_hint,
@@ -1506,7 +1215,9 @@ class ReportAgent:
                     messages.append(
                         {
                             "role": "user",
-                            "content": REACT_TOOL_LIMIT_MSG.format(
+                            "content": load_prompt(
+                                "report",
+                                "react_limit",
                                 tool_calls_count=tool_calls_count,
                                 max_tool_calls=self.MAX_TOOL_CALLS_PER_SECTION,
                             ),
@@ -1556,15 +1267,19 @@ class ReportAgent:
                 unused_tools = all_tools - used_tools
                 unused_hint = ""
                 if unused_tools and tool_calls_count < self.MAX_TOOL_CALLS_PER_SECTION:
-                    unused_hint = REACT_UNUSED_TOOLS_HINT.format(
-                        unused_list="、".join(unused_tools)
+                    unused_hint = load_prompt(
+                        "report",
+                        "react_unused_hint",
+                        unused_list="、".join(unused_tools),
                     )
 
                 messages.append({"role": "assistant", "content": response})
                 messages.append(
                     {
                         "role": "user",
-                        "content": REACT_OBSERVATION_TEMPLATE.format(
+                        "content": load_prompt(
+                            "report",
+                            "react_observation",
                             tool_name=call["name"],
                             result=result,
                             tool_calls_count=tool_calls_count,
@@ -1591,7 +1306,9 @@ class ReportAgent:
                 messages.append(
                     {
                         "role": "user",
-                        "content": REACT_INSUFFICIENT_TOOLS_MSG_ALT.format(
+                        "content": load_prompt(
+                            "report",
+                            "react_insufficient_alt",
                             tool_calls_count=tool_calls_count,
                             min_tool_calls=min_tool_calls,
                             unused_hint=unused_hint,
@@ -1618,7 +1335,9 @@ class ReportAgent:
 
         # alcanzarHastaMásgrandeIteración vecesnúmero，forzarGenerar contenido
         logger.warning(t("report.sectionMaxIter", title=section.title))
-        messages.append({"role": "user", "content": REACT_FORCE_FINAL_MSG})
+        messages.append(
+            {"role": "user", "content": load_prompt("report", "react_force_final")}
+        )
 
         response = self.llm.chat(messages=messages, temperature=0.5, max_tokens=4096)
 
@@ -1949,7 +1668,9 @@ class ReportAgent:
         except Exception as e:
             logger.warning(t("report.FetchReportFailed", error=e))
 
-        system_prompt = CHAT_SYSTEM_PROMPT_TEMPLATE.format(
+        system_prompt = load_prompt(
+            "report",
+            "chat_system",
             simulation_requirement=self.simulation_requirement,
             report_content=report_content
             if report_content
