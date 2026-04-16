@@ -23,7 +23,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { availableLocales } from '@/i18n/index.js'
 
-const { locale } = useI18n()
+const { locale } = useI18n({ useScope: 'global' })
 const open = ref(false)
 const switcherRef = ref(null)
 

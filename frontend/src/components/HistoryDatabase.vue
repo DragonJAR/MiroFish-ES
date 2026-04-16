@@ -198,7 +198,7 @@ import { getSimulationHistory } from '../api/simulation'
 
 const router = useRouter()
 const route = useRoute()
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 
 // Estado
 const projects = ref([])

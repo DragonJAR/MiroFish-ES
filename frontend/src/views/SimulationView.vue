@@ -75,7 +75,7 @@ import { getSimulation, stopSimulation, getEnvStatus, closeSimulationEnv } from 
 import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 const route = useRoute()
 const router = useRouter()
 

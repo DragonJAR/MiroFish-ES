@@ -739,7 +739,21 @@ class ZepToolsService:
         """
         logger.info(t("console.FetchingAllNodes", graphId=graph_id))
 
-        nodes = fetch_all_nodes(self.client, graph_id)
+        if self._use_zep:
+            nodes = fetch_all_nodes(self.client, graph_id)
+        else:
+            # Graphiti backend — use memory_backend directly
+            entities = self.memory_backend.get_entities(graph_id)
+            nodes = [
+                EntityNode(
+                    uuid_=e.get("uuid", ""),
+                    name=e.get("name", ""),
+                    labels=e.get("labels", []),
+                    summary=e.get("summary", ""),
+                    attributes=e.get("attributes", {}),
+                )
+                for e in entities
+            ]
 
         result = []
         for node in nodes:
@@ -774,7 +788,12 @@ class ZepToolsService:
         """
         logger.info(t("console.FetchingAllEdges", graphId=graph_id))
 
-        edges = fetch_all_edges(self.client, graph_id)
+        if self._use_zep:
+            edges = fetch_all_edges(self.client, graph_id)
+        else:
+            # Graphiti backend — use memory_backend directly
+            edge_dicts = self.memory_backend.get_edges(graph_id)
+            edges = [type("Edge", (), d)() for d in edge_dicts]
 
         result = []
         for edge in edges:
@@ -814,10 +833,27 @@ class ZepToolsService:
         logger.info(t("console.FetchingNodeDetail", uuid=node_uuid[:8]))
 
         try:
-            node = self._call_with_retry(
-                func=lambda: self.client.graph.node.get(uuid_=node_uuid),
-                opeRation_name=t("console.FetchNodeDetailOp", uuid=node_uuid[:8]),
-            )
+            if self._use_zep:
+                node = self._call_with_retry(
+                    func=lambda: self.client.graph.node.get(uuid_=node_uuid),
+                    opeRation_name=t("console.FetchNodeDetailOp", uuid=node_uuid[:8]),
+                )
+            else:
+                # Graphiti backend — use memory_backend directly
+                entity = self.memory_backend.get_entity_by_uuid(
+                    self.graph_id, node_uuid
+                )
+                node = (
+                    EntityNode(
+                        uuid_=entity.get("uuid", ""),
+                        name=entity.get("name", ""),
+                        labels=entity.get("labels", []),
+                        summary=entity.get("summary", ""),
+                        attributes=entity.get("attributes", {}),
+                    )
+                    if entity
+                    else None
+                )
 
             if not node:
                 return None

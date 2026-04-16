@@ -415,7 +415,7 @@ import * as d3 from 'd3'
 
 const route = useRoute()
 const router = useRouter()
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 
 // ID del proyecto actual (puede cambiar de 'new' a ID real)
 const currentProjectId = ref(route.params.projectId)

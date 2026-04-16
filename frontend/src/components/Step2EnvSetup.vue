@@ -643,7 +643,7 @@ import {
 } from '../api/simulation'
 import { useTranslateLog } from '../composables/useTranslateLog'
 
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 const { translateLog } = useTranslateLog()
 
 const props = defineProps({

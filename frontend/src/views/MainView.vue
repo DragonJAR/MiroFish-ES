@@ -89,7 +89,7 @@ import LanguageSwitcher from '../components/LanguageSwitcher.vue'
 
 const route = useRoute()
 const router = useRouter()
-const { t, tm } = useI18n()
+const { t, tm } = useI18n({ useScope: 'global' })
 
 // Layout State
 const viewMode = ref('split') // graph | split | workbench

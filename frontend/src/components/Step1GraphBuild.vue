@@ -194,7 +194,7 @@ import { createSimulation } from '../api/simulation'
 import { useTranslateLog } from '../composables/useTranslateLog'
 
 const router = useRouter()
-const { t } = useI18n()
+const { t } = useI18n({ useScope: 'global' })
 const { translateLog } = useTranslateLog()
 
 const props = defineProps({
