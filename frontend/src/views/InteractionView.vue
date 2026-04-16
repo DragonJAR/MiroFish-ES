@@ -92,6 +92,7 @@ const simulationId = ref(null)
 const projectData = ref(null)
 const graphData = ref(null)
 const graphLoading = ref(false)
+const projectNotFound = ref(false)
 const systemLogs = ref([])
 const currentStatus = ref('ready') // ready | processing | completed | error
 
@@ -159,17 +160,25 @@ const loadReportData = async () => {
         if (simRes.success && simRes.data) {
           const simData = simRes.data
 
-          // obtener info del proyecto
+          // obtener info del proyecto (no bloqueante — el panel de grafo es enriquecimiento)
           if (simData.project_id) {
-            const projRes = await getProject(simData.project_id)
-            if (projRes.success && projRes.data) {
-              projectData.value = projRes.data
-              addLog(t('log.projectLoadSuccess', { id: projRes.data.project_id }))
+            try {
+              const projRes = await getProject(simData.project_id)
+              if (projRes.success && projRes.data) {
+                projectData.value = projRes.data
+                addLog(t('log.projectLoadSuccess', { id: projRes.data.project_id }))
 
-              // obtener datos del grafo
-              if (projRes.data.graph_id) {
-                await loadGraph(projRes.data.graph_id)
+                // obtener datos del grafo
+                if (projRes.data.graph_id) {
+                  await loadGraph(projRes.data.graph_id)
+                }
               }
+            } catch (projErr) {
+              // 404 u otro error — proyecto no disponible, continuar sin él
+              projectNotFound.value = true
+              addLog(t('api.projectNotFound', { id: simData.project_id }))
+              projectData.value = null
+              graphData.value = null
             }
           }
         }
